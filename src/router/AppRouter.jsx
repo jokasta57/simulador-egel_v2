@@ -4,9 +4,10 @@ import { ExamPage, ExamResultPage, HomePage, RegisterPage, SimulatorPage } from 
 import { DashboardLayout } from '../dashboard'
 import { PrivateRoute } from './PrivateRoute'
 import NotFoundPage from '../simulator/pages/NotFoundPage'
+import { DashboardRoutes } from '../dashboard/routes/DashboardRoutes'
 
 export const AppRouter = () => {
-    const isAuthenticated = false
+    const isAuthenticated = true
     const isStudentRegistered = false
     const isExamFinished = false
 
@@ -16,14 +17,14 @@ export const AppRouter = () => {
             <Route path='/' element={<HomePage/>} />
 
             {/* Rutas del administrador */}
-            <Route path='/admin/login' element={<LoginPage/>}/> 
-            <Route path ='/admin/dashboard' element={
+            <Route path='/login' element={<LoginPage/>}/> 
+            <Route path ='/admin/*' element={
                 // Ruta privada para DashboardPage
                 <PrivateRoute 
                     isAuthenticated={isAuthenticated}
-                    redirectTo='/admin/login'
+                    redirectTo='/login'
                 >
-                    <DashboardLayout/>
+                    <DashboardRoutes/>
                 </PrivateRoute>
             }/>
 

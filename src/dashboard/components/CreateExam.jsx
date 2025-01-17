@@ -10,11 +10,13 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
+  Pagination,
 } from '@mui/material';
 import { saveExam, saveQuestion, loadSavedExam } from '../../actions/examActions';
 import {ExamInfo} from './ExamInfo';
 import {QuestionCard} from './QuestionCard';
 import {FloatingAddButton} from './FloatingAddButton';
+import { useCreateExamStore } from '../../hooks/useCreateExamStore';
 
 export const CreateExam = () => {
   const theme = useTheme();
@@ -24,6 +26,8 @@ export const CreateExam = () => {
     carrera: '',
     periodo: '',
   });
+
+  const { handleSaveExamInfo } = useCreateExamStore();
 
   const [preguntas, setPreguntas] = useState([]);
   const [preguntasGuardadas, setPreguntasGuardadas] = useState({});
@@ -36,6 +40,8 @@ export const CreateExam = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [isExamInfoSaved, setIsExamInfoSaved] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const questionsPerPage = 10;
 
   const handleExamInfoChange = (newExamInfo) => {
     setExamInfo(newExamInfo);
@@ -59,13 +65,16 @@ export const CreateExam = () => {
 
     setIsLoading(true);
     try {
+      console.log(examInfo.titulo);
       // Aquí iría la lógica para guardar la información del examen en el backend
+      await handleSaveExamInfo(examInfo.titulo, examInfo.duracion, examInfo.carrera, examInfo.periodo)
       // Por ahora, simularemos una operación asíncrona
       await new Promise(resolve => setTimeout(resolve, 1000));
       setIsExamInfoSaved(true);
       setSuccess('Información del examen guardada exitosamente');
       setLastSaved(new Date());
     } catch (error) {
+      console.log(error);
       setError('Error al guardar la información del examen');
     } finally {
       setIsLoading(false);
@@ -94,6 +103,7 @@ export const CreateExam = () => {
     };
     setPreguntas(prev => [...prev, nuevaPregunta]);
     setShouldScroll(true);
+    setCurrentPage(Math.ceil((preguntas.length + 1) / questionsPerPage));
   };
 
   const eliminarPregunta = (preguntaId) => {
@@ -117,6 +127,7 @@ export const CreateExam = () => {
       return newPreguntasGuardadas;
     });
     setShouldScroll(true);
+    setCurrentPage(Math.ceil(preguntas.length / questionsPerPage));
   };
 
   const actualizarPregunta = useCallback((preguntaId, campo, valor) => {
@@ -231,6 +242,15 @@ export const CreateExam = () => {
 
   const canAddQuestion = isExamInfoSaved && (Object.values(preguntasGuardadas).every(Boolean) && preguntas.length > 0 ? preguntas.length === Object.keys(preguntasGuardadas).length : true);
 
+  // Pagination logic
+  const indexOfLastQuestion = currentPage * questionsPerPage;
+  const indexOfFirstQuestion = indexOfLastQuestion - questionsPerPage;
+  const currentQuestions = preguntas.slice(indexOfFirstQuestion, indexOfLastQuestion);
+
+  const handleChangePage = (event, value) => {
+    setCurrentPage(value);
+  };
+
   return (
     <Box sx={{ 
       maxWidth: { xs: '100%', sm: '540px', md: '720px', lg: '960px', xl: '1140px' },
@@ -273,7 +293,7 @@ export const CreateExam = () => {
           {isLoading ? (
             <CircularProgress size={24} color="inherit" />
           ) : isExamInfoSaved ? (
-            'Examen guardado'
+            'Información guardada'
           ) : isExamInfoComplete() ? (
             'Continuar'
           ) : (
@@ -292,19 +312,30 @@ export const CreateExam = () => {
       </Box>
 
       <Stack spacing={{ xs: 2, sm: 3 }}>
-        {preguntas.map((pregunta, index) => (
+        {currentQuestions.map((pregunta, index) => (
           <QuestionCard
             key={pregunta.id}
             pregunta={pregunta}
-            index={index}
+            index={indexOfFirstQuestion + index}
             onDelete={eliminarPregunta}
             onUpdate={actualizarPregunta}
             onSave={guardarPregunta}
             isSaved={preguntasGuardadas[pregunta.id]}
-            ref={index === preguntas.length - 1 ? lastQuestionRef : null}
+            ref={index === currentQuestions.length - 1 ? lastQuestionRef : null}
           />
         ))}
       </Stack>
+
+      {preguntas.length > questionsPerPage && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Pagination
+            count={Math.ceil(preguntas.length / questionsPerPage)}
+            page={currentPage}
+            onChange={handleChangePage}
+            color="primary"
+          />
+        </Box>
+      )}
 
       <FloatingAddButton onClick={agregarPregunta} disabled={!canAddQuestion} />
 
@@ -369,4 +400,3 @@ export const CreateExam = () => {
     </Box>
   );
 };
-

@@ -156,6 +156,9 @@ export const DashboardLayout = ({ children }) => {
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
             }}
           >
+            <Typography variant="body1" sx={{ mr: 1, color: 'white' }}>
+              Hola
+            </Typography>
             <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
               <PersonIcon />
             </Avatar>

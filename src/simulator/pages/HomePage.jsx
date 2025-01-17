@@ -1,5 +1,6 @@
 import { Box, Button, Typography, Paper, Container, Grid, useTheme, useMediaQuery } from '@mui/material';
 import { School as SchoolIcon, AdminPanelSettings as AdminIcon } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
 
 export const HomePage = () => {
     const theme = useTheme();
@@ -91,18 +92,20 @@ export const HomePage = () => {
                                 >
                                     Accede para realizar simulacros y evaluar tu preparación.
                                 </Typography>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    size="large"
-                                    fullWidth={isMobile}
-                                    sx={{
-                                        mt: 'auto',
-                                        py: 1.5,
-                                    }}
-                                >
-                                    Ingresar como Estudiante
-                                </Button>
+                                <Link to='/student/register'>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        size="large"
+                                        fullWidth={isMobile}
+                                        sx={{
+                                            mt: 'auto',
+                                            py: 1.5,
+                                        }}
+                                        >
+                                        Ingresar como Estudiante
+                                    </Button>
+                                </Link>
                             </Paper>
                         </Grid>
 
@@ -151,18 +154,20 @@ export const HomePage = () => {
                                 >
                                     Acceso único para administradores.
                                 </Typography>
-                                <Button
-                                    variant="contained"
-                                    color="secondary"
-                                    size="large"
-                                    fullWidth={isMobile}
-                                    sx={{
-                                        mt: 'auto',
-                                        py: 1.5,
-                                    }}
-                                >
-                                    Ingresar como Administrador
-                                </Button>
+                                <Link to='/login'>
+                                    <Button
+                                        variant="contained"
+                                        color="secondary"
+                                        size="large"
+                                        fullWidth={isMobile}
+                                        sx={{
+                                            mt: 'auto',
+                                            py: 1.5,
+                                        }}
+                                        >
+                                        Ingresar como Administrador
+                                    </Button>
+                                </Link>
                             </Paper>
                         </Grid>
                     </Grid>

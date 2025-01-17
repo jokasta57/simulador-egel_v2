@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Button, TextField, Paper, Typography, Box, InputAdornment, IconButton, useTheme, useMediaQuery, Snackbar, Alert } from '@mui/material';
 import { LockOutlined as LockOutlinedIcon, Visibility, VisibilityOff, Badge as BadgeIcon } from '@mui/icons-material';
 import { useAuthStore } from '../../hooks/useAuthStore';
@@ -6,45 +6,44 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 export const LoginPage = () => {
-  const {startLoginAdmin} = useAuthStore();
+  const { startLoginAdmin } = useAuthStore();
   const { error } = useSelector(state => state.auth);
   const navigate = useNavigate();
 
-  const [numeroIdentificacion, setNumeroIdentificacion] = useState('');
-  const [nip, setNip] = useState('');
+  const [formData, setFormData] = useState({
+    numeroIdentificacion: '',
+    nip: ''
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'success',
   });
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleInputChange = useCallback((event) => {
+    const { name, value } = event.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
+  }, []);
 
-    // Validación de campos
-    if (!numeroIdentificacion && !nip) {
+  const handleSubmit = useCallback(async (event) => {
+    event.preventDefault();
+    const { numeroIdentificacion, nip } = formData;
+
+    if (!numeroIdentificacion || !nip) {
       setSnackbar({
         open: true,
-        message: 'Por favor, ingrese número de identificación y NIP',
-        severity: 'warning',
-      });
-      return;
-    }
-    if (!numeroIdentificacion) {
-      setSnackbar({
-        open: true,
-        message: 'Por favor, ingrese número de identificación',
-        severity: 'warning',
-      });
-      return;
-    }
-    if (!nip) {
-      setSnackbar({
-        open: true,
-        message: 'Por favor, ingrese NIP',
+        message: !numeroIdentificacion && !nip
+          ? 'Por favor, ingrese número de identificación y NIP'
+          : !numeroIdentificacion
+          ? 'Por favor, ingrese número de identificación'
+          : 'Por favor, ingrese NIP',
         severity: 'warning',
       });
       return;
@@ -57,7 +56,7 @@ export const LoginPage = () => {
         message: 'Inicio de sesión exitoso',
         severity: 'success',
       });
-      navigate('/admin/dashboard')
+      navigate('/admin/dashboard');
     } catch (error) {
       setSnackbar({
         open: true,
@@ -65,11 +64,39 @@ export const LoginPage = () => {
         severity: 'error',
       });
     }
-  };
+  }, [formData, startLoginAdmin, navigate]);
 
-  const handleTogglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const handleTogglePasswordVisibility = useCallback(() => {
+    setShowPassword(prevShow => !prevShow);
+  }, []);
+
+  const handleCloseSnackbar = useCallback(() => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  }, []);
+
+  const paperStyles = useMemo(() => ({
+    padding: theme.spacing(4),
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    maxWidth: 400,
+    width: '100%',
+    borderRadius: 2,
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(3),
+      maxWidth: '90%',
+    },
+  }), [theme]);
+
+  const buttonStyles = useMemo(() => ({
+    mt: 3,
+    mb: 2,
+    py: 1.5,
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    textTransform: 'none',
+    borderRadius: 2,
+  }), []);
 
   return (
     <Box
@@ -82,22 +109,7 @@ export const LoginPage = () => {
         backgroundColor: theme.palette.background.default,
       }}
     >
-      <Paper
-        elevation={3}
-        sx={{
-          padding: theme.spacing(4),
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          maxWidth: 400,
-          width: '100%',
-          borderRadius: 2,
-          [theme.breakpoints.down('sm')]: {
-            padding: theme.spacing(3),
-            maxWidth: '90%',
-          },
-        }}
-      >
+      <Paper elevation={3} sx={paperStyles}>
         <Box
           sx={{
             backgroundColor: theme.palette.primary.main,
@@ -118,13 +130,13 @@ export const LoginPage = () => {
           <TextField
             margin="normal"
             fullWidth
-            id="numero_identificacion"
+            id="numeroIdentificacion"
             label="Número de Identificación"
-            name="numero_identificacion"
+            name="numeroIdentificacion"
             autoComplete="username"
             autoFocus
-            value={numeroIdentificacion}
-            onChange={(e) => setNumeroIdentificacion(e.target.value)}
+            value={formData.numeroIdentificacion}
+            onChange={handleInputChange}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -141,8 +153,8 @@ export const LoginPage = () => {
             type={showPassword ? "text" : "password"}
             id="nip"
             autoComplete="current-password"
-            value={nip}
-            onChange={(e) => setNip(e.target.value)}
+            value={formData.nip}
+            onChange={handleInputChange}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -166,15 +178,7 @@ export const LoginPage = () => {
             type="submit"
             fullWidth
             variant="contained"
-            sx={{
-              mt: 3,
-              mb: 2,
-              py: 1.5,
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              textTransform: 'none',
-              borderRadius: 2,
-            }}
+            sx={buttonStyles}
           >
             Iniciar Sesión
           </Button>
@@ -183,11 +187,11 @@ export const LoginPage = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert 
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          onClose={handleCloseSnackbar} 
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >

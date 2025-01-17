@@ -1,5 +1,4 @@
-import React, { forwardRef, useState, useEffect } from 'react';
-import { debounce } from 'lodash';
+import React, { memo, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -7,99 +6,47 @@ import {
   TextField,
   Button,
   Box,
-  Alert,
-  Collapse,
 } from '@mui/material';
 import { Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
-import {OptionList} from './OptionList';
-import {ImageUpload} from './ImageUpload';
-import { saveQuestion } from '../../actions/examActions';
+import { OptionList } from './OptionList';
+import { ImageUpload } from './ImageUpload';
+import { useDebounce } from '../../hooks/useDebounce';
 
-export const QuestionCard = forwardRef(({ pregunta, index, onDelete, onUpdate, onSave, isSaved }, ref) => {
-  const [localPregunta, setLocalPregunta] = useState(pregunta);
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertMessage, setAlertMessage] = useState('');
-  const [alertSeverity, setAlertSeverity] = useState('error');
+export const QuestionCard = memo(({ pregunta, index, onDelete, onUpdate, onSave, isSaved }) => {
+  const debouncedUpdate = useDebounce((field, value) => {
+    onUpdate(pregunta.id, field, value);
+  }, 300);
 
-  const debouncedUpdate = React.useCallback(
-    debounce((id, field, value) => {
-      onUpdate(id, field, value);
-    }, 300),
-    [onUpdate]
-  );
-
-  React.useEffect(() => {
-    return () => {
-      debouncedUpdate.cancel();
-    };
+  const handleQuestionChange = useCallback((e) => {
+    debouncedUpdate('pregunta', e.target.value);
   }, [debouncedUpdate]);
 
-  const handleQuestionChange = (e) => {
-    const newValue = e.target.value;
-    setLocalPregunta(prev => ({ ...prev, pregunta: newValue }));
-    debouncedUpdate(localPregunta.id, 'pregunta', newValue);
-  };
+  const handleImageUpload = useCallback((imageData) => {
+    onUpdate(pregunta.id, 'imagen', imageData);
+  }, [onUpdate, pregunta.id]);
 
-  const handleQuestionBlur = () => {
-    onUpdate(localPregunta.id, 'pregunta', localPregunta.pregunta);
-  };
-
-  const validateQuestion = () => {
-    const opcionesValidas = localPregunta.opciones.filter(opcion => opcion.texto.trim() !== '' || opcion.imagen);
-    const opcionesUnicas = new Set(opcionesValidas.map(opcion => 
-      opcion.texto.trim().toLowerCase() + (opcion.imagen ? opcion.imagen : '')
-    ));
-
-    return (
-      localPregunta.pregunta.trim() !== '' &&
-      opcionesValidas.length >= 2 &&
-      opcionesUnicas.size === opcionesValidas.length
-    );
-  };
-
-  const handleImageUpload = (imageData) => {
-    setLocalPregunta(prev => ({ ...prev, imagen: imageData }));
-    onUpdate(localPregunta.id, 'imagen', imageData);
-  };
-
-  const handleOptionUpdate = (opcionIndex, campo, valor) => {
-    setLocalPregunta(prev => {
-      let nuevasOpciones;
-      if (campo === 'add') {
-        nuevasOpciones = [...prev.opciones, valor];
-      } else if (campo === 'delete') {
-        nuevasOpciones = prev.opciones.filter((_, index) => index !== opcionIndex);
-      } else {
-        nuevasOpciones = prev.opciones.map((opcion, index) =>
-          index === opcionIndex ? { ...opcion, [campo]: valor } : opcion
-        );
-      }
-      onUpdate(localPregunta.id, 'opciones', nuevasOpciones);
-      return { ...prev, opciones: nuevasOpciones };
-    });
-  };
-
-  const handleCorrectAnswerChange = (opcionIndex) => {
-    setLocalPregunta(prev => ({ ...prev, respuestaCorrecta: opcionIndex }));
-    onUpdate(localPregunta.id, 'respuestaCorrecta', opcionIndex);
-  };
-
-  const handleSave = () => {
-    const isValid = validateQuestion();
-    if (isValid) {
-      onSave(localPregunta.id);
-      setAlertMessage('Pregunta guardada exitosamente');
-      setAlertSeverity('success');
+  const handleOptionUpdate = useCallback((opcionIndex, campo, valor) => {
+    const nuevasOpciones = [...pregunta.opciones];
+    if (campo === 'add') {
+      nuevasOpciones.push(valor);
+    } else if (campo === 'delete') {
+      nuevasOpciones.splice(opcionIndex, 1);
     } else {
-      setAlertMessage('Por favor, complete la pregunta y asegúrese de tener al menos dos opciones válidas y únicas');
-      setAlertSeverity('error');
+      nuevasOpciones[opcionIndex] = { ...nuevasOpciones[opcionIndex], [campo]: valor };
     }
-    setShowAlert(true);
-    setTimeout(() => setShowAlert(false), 5000);
-  };
+    onUpdate(pregunta.id, 'opciones', nuevasOpciones);
+  }, [onUpdate, pregunta.id, pregunta.opciones]);
+
+  const handleCorrectAnswerChange = useCallback((opcionIndex) => {
+    onUpdate(pregunta.id, 'respuestaCorrecta', opcionIndex);
+  }, [onUpdate, pregunta.id]);
+
+  const handleSave = useCallback(() => {
+    onSave(pregunta.id);
+  }, [onSave, pregunta.id]);
 
   return (
-    <Card ref={ref} id={`pregunta-${localPregunta.id}`}>
+    <Card id={`pregunta-${pregunta.id}`}>
       <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
         <Box sx={{ 
           display: 'flex', 
@@ -115,18 +62,12 @@ export const QuestionCard = forwardRef(({ pregunta, index, onDelete, onUpdate, o
             variant="outlined"
             color="error"
             startIcon={<DeleteIcon />}
-            onClick={() => onDelete(localPregunta.id)}
+            onClick={() => onDelete(pregunta.id)}
             sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Eliminar Pregunta
           </Button>
         </Box>
-
-        <Collapse in={showAlert}>
-          <Alert severity={alertSeverity} sx={{ mb: 2 }}>
-            {alertMessage}
-          </Alert>
-        </Collapse>
 
         <Box sx={{ mb: 3 }}>
           <TextField
@@ -134,22 +75,21 @@ export const QuestionCard = forwardRef(({ pregunta, index, onDelete, onUpdate, o
             multiline
             rows={3}
             label="Texto de la Pregunta"
-            value={localPregunta.pregunta}
+            defaultValue={pregunta.pregunta}
             onChange={handleQuestionChange}
-            onBlur={handleQuestionBlur}
             sx={{ mb: 2 }}
           />
 
           <ImageUpload
-            currentImage={localPregunta.imagen}
+            currentImage={pregunta.imagen}
             onImageUpload={handleImageUpload}
             label="Imagen de la pregunta"
           />
         </Box>
 
         <OptionList
-          opciones={localPregunta.opciones}
-          respuestaCorrecta={localPregunta.respuestaCorrecta}
+          opciones={pregunta.opciones}
+          respuestaCorrecta={pregunta.respuestaCorrecta}
           onOptionUpdate={handleOptionUpdate}
           onCorrectAnswerChange={handleCorrectAnswerChange}
         />
@@ -171,5 +111,4 @@ export const QuestionCard = forwardRef(({ pregunta, index, onDelete, onUpdate, o
 });
 
 QuestionCard.displayName = 'QuestionCard';
-
 

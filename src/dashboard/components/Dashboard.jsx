@@ -47,7 +47,7 @@ export const Dashboard = () => {
             <Typography variant="h6" gutterBottom>
               Resultados por Materia
             </Typography>
-            <ResponsiveContainer width="100%" height="90%">
+            {/* <ResponsiveContainer width="100%" height="90%">
               <BarChart data={dataBarras}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
@@ -57,7 +57,7 @@ export const Dashboard = () => {
                 <Bar dataKey="aprobados" fill={theme.palette.primary.main} />
                 <Bar dataKey="reprobados" fill={theme.palette.secondary.main} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer> */}
           </Paper>
         </Grid>
         <Grid item xs={12} md={4}>
@@ -65,7 +65,7 @@ export const Dashboard = () => {
             <Typography variant="h6" gutterBottom>
               Estado de Exámenes
             </Typography>
-            <ResponsiveContainer width="100%" height="90%">
+            {/* <ResponsiveContainer width="100%" height="90%">
               <PieChart>
                 <Pie
                   data={dataPie}
@@ -83,7 +83,7 @@ export const Dashboard = () => {
                 </Pie>
                 <Tooltip />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer> */}
           </Paper>
         </Grid>
       </Grid>

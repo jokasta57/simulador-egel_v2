@@ -232,14 +232,32 @@ export const CreateExam = () => {
   const canAddQuestion = isExamInfoSaved && (Object.values(preguntasGuardadas).every(Boolean) && preguntas.length > 0 ? preguntas.length === Object.keys(preguntasGuardadas).length : true);
 
   return (
-    <Box sx={{ maxWidth: 1200, margin: '0 auto', p: 3, pb: 10 }}>
-      <Typography variant="h4" component="h1" sx={{ mb: 4, fontWeight: 'bold' }}>
+    <Box sx={{ 
+      maxWidth: { xs: '100%', sm: '540px', md: '720px', lg: '960px', xl: '1140px' },
+      margin: '0 auto', 
+      p: { xs: 2, sm: 3 },
+      pb: { xs: 16, sm: 10 } // Increased bottom padding on mobile
+    }}>
+      <Typography 
+        variant="h4" 
+        component="h1" 
+        sx={{ 
+          mb: { xs: 2, sm: 4 }, 
+          fontWeight: 'bold',
+          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+        }}
+      >
         Crear Nuevo Examen
       </Typography>
 
       <ExamInfo examInfo={examInfo} onExamInfoChange={handleExamInfoChange} />
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, mb: 4 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        mt: { xs: 1, sm: 2 }, 
+        mb: { xs: 2, sm: 4 }
+      }}>
         <Button
           variant="contained"
           onClick={guardarInformacionExamen}
@@ -249,22 +267,31 @@ export const CreateExam = () => {
             '&:hover': {
               bgcolor: isExamInfoSaved ? theme.palette.success.dark : theme.palette.primary.dark,
             },
+            width: { xs: '100%', sm: 'auto' }
           }}
         >
-          {isLoading ? <CircularProgress size={24} color="inherit" /> : (isExamInfoSaved ? 'Información Guardada' : 'Guardar Información del Examen')}
+          {isLoading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : isExamInfoSaved ? (
+            'Examen guardado'
+          ) : isExamInfoComplete() ? (
+            'Continuar'
+          ) : (
+            'Debe completar la información'
+          )}
         </Button>
       </Box>
 
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>
+      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+        <Typography variant="h6" sx={{ mb: { xs: 0.5, sm: 1 }, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
           Preguntas del Examen
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
           Total de preguntas: {preguntas.length}
         </Typography>
       </Box>
 
-      <Stack spacing={3}>
+      <Stack spacing={{ xs: 2, sm: 3 }}>
         {preguntas.map((pregunta, index) => (
           <QuestionCard
             key={pregunta.id}
@@ -282,7 +309,7 @@ export const CreateExam = () => {
       <FloatingAddButton onClick={agregarPregunta} disabled={!canAddQuestion} />
 
       {preguntas.length > 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: { xs: 3, sm: 4 } }}>
           <Button
             variant="contained"
             size="large"
@@ -293,6 +320,7 @@ export const CreateExam = () => {
               '&:hover': {
                 bgcolor: theme.palette.primary.dark,
               },
+              width: { xs: '100%', sm: 'auto' }
             }}
           >
             {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Guardar Examen'}
@@ -320,7 +348,16 @@ export const CreateExam = () => {
           {error || success}
         </Alert>
       </Snackbar>
-      <Box sx={{ position: 'fixed', bottom: 16, left: 16, zIndex: 1000 }}>
+      <Box sx={{ 
+        position: 'fixed', 
+        bottom: { xs: 80, sm: 16 }, // Increased bottom position on mobile
+        left: { xs: 16, sm: 16 }, 
+        zIndex: 1000,
+        bgcolor: 'background.paper',
+        p: 1,
+        borderRadius: 1,
+        boxShadow: 1
+      }}>
         {isSaving ? (
           <CircularProgress size={24} />
         ) : (

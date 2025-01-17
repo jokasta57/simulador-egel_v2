@@ -16,6 +16,7 @@ import {
   Menu,
   MenuItem,
   useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -30,36 +31,33 @@ import {
 const drawerWidth = 240;
 
 const menuItems = [
-  { 
-    text: 'Dashboard', 
-    icon: <DashboardIcon />, 
+  {
+    text: 'Dashboard',
+    icon: <DashboardIcon />,
     path: '/admin/dashboard',
-    color: '#B91116'
   },
-  { 
-    text: 'Lista de Exámenes', 
-    icon: <LibraryBooksIcon />, 
+  {
+    text: 'Lista de Exámenes',
+    icon: <LibraryBooksIcon />,
     path: '/admin/examenes',
-    color: '#B91116'
   },
-  { 
-    text: 'Crear Examen', 
-    icon: <AddCircleIcon />, 
+  {
+    text: 'Crear Examen',
+    icon: <AddCircleIcon />,
     path: '/admin/crear-examen',
-    color: '#B91116'
   },
-  { 
-    text: 'Estadísticas', 
-    icon: <BarChartIcon />, 
+  {
+    text: 'Estadísticas',
+    icon: <BarChartIcon />,
     path: '/admin/estadisticas',
-    color: '#B91116'
   },
 ];
 
 export const DashboardLayout = ({ children }) => {
   const theme = useTheme();
   const location = useLocation();
-  const [open, setOpen] = useState(true);
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [open, setOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleDrawerToggle = () => {
@@ -74,21 +72,75 @@ export const DashboardLayout = ({ children }) => {
     setAnchorEl(null);
   };
 
+  const drawer = (
+    <>
+      <Toolbar />
+      <List>
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+
+          return (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                component={Link}
+                to={item.path}
+                selected={isActive}
+                onClick={isMobile ? handleDrawerToggle : undefined}
+                sx={{
+                  minHeight: 48,
+                  '&.Mui-selected': {
+                    backgroundColor: 'rgba(185, 17, 22, 0.08)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(185, 17, 22, 0.12)',
+                    },
+                  },
+                  '&:hover': {
+                    backgroundColor: 'rgba(185, 17, 22, 0.04)',
+                  },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    color: isActive ? '#B91116' : 'rgba(0, 0, 0, 0.54)',
+                    minWidth: '40px'
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.text}
+                  sx={{
+                    '& .MuiListItemText-primary': {
+                      color: isActive ? '#B91116' : 'inherit',
+                      fontWeight: isActive ? 500 : 400,
+                    },
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
+    </>
+  );
+
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar
         position="fixed"
         sx={{
           zIndex: theme.zIndex.drawer + 1,
           backgroundColor: '#B91116',
+          boxShadow: 'none',
+          width: '100%',
         }}
       >
         <Toolbar>
           <IconButton
             color="inherit"
             aria-label="toggle drawer"
-            onClick={handleDrawerToggle}
             edge="start"
+            onClick={handleDrawerToggle}
             sx={{ mr: 2 }}
           >
             <MenuIcon />
@@ -129,87 +181,58 @@ export const DashboardLayout = ({ children }) => {
           </Menu>
         </Toolbar>
       </AppBar>
+
       <Drawer
-        variant="permanent"
+        variant={isMobile ? "temporary" : "permanent"}
         open={open}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true,
+        }}
         sx={{
-          width: drawerWidth,
+          width: open ? drawerWidth : 0,
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: {
+          '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
-            backgroundColor: theme.palette.background.paper,
-            borderRight: `1px solid ${theme.palette.divider}`,
-            transition: theme.transitions.create(['width', 'margin'], {
+            borderRight: '1px solid rgba(0, 0, 0, 0.12)',
+            transform: open ? 'none' : `translateX(-${drawerWidth}px)`,
+            visibility: open ? 'visible' : 'hidden',
+            transition: theme.transitions.create(['transform', 'visibility'], {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,
-            }),
-            ...(open ? {
-              width: drawerWidth,
-            } : {
-              width: theme.spacing(7),
-              overflowX: 'hidden',
             }),
           },
         }}
       >
-        <Toolbar />
-        <Box sx={{ overflow: 'auto' }}>
-          <List>
-            {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              
-              return (
-                <ListItem key={item.text} disablePadding>
-                  <ListItemButton
-                    component={Link}
-                    to={item.path}
-                    selected={isActive}
-                    sx={{
-                      '&.Mui-selected': {
-                        backgroundColor: 'rgba(185, 17, 22, 0.08)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(185, 17, 22, 0.12)',
-                        },
-                      },
-                      '&:hover': {
-                        backgroundColor: 'rgba(185, 17, 22, 0.04)',
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ 
-                      color: isActive ? '#B91116' : 'rgba(0, 0, 0, 0.54)',
-                      minWidth: '40px'
-                    }}>
-                      {item.icon}
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={item.text} 
-                      sx={{
-                        '& .MuiListItemText-primary': {
-                          color: isActive ? '#B91116' : 'inherit',
-                          fontWeight: isActive ? 500 : 400,
-                        },
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              );
-            })}
-          </List>
-        </Box>
+        {drawer}
       </Drawer>
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          backgroundColor: theme.palette.background.default,
-          minHeight: '100vh',
+          minWidth: 0,
+          transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+          width: open ? `calc(100% - ${drawerWidth}px)` : '100%', // Ajuste aquí
+          px: 4,
+          py: 3,
         }}
       >
         <Toolbar />
-        {children}
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            maxWidth: '100%',
+            margin: '0 auto',
+          }}
+        >
+          {children}
+        </Box>
       </Box>
     </Box>
   );

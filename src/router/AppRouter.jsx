@@ -5,11 +5,21 @@ import { DashboardLayout } from '../dashboard'
 import { PrivateRoute } from './PrivateRoute'
 import NotFoundPage from '../simulator/pages/NotFoundPage'
 import { DashboardRoutes } from '../dashboard/routes/DashboardRoutes'
+import { useAuthStore } from '../hooks/useAuthStore'
+import { useEffect } from 'react'
+import { LoadingSpinner } from '../simulator/components/LoadingSpinner'
 
 export const AppRouter = () => {
-    const isAuthenticated = true
-    const isStudentRegistered = false
+    const {isAuthenticated, checkAuthToken, isLoading} = useAuthStore();
     const isExamFinished = false
+
+    useEffect(() => {
+        checkAuthToken()
+    }, [])
+
+    if (isLoading) {
+        return <LoadingSpinner />
+    }
 
     return (
         <Routes>
@@ -32,15 +42,15 @@ export const AppRouter = () => {
             <Route path='/student/register' element={<RegisterPage/>}/>
             {/* Ruta para acceder a todos los examenes disponibles */}
             <Route path='/exams' element={
-                isStudentRegistered ? <SimulatorPage /> : <Navigate to="/student/register" />
+                isAuthenticated ? <SimulatorPage /> : <Navigate to="/student/register" />
             } />
             {/* Ruta para acceder al examen seleccionado */}
             <Route path='/exams/:examId' element={
-                isStudentRegistered ? <ExamPage /> : <Navigate to="/student/register" />
+                isAuthenticated ? <ExamPage /> : <Navigate to="/student/register" />
             } />
             {/* Ruta para acceder al resultado final del examen */}
             <Route path='/exams/:examId/result' element={
-                isExamFinished && isStudentRegistered ? <ExamResultPage /> : <Navigate to="/exams/:examId" />
+                isExamFinished && isAuthenticated ? <ExamResultPage /> : <Navigate to="/exams/:examId" />
             } />
 
             {/* Ruta para manejo de error 404 */}

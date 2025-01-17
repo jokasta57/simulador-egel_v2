@@ -13,6 +13,7 @@ import {
 import { Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
 import {OptionList} from './OptionList';
 import {ImageUpload} from './ImageUpload';
+import { saveQuestion } from '../../actions/examActions';
 
 export const QuestionCard = forwardRef(({ pregunta, index, onDelete, onUpdate, onSave, isSaved }, ref) => {
   const [localPregunta, setLocalPregunta] = useState(pregunta);
@@ -35,7 +36,6 @@ export const QuestionCard = forwardRef(({ pregunta, index, onDelete, onUpdate, o
 
   const handleQuestionChange = (e) => {
     const newValue = e.target.value;
-    console.log("handleQuestionChange: updating localPregunta", newValue);
     setLocalPregunta(prev => ({ ...prev, pregunta: newValue }));
     debouncedUpdate(localPregunta.id, 'pregunta', newValue);
   };
@@ -100,9 +100,15 @@ export const QuestionCard = forwardRef(({ pregunta, index, onDelete, onUpdate, o
 
   return (
     <Card ref={ref} id={`pregunta-${localPregunta.id}`}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6">
+      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'flex-start', sm: 'center' }, 
+          mb: { xs: 2, sm: 3 } 
+        }}>
+          <Typography variant="h6" sx={{ mb: { xs: 1, sm: 0 } }}>
             Pregunta {index + 1}
           </Typography>
           <Button
@@ -110,6 +116,7 @@ export const QuestionCard = forwardRef(({ pregunta, index, onDelete, onUpdate, o
             color="error"
             startIcon={<DeleteIcon />}
             onClick={() => onDelete(localPregunta.id)}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Eliminar Pregunta
           </Button>
@@ -147,12 +154,13 @@ export const QuestionCard = forwardRef(({ pregunta, index, onDelete, onUpdate, o
           onCorrectAnswerChange={handleCorrectAnswerChange}
         />
 
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: { xs: 2, sm: 3 } }}>
           <Button
             variant="contained"
             color={isSaved ? "success" : "primary"}
             startIcon={<SaveIcon />}
             onClick={handleSave}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             {isSaved ? "Guardado" : "Guardar Pregunta"}
           </Button>

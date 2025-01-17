@@ -1,19 +1,70 @@
 import React, { useState } from 'react';
-import { Button, TextField, Paper, Typography, Box, Link, InputAdornment, IconButton, useTheme, useMediaQuery } from '@mui/material';
-import { LockOutlined as LockOutlinedIcon, Visibility, VisibilityOff, Email as EmailIcon } from '@mui/icons-material';
+import { Button, TextField, Paper, Typography, Box, InputAdornment, IconButton, useTheme, useMediaQuery, Snackbar, Alert } from '@mui/material';
+import { LockOutlined as LockOutlinedIcon, Visibility, VisibilityOff, Badge as BadgeIcon } from '@mui/icons-material';
+import { useAuthStore } from '../../hooks/useAuthStore';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 export const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const {startLoginAdmin} = useAuthStore();
+  const { error } = useSelector(state => state.auth);
+  const navigate = useNavigate();
+
+  const [numeroIdentificacion, setNumeroIdentificacion] = useState('');
+  const [nip, setNip] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log('Email:', email);
-    console.log('Password:', password);
-    // Aquí iría la lógica de autenticación
+
+    // Validación de campos
+    if (!numeroIdentificacion && !nip) {
+      setSnackbar({
+        open: true,
+        message: 'Por favor, ingrese número de identificación y NIP',
+        severity: 'warning',
+      });
+      return;
+    }
+    if (!numeroIdentificacion) {
+      setSnackbar({
+        open: true,
+        message: 'Por favor, ingrese número de identificación',
+        severity: 'warning',
+      });
+      return;
+    }
+    if (!nip) {
+      setSnackbar({
+        open: true,
+        message: 'Por favor, ingrese NIP',
+        severity: 'warning',
+      });
+      return;
+    }
+
+    try {
+      await startLoginAdmin(numeroIdentificacion, nip);
+      setSnackbar({
+        open: true,
+        message: 'Inicio de sesión exitoso',
+        severity: 'success',
+      });
+      navigate('/admin/dashboard')
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Error al iniciar sesión. Por favor, verifica tus credenciales.',
+        severity: 'error',
+      });
+    }
   };
 
   const handleTogglePasswordVisibility = () => {
@@ -66,34 +117,32 @@ export const LoginPage = () => {
         <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
           <TextField
             margin="normal"
-            required
             fullWidth
-            id="email"
-            label="Correo Electrónico"
-            name="email"
-            autoComplete="email"
+            id="numero_identificacion"
+            label="Número de Identificación"
+            name="numero_identificacion"
+            autoComplete="username"
             autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={numeroIdentificacion}
+            onChange={(e) => setNumeroIdentificacion(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <EmailIcon color="action" />
+                  <BadgeIcon color="action" />
                 </InputAdornment>
               ),
             }}
           />
           <TextField
             margin="normal"
-            required
             fullWidth
-            name="password"
-            label="Contraseña"
+            name="nip"
+            label="NIP"
             type={showPassword ? "text" : "password"}
-            id="password"
+            id="nip"
             autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={nip}
+            onChange={(e) => setNip(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -103,7 +152,7 @@ export const LoginPage = () => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle password visibility"
+                    aria-label="toggle nip visibility"
                     onClick={handleTogglePasswordVisibility}
                     edge="end"
                   >
@@ -131,6 +180,21 @@ export const LoginPage = () => {
           </Button>
         </Box>
       </Paper>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
+

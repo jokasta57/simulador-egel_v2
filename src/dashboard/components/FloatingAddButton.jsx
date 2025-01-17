@@ -7,9 +7,9 @@ export const FloatingAddButton = ({ onClick, disabled }) => {
     <Box
       sx={{
         position: 'fixed',
-        bottom: 32,
-        right: 32,
-        zIndex: 1000,
+        bottom: { xs: 16, sm: 32 },
+        right: { xs: 16, sm: 32 },
+        zIndex: 1100,
       }}
     >
       <Tooltip title={disabled ? "Complete la información del examen" : "Agregar Pregunta"} placement="left">
@@ -35,6 +35,3 @@ export const FloatingAddButton = ({ onClick, disabled }) => {
     </Box>
   );
 };
-
-
-

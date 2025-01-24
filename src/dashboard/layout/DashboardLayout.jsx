@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -27,6 +27,7 @@ import {
   Person as PersonIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material';
+import { useSelector } from 'react-redux';
 
 const drawerWidth = 240;
 
@@ -60,12 +61,15 @@ export const DashboardLayout = ({ children }) => {
   const [open, setOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
 
+  const {user} = useSelector( state => state.auth) //Toma el valor que esta en el store state.counter.{counter: 10}
+
   const handleDrawerToggle = () => {
     setOpen(!open);
-  };
+  };  
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
+
   };
 
   const handleMenuClose = () => {
@@ -148,21 +152,28 @@ export const DashboardLayout = ({ children }) => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Panel Administrativo
           </Typography>
-          <IconButton
-            onClick={handleMenuClick}
+          <Box
             sx={{
-              padding: 0.5,
-              border: '2px solid white',
-              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+              display: 'flex',
+              alignItems: 'center', // Centra verticalmente el texto y el botón
             }}
           >
-            <Typography variant="body1" sx={{ mr: 1, color: 'white' }}>
-              Hola
+            <Typography variant="body1" sx={{ color: 'white', mr: 1 }}>
+              Hola, {user.nombre}!
             </Typography>
-            <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
-              <PersonIcon />
-            </Avatar>
-          </IconButton>
+            <IconButton
+              onClick={handleMenuClick}
+              sx={{
+                padding: 0.5,
+                border: '2px solid white',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+              }}
+            >
+              <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
+                <PersonIcon />
+              </Avatar>
+            </IconButton>
+          </Box>
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}

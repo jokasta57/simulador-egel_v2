@@ -21,12 +21,12 @@ export const useCreateExamStore = () => {
         }, 2000);
     }, [dispatch]);
 
-    const handleSaveExamInfo = useCallback(async (nombre, duracion, carrera, periodo) => {
+    const handleSaveExamInfo = useCallback(async (nombre, duracion, carrera, periodo, area) => {
         dispatch(saveExamInfoStart());
 
         try {
             console.log('EXAMDATA', nombre, duracion, carrera, periodo);
-            const response = await adminApi.post('/exams', {nombre, duracion, carrera, periodo});
+            const response = await adminApi.post('/exams', {nombre, duracion, carrera, periodo, area});
             dispatch(saveExamInfoSuccess(response.data.examen));
 
             return response.data;

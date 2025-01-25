@@ -11,11 +11,12 @@ import {
     updateExamSuccess,
     updateExamFailure,
     setError,
+    setCurrentQuestion,
 } from '../../store/exams/examsSlice';
 
 export const useExamsStore = () => {
     const dispatch = useDispatch();
-    const { exams, currentExam, isLoading, error, success } = useSelector(state => state.exams);
+    const { exams, currentExam, isLoading, error, success, currentQuestion } = useSelector(state => state.exams);
 
     const handleLoadExams = useCallback(async () => {
         dispatch(loadExamsStart());
@@ -56,6 +57,48 @@ export const useExamsStore = () => {
         }
     }, [dispatch]);
 
+    const handleLoadQuestion = useCallback(async (examId, orden) => {
+        try {
+            const response = await adminApi.get(`/questions/orden`, {
+                params: {
+                    orden,
+                    id_examen: examId
+                }
+            });
+            dispatch(setCurrentQuestion(response.data.pregunta))
+            return response.data.pregunta;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data || 'Error al cargar la pregunta'));
+            throw error;
+        }
+    }, [dispatch]);
+    
+    const handleLoadQuestionsByExam = useCallback(async (examId) => {
+        try {
+            const response = await adminApi.get(`/questions/exam/${examId}`);
+            return response.data.preguntas;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data || 'Error al cargar las preguntas'));
+            throw error;
+        }
+    }, [dispatch]);
+    
+    const handleUpdateQuestion = useCallback(async (updateData) => {
+        dispatch(updateQuestionStart());
+        try {
+            await adminApi.put(`/questions/${currentQuestion.id_pregunta}`, updateData);
+            const response = await adminApi.get(`/questions/id/${currentQuestion.id_pregunta}`);
+            dispatch(updateQuestion(response.data.pregunta))
+            return response.data.preguntas;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data || 'Error al cargar las preguntas'));
+            throw error;
+        }
+    }, [dispatch]);
+
     const handleClearError = useCallback(() => {
         dispatch(clearError());
     }, [dispatch]);
@@ -75,5 +118,8 @@ export const useExamsStore = () => {
         handleUpdateExam,
         handleClearError,
         handleClearSuccess,
+        handleLoadQuestion,
+        handleLoadQuestionsByExam,
+        handleUpdateQuestion
     };
 };

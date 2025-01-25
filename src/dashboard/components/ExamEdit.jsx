@@ -1,55 +1,228 @@
-import React, { useEffect, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
-import { Box, Typography, TextField, Button, Card, CardContent, Stack, CircularProgress, Alert } from "@mui/material"
-import { useForm } from "react-hook-form"
+import React, { useState, useMemo, useEffect } from "react"
+import { useParams } from "react-router-dom"
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Stack,
+  CircularProgress,
+  Alert,
+  FormControlLabel,
+  Switch,
+  Autocomplete,
+  IconButton,
+  Chip,
+  Snackbar,
+  Grid,
+} from "@mui/material"
+import { useForm, Controller } from "react-hook-form"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
+import EditIcon from "@mui/icons-material/Edit"
+import { QuestionCard } from "./QuestionCard"
+import { FloatingAddButton } from "./FloatingAddButton"
+
+const generatePeriodOptions = () => {
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth()
+  const startYear = currentMonth < 6 ? currentYear : currentYear + 1
+  const options = []
+
+  for (let i = 0; i < 4; i++) {
+    const year = startYear + Math.floor(i / 2)
+    const period = i % 2 === 0 ? "1" : "2"
+    options.push(`${year}-${period}`)
+  }
+
+  return options
+}
+
+const QuestionPanel = ({ totalQuestions, currentOrder, onQuestionSelect }) => (
+  <Box sx={{ mb: 3, p: 2, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+    <Typography variant="subtitle1" sx={{ mb: 2 }}>
+      Panel de Preguntas
+    </Typography>
+    <Grid container spacing={1}>
+      {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((orden) => (
+        <Grid item key={orden}>
+          <Chip
+            label={`P${orden}`}
+            onClick={() => onQuestionSelect(orden)}
+            color={orden === currentOrder ? "primary" : "default"}
+            variant={orden === currentOrder ? "filled" : "outlined"}
+            sx={{ cursor: "pointer" }}
+          />
+        </Grid>
+      ))}
+    </Grid>
+  </Box>
+)
 
 export const ExamEdit = () => {
   const { id } = useParams()
-  const navigate = useNavigate()
-  const { handleLoadExam, handleUpdateExam, currentExam, isLoading, error, success } = useExamsStore()
-  const [loadError, setLoadError] = useState(null)
-  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const {
+    handleLoadExam,
+    handleUpdateExam,
+    handleLoadQuestion,
+    currentExam,
+    isLoading,
+    error,
+    success,
+    handleClearError,
+    handleClearSuccess,
+    handleLoadQuestionsByExam,
+    handleUpdateQuestion
+  } = useExamsStore()
 
-  const { register, handleSubmit, reset } = useForm({
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [isExamInfoEditable, setIsExamInfoEditable] = useState(false)
+  const [totalQuestions, setTotalQuestions] = useState(0)
+  const [currentOrder, setCurrentOrder] = useState(null)
+  const [currentQuestion, setCurrentQuestion] = useState(null)
+  const [preguntasGuardadas, setPreguntasGuardadas] = useState({})
+
+  const { control, handleSubmit, reset, watch } = useForm({
     defaultValues: {
       nombre: "",
       periodo: "",
       duracion: "",
       carrera: "",
+      area: "",
+      estado: "activo",
     },
   })
 
+  const examInfo = watch()
+
+  const isExamInfoComplete = useMemo(() => {
+    return Object.values(examInfo).every((value) => value !== "")
+  }, [examInfo])
+
+  // Load exam and initialize question panel
   useEffect(() => {
     const loadExam = async () => {
       setIsInitialLoading(true)
       try {
-        console.log("Iniciando carga del examen:", id)
         const exam = await handleLoadExam(id)
-        console.log("Examen cargado:", exam)
+        const questionsLength = await handleLoadQuestionsByExam(id)
         reset({
-          nombre: exam.nombre,
-          periodo: exam.periodo,
-          duracion: exam.duracion,
-          carrera: exam.carrera,
+          nombre: exam.nombre || "",
+          periodo: exam.periodo || "",
+          duracion: exam.duracion || "",
+          carrera: exam.carrera || "",
+          area: exam.area || "",
+          estado: exam.estado || "activo",
         })
+        setTotalQuestions(questionsLength.length || 0)
+
+        // If there are questions, load the first one
+        if (exam.total_preguntas > 0) {
+          setCurrentOrder(1)
+          const firstQuestion = await handleLoadQuestion(id, 1)
+          setCurrentQuestion(firstQuestion)
+        }
       } catch (error) {
         console.error("Error loading exam:", error)
-        setLoadError("No se pudo cargar el examen. Por favor, inténtelo de nuevo.")
       } finally {
         setIsInitialLoading(false)
+        setIsExamInfoEditable(false)
       }
     }
 
-    loadExam()
-  }, [id, handleLoadExam, reset])
+    if (id) {
+      loadExam()
+    }
+  }, [id, handleLoadExam, handleLoadQuestion, reset])
+
+  const handleQuestionSelect = async (orden) => {
+    try {
+      const question = await handleLoadQuestion(id, orden)
+      setCurrentQuestion(question)
+      setCurrentOrder(orden)
+    } catch (error) {
+      console.error("Error loading question:", error)
+    }
+  }
 
   const onSubmit = async (data) => {
+    if (!isExamInfoComplete) return
+
     try {
       await handleUpdateExam(id, data)
-      navigate("/admin/exams") // Redirigir a la lista de exámenes después de actualizar
+      setIsExamInfoEditable(false)
     } catch (error) {
-      console.error("Error updating exam:", error)
+      console.error(error)
+    }
+  }
+
+  const toggleExamInfoEdit = () => {
+    setIsExamInfoEditable(!isExamInfoEditable)
+  }
+
+  const agregarPregunta = async () => {
+    const newOrder = totalQuestions + 1
+    const newQuestion = {
+      id_examen: id,
+      pregunta: "",
+      imagen: null,
+      opciones: [
+        { texto: "", imagen: null },
+        { texto: "", imagen: null },
+      ],
+      respuestaCorrecta: 0,
+      orden: newOrder,
+    }
+
+    try {
+      await handleUpdateExam(id, {
+        ...currentExam,
+        total_preguntas: newOrder,
+        preguntas: [...(currentExam.preguntas || []), newQuestion],
+      })
+      setTotalQuestions(newOrder)
+      setCurrentOrder(newOrder)
+      setCurrentQuestion(newQuestion)
+    } catch (error) {
+      console.error("Error adding question:", error)
+    }
+  }
+
+  const eliminarPregunta = async (preguntaId) => {
+    try {
+      const updatedQuestions = currentExam.preguntas.filter((p) => p.id !== preguntaId)
+      await handleUpdateExam(id, {
+        ...currentExam,
+        total_preguntas: totalQuestions - 1,
+        preguntas: updatedQuestions,
+      })
+      setTotalQuestions((prev) => prev - 1)
+
+      // Load previous question if exists
+      if (currentOrder > 1) {
+        await handleQuestionSelect(currentOrder - 1)
+      } else if (totalQuestions > 1) {
+        await handleQuestionSelect(1)
+      } else {
+        setCurrentQuestion(null)
+        setCurrentOrder(null)
+      }
+    } catch (error) {
+      console.error("Error deleting question:", error)
+    }
+  }
+
+  const actualizarPregunta = (preguntaId, campo, valor) => {
+    setCurrentQuestion((prev) => ({ ...prev, [campo]: valor }))
+    setPreguntasGuardadas((prev) => ({ ...prev, [preguntaId]: false }))
+  }
+
+  const guardarPregunta = async (preguntaId) => {
+    if (!currentQuestion) return
+
+    try {
+      handleUpdateQuestion(preguntaId)
+    } catch (error) {
+      console.error("Error saving question:", error)
     }
   }
 
@@ -61,54 +234,177 @@ export const ExamEdit = () => {
     )
   }
 
-  if (loadError) {
-    return (
-      <Box sx={{ maxWidth: 800, margin: "0 auto", p: 3 }}>
-        <Alert severity="error">{loadError}</Alert>
-        <Button onClick={() => navigate("/admin/exams")} sx={{ mt: 2 }}>
-          Volver a la lista de exámenes
-        </Button>
-      </Box>
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress />
-      </Box>
-    )
-  }
-
   return (
-    <Box sx={{ maxWidth: 800, margin: "0 auto", p: 3 }}>
-      <Typography variant="h4" component="h1" sx={{ mb: 4 }}>
-        Editar Examen
+    <Box
+      sx={{
+        maxWidth: { xs: "100%", sm: "540px", md: "720px", lg: "960px", xl: "1140px" },
+        margin: "0 auto",
+        p: { xs: 2, sm: 3 },
+        pb: { xs: 16, sm: 10 },
+      }}
+    >
+      <Typography
+        variant="h4"
+        component="h1"
+        sx={{
+          mb: { xs: 2, sm: 4 },
+          fontWeight: "bold",
+          fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" },
+        }}
+      >
+        {id ? "Editar Examen" : "Crear Nuevo Examen"}
       </Typography>
 
-      <Card>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Stack spacing={3}>
-              <TextField label="Nombre del Examen" fullWidth {...register("nombre", { required: true })} />
-              <TextField label="Periodo" fullWidth {...register("periodo", { required: true })} />
-              <TextField label="Duración (HH:MM:SS)" fullWidth {...register("duracion", { required: true })} />
-              <TextField label="Carrera" fullWidth {...register("carrera", { required: true })} />
+      <Box sx={{ position: "relative", mb: 4 }}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Stack spacing={3}>
+            <Controller
+              name="nombre"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <TextField label="Nombre del Examen" fullWidth {...field} disabled={!isExamInfoEditable} />
+              )}
+            />
 
-              {error && <Alert severity="error">{error}</Alert>}
+            <Controller
+              name="periodo"
+              control={control}
+              rules={{ required: true }}
+              render={({ field: { onChange, value } }) => (
+                <Autocomplete
+                  value={value}
+                  onChange={(event, newValue) => {
+                    onChange(newValue)
+                  }}
+                  options={generatePeriodOptions()}
+                  renderInput={(params) => <TextField {...params} label="Periodo" />}
+                  disabled={!isExamInfoEditable}
+                />
+              )}
+            />
 
-              <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
-                <Button variant="outlined" onClick={() => navigate("/admin/exams")}>
-                  Cancelar
-                </Button>
-                <Button type="submit" variant="contained" disabled={isLoading}>
-                  {isLoading ? "Guardando..." : "Guardar Cambios"}
-                </Button>
-              </Box>
-            </Stack>
-          </form>
-        </CardContent>
-      </Card>
+            <Controller
+              name="duracion"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <TextField label="Duración (HH:MM:SS)" fullWidth {...field} disabled={!isExamInfoEditable} />
+              )}
+            />
+
+            <Controller
+              name="carrera"
+              control={control}
+              rules={{ required: true }}
+              render={({ field: { onChange, value } }) => (
+                <Autocomplete
+                  value={value}
+                  onChange={(event, newValue) => {
+                    onChange(newValue)
+                  }}
+                  options={["Ingeniería en Software", "Medicina", "Licenciatura en Administración", "Enfermería"]}
+                  renderInput={(params) => <TextField {...params} label="Carrera" />}
+                  disabled={!isExamInfoEditable}
+                />
+              )}
+            />
+
+            <Controller
+              name="area"
+              control={control}
+              render={({ field }) => <TextField label="Área" fullWidth {...field} disabled={!isExamInfoEditable} />}
+            />
+
+            <Controller
+              name="estado"
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={value === "activo"}
+                      onChange={(e) => onChange(e.target.checked ? "activo" : "borrador")}
+                      color="primary"
+                      disabled={!isExamInfoEditable}
+                    />
+                  }
+                  label={value === "activo" ? "Activo" : "Borrador"}
+                />
+              )}
+            />
+          </Stack>
+
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              mt: { xs: 1, sm: 2 },
+              mb: { xs: 2, sm: 4 },
+            }}
+          >
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isLoading || !isExamInfoComplete}
+              sx={{
+                width: { xs: "100%", sm: "auto" },
+              }}
+            >
+              {isLoading ? <CircularProgress size={24} color="inherit" /> : "Guardar información"}
+            </Button>
+          </Box>
+        </form>
+
+        {!isExamInfoEditable && (
+          <IconButton onClick={toggleExamInfoEdit} sx={{ position: "absolute", top: 0, right: 0 }}>
+            <EditIcon />
+          </IconButton>
+        )}
+      </Box>
+
+      {!isExamInfoEditable && (
+        <>
+          <QuestionPanel
+            totalQuestions={totalQuestions}
+            currentOrder={currentOrder}
+            onQuestionSelect={handleQuestionSelect}
+          />
+
+          {currentQuestion && (
+            <QuestionCard
+              key={currentQuestion.id}
+              pregunta={currentQuestion}
+              index={currentOrder - 1}
+              onDelete={eliminarPregunta}
+              onUpdate={actualizarPregunta}
+              onSave={guardarPregunta}
+              isSaved={preguntasGuardadas[currentQuestion.id]}
+            />
+          )}
+        </>
+      )}
+
+      <FloatingAddButton onClick={agregarPregunta} disabled={isExamInfoEditable} />
+
+      <Snackbar
+        open={Boolean(error || success)}
+        autoHideDuration={5000}
+        onClose={() => {
+          error ? handleClearError() : handleClearSuccess()
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => {
+            error ? handleClearError() : handleClearSuccess()
+          }}
+          severity={error ? "error" : "success"}
+          sx={{ width: "100%" }}
+        >
+          {error || success}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

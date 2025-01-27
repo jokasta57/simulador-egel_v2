@@ -12,6 +12,8 @@ import {
     updateExamFailure,
     setError,
     setCurrentQuestion,
+    updateQuestionStart,
+    resetCurrentQuestion
 } from '../../store/exams/examsSlice';
 
 export const useExamsStore = () => {
@@ -107,6 +109,10 @@ export const useExamsStore = () => {
         dispatch(clearSuccess());
     }, [dispatch]);
 
+    const handleResetCurrentQuestion = useCallback(() => {
+        dispatch(resetCurrentQuestion());
+    }, [dispatch])
+
     return {
         exams,
         currentExam,
@@ -120,6 +126,7 @@ export const useExamsStore = () => {
         handleClearSuccess,
         handleLoadQuestion,
         handleLoadQuestionsByExam,
-        handleUpdateQuestion
+        handleUpdateQuestion,
+        handleResetCurrentQuestion
     };
 };

@@ -236,7 +236,6 @@ export const CreateExam = () => {
               pregunta={currentQuestion}
               index={currentQuestionIndex}
               onDelete={eliminarPregunta}
-              onUpdate={actualizarPregunta}
               onSave={guardarPregunta}
               isSaved={preguntasGuardadas[currentQuestion.id]}
             />

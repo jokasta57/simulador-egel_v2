@@ -27,7 +27,8 @@ import {
   Person as PersonIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { useAuthStore } from '../../hooks/useAuthStore';
 
 const drawerWidth = 240;
 
@@ -60,7 +61,8 @@ export const DashboardLayout = ({ children }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [open, setOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
-
+  const {startLogout} = useAuthStore();
+  
   const {user} = useSelector( state => state.auth) //Toma el valor que esta en el store state.counter.{counter: 10}
 
   const handleDrawerToggle = () => {
@@ -75,6 +77,10 @@ export const DashboardLayout = ({ children }) => {
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
+
+  const handleLogOut = () => {
+    startLogout();
+  }
 
   const drawer = (
     <>
@@ -186,7 +192,7 @@ export const DashboardLayout = ({ children }) => {
               </ListItemIcon>
               Perfil
             </MenuItem>
-            <MenuItem onClick={handleMenuClose}>
+            <MenuItem onClick={handleLogOut}>
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />
               </ListItemIcon>

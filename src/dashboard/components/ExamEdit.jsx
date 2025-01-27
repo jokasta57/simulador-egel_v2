@@ -21,6 +21,7 @@ import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import EditIcon from "@mui/icons-material/Edit"
 import { QuestionCard } from "./QuestionCard"
 import { FloatingAddButton } from "./FloatingAddButton"
+import { useSelector } from "react-redux"
 
 const generatePeriodOptions = () => {
   const currentYear = new Date().getFullYear()
@@ -59,6 +60,7 @@ const QuestionPanel = ({ totalQuestions, currentOrder, onQuestionSelect }) => (
 )
 
 export const ExamEdit = () => {
+  const { exams, currentQuestion, resetCurrentQuestion } = useSelector((state) => state.exams)
   const { id } = useParams()
   const {
     handleLoadExam,
@@ -71,14 +73,14 @@ export const ExamEdit = () => {
     handleClearError,
     handleClearSuccess,
     handleLoadQuestionsByExam,
-    handleUpdateQuestion
+    handleUpdateQuestion,
+    handleResetCurrentQuestion
   } = useExamsStore()
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [isExamInfoEditable, setIsExamInfoEditable] = useState(false)
   const [totalQuestions, setTotalQuestions] = useState(0)
   const [currentOrder, setCurrentOrder] = useState(null)
-  const [currentQuestion, setCurrentQuestion] = useState(null)
   const [preguntasGuardadas, setPreguntasGuardadas] = useState({})
 
   const { control, handleSubmit, reset, watch } = useForm({
@@ -98,7 +100,6 @@ export const ExamEdit = () => {
     return Object.values(examInfo).every((value) => value !== "")
   }, [examInfo])
 
-  // Load exam and initialize question panel
   useEffect(() => {
     const loadExam = async () => {
       setIsInitialLoading(true)
@@ -115,11 +116,9 @@ export const ExamEdit = () => {
         })
         setTotalQuestions(questionsLength.length || 0)
 
-        // If there are questions, load the first one
         if (exam.total_preguntas > 0) {
           setCurrentOrder(1)
-          const firstQuestion = await handleLoadQuestion(id, 1)
-          setCurrentQuestion(firstQuestion)
+          await handleLoadQuestion(id, 1)
         }
       } catch (error) {
         console.error("Error loading exam:", error)
@@ -132,12 +131,17 @@ export const ExamEdit = () => {
     if (id) {
       loadExam()
     }
-  }, [id, handleLoadExam, handleLoadQuestion, reset])
+  }, [id, handleLoadExam, handleLoadQuestion, reset, handleLoadQuestionsByExam])
+  useEffect(() => {
+    // Esta función se ejecutará cuando el componente se desmonte
+    return () => {
+      handleResetCurrentQuestion()
+    }
+  }, [handleResetCurrentQuestion])
 
   const handleQuestionSelect = async (orden) => {
     try {
-      const question = await handleLoadQuestion(id, orden)
-      setCurrentQuestion(question)
+      await handleLoadQuestion(id, orden)
       setCurrentOrder(orden)
     } catch (error) {
       console.error("Error loading question:", error)
@@ -146,6 +150,7 @@ export const ExamEdit = () => {
 
   const onSubmit = async (data) => {
     if (!isExamInfoComplete) return
+    console.log(data);
 
     try {
       await handleUpdateExam(id, data)
@@ -181,7 +186,6 @@ export const ExamEdit = () => {
       })
       setTotalQuestions(newOrder)
       setCurrentOrder(newOrder)
-      setCurrentQuestion(newQuestion)
     } catch (error) {
       console.error("Error adding question:", error)
     }
@@ -197,13 +201,11 @@ export const ExamEdit = () => {
       })
       setTotalQuestions((prev) => prev - 1)
 
-      // Load previous question if exists
       if (currentOrder > 1) {
         await handleQuestionSelect(currentOrder - 1)
       } else if (totalQuestions > 1) {
         await handleQuestionSelect(1)
       } else {
-        setCurrentQuestion(null)
         setCurrentOrder(null)
       }
     } catch (error) {
@@ -212,15 +214,17 @@ export const ExamEdit = () => {
   }
 
   const actualizarPregunta = (preguntaId, campo, valor) => {
-    setCurrentQuestion((prev) => ({ ...prev, [campo]: valor }))
+    if (!currentQuestion) return
+    const updatedQuestion = { ...currentQuestion, [campo]: valor }
+    handleUpdateQuestion(preguntaId, updatedQuestion)
     setPreguntasGuardadas((prev) => ({ ...prev, [preguntaId]: false }))
   }
 
   const guardarPregunta = async (preguntaId) => {
     if (!currentQuestion) return
-
     try {
-      handleUpdateQuestion(preguntaId)
+      await handleUpdateQuestion(preguntaId, currentQuestion)
+      setPreguntasGuardadas((prev) => ({ ...prev, [preguntaId]: true }))
     } catch (error) {
       console.error("Error saving question:", error)
     }
@@ -374,7 +378,7 @@ export const ExamEdit = () => {
           {currentQuestion && (
             <QuestionCard
               key={currentQuestion.id}
-              pregunta={currentQuestion}
+              // pregunta={currentQuestion}
               index={currentOrder - 1}
               onDelete={eliminarPregunta}
               onUpdate={actualizarPregunta}

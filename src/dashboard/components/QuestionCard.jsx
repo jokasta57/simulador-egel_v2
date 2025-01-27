@@ -1,58 +1,74 @@
-import React, { memo, useCallback } from "react"
+import React, { memo, useCallback, useState, useEffect } from "react"
 import { Card, CardContent, Typography, TextField, Button, Box } from "@mui/material"
 import { Delete as DeleteIcon, Save as SaveIcon } from "@mui/icons-material"
 import { OptionList } from "./OptionList"
 import { ImageUpload } from "./ImageUpload"
-import { useDebounce } from "../../hooks/useDebounce"
+import { useSelector } from "react-redux"
+import { useExamsStore } from "../../hooks/exams/useExamsStore"
 
-export const QuestionCard = memo(({ pregunta, index, onDelete, onUpdate, onSave, isSaved }) => {
-  const debouncedUpdate = useDebounce((field, value) => {
-    onUpdate(pregunta.id_pregunta, field, value)
-  }, 300)
+export const QuestionCard = memo(({ index, onDelete, isSaved }) => {
+  const { currentQuestion } = useSelector((state) => state.exams)
+  const { handleUpdateQuestion, handleSaveQuestion, handleResetCurrentQuestion } = useExamsStore()
+  const [localQuestion, setLocalQuestion] = useState(currentQuestion || {})
 
-  const handleQuestionChange = useCallback(
-    (e) => {
-      debouncedUpdate("contenido", e.target.value)
-    },
-    [debouncedUpdate],
-  )
+  useEffect(() => {
+    if (currentQuestion) {
+      setLocalQuestion(currentQuestion)
+    }
+  }, [currentQuestion])
 
-  const handleImageUpload = useCallback(
-    (imageData) => {
-      onUpdate(pregunta.id_pregunta, "imagen_url", imageData)
-      // If you need to update public_id_imagen as well, you would do it here
-    },
-    [onUpdate, pregunta.id_pregunta],
-  )
+  useEffect(() => {
+    return () => {
+      handleResetCurrentQuestion();
+    }
+  }, [handleResetCurrentQuestion])
 
-  const handleOptionUpdate = useCallback(
-    (opcionIndex, campo, valor) => {
-      const nuevasOpciones = [...pregunta.opciones]
+
+  const handleQuestionChange = useCallback((e) => {
+    const newContent = e.target.value
+    setLocalQuestion((prev) => ({ ...prev, contenido: newContent }))
+  }, [])
+
+  const handleImageUpload = useCallback((imageData) => {
+    setLocalQuestion((prev) => ({ ...prev, imagen_url: imageData }))
+  }, [])
+
+  const handleOptionUpdate = useCallback((opcionIndex, campo, valor) => {
+    setLocalQuestion((prev) => {
+      const nuevasOpciones = [...(prev.opcion || [])]
       if (campo === "add") {
         nuevasOpciones.push(valor)
       } else if (campo === "delete") {
         nuevasOpciones.splice(opcionIndex, 1)
+      } else if (campo === "update_all") {
+        return { ...prev, opcion: valor }
       } else {
         nuevasOpciones[opcionIndex] = { ...nuevasOpciones[opcionIndex], [campo]: valor }
       }
-      onUpdate(pregunta.id_pregunta, "opciones", nuevasOpciones)
-    },
-    [onUpdate, pregunta.id_pregunta, pregunta.opciones],
-  )
+      return { ...prev, opcion: nuevasOpciones }
+    })
+  }, [])
 
-  const handleCorrectAnswerChange = useCallback(
-    (opcionIndex) => {
-      onUpdate(pregunta.id_pregunta, "respuestaCorrecta", opcionIndex)
-    },
-    [onUpdate, pregunta.id_pregunta],
-  )
+  const handleCorrectAnswerChange = useCallback((opcionIndex) => {
+    setLocalQuestion((prev) => ({ ...prev, es_correcta: opcionIndex }))
+  }, [])
 
-  const handleSave = useCallback(() => {
-    onSave(pregunta.id_pregunta)
-  }, [onSave, pregunta.id_pregunta])
+  const handleSave = useCallback(async () => {
+    try {
+      await handleUpdateQuestion(localQuestion)
+      await handleSaveQuestion()
+      // Aquí puedes manejar el éxito del guardado, por ejemplo, mostrando un mensaje
+    } catch (error) {
+      // Aquí puedes manejar el error, por ejemplo, mostrando un mensaje de error
+    }
+  }, [localQuestion, handleUpdateQuestion, handleSaveQuestion])
+
+  if (!localQuestion) {
+    return null
+  }
 
   return (
-    <Card id={`pregunta-${pregunta.id_pregunta}`}>
+    <Card id={`pregunta-${localQuestion.id_pregunta}`}>
       <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
         <Box
           sx={{
@@ -64,13 +80,13 @@ export const QuestionCard = memo(({ pregunta, index, onDelete, onUpdate, onSave,
           }}
         >
           <Typography variant="h6" sx={{ mb: { xs: 1, sm: 0 } }}>
-            Pregunta {pregunta.orden}
+            Pregunta {localQuestion.orden || index + 1}
           </Typography>
           <Button
             variant="outlined"
             color="error"
             startIcon={<DeleteIcon />}
-            onClick={() => onDelete(pregunta.id_pregunta)}
+            onClick={() => onDelete(localQuestion.id_pregunta)}
             sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             Eliminar Pregunta
@@ -82,22 +98,22 @@ export const QuestionCard = memo(({ pregunta, index, onDelete, onUpdate, onSave,
             fullWidth
             multiline
             rows={3}
-            label="Texto de la Pregunta"
-            defaultValue={pregunta.contenido}
+            label=""
+            value={localQuestion.contenido || ""}
             onChange={handleQuestionChange}
             sx={{ mb: 2 }}
           />
 
           <ImageUpload
-            currentImage={pregunta.imagen_url}
+            currentImage={localQuestion.imagen_url}
             onImageUpload={handleImageUpload}
             label="Imagen de la pregunta"
           />
         </Box>
 
         <OptionList
-          opciones={pregunta.opcion}
-          respuestaCorrecta={pregunta.respuestaCorrecta}
+          opciones={localQuestion.opcion}
+          respuestaCorrecta={localQuestion.es_correcta}
           onOptionUpdate={handleOptionUpdate}
           onCorrectAnswerChange={handleCorrectAnswerChange}
         />

@@ -25,7 +25,6 @@ export const useCreateExamStore = () => {
         dispatch(saveExamInfoStart());
 
         try {
-            console.log('EXAMDATA', nombre, duracion, carrera, periodo);
             const response = await adminApi.post('/exams', {nombre, duracion, carrera, periodo, area});
             dispatch(saveExamInfoSuccess(response.data.examen));
 

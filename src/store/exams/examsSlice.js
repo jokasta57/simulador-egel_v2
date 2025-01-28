@@ -28,6 +28,15 @@ export const examsSlice = createSlice({
             state.currentQuestion = action.payload
             state.isLoading = false        
         },
+        // Acción para agregar un nueva pregunta
+        addNewQuestionStart: (state) => {
+            state.isLoading = true;
+        },
+        // Acción para agregar un nueva pregunta
+        addNewQuestion: (state) => {
+            state.currentQuestion = action.payload;
+            state.isLoading = false;
+        },
         updateExamStart: (state) => {
             state.isLoading = true;
         },
@@ -84,4 +93,22 @@ export const examsSlice = createSlice({
     },
 })
 
-export const { setCurrentExam, clearError, clearSuccess, addExam, loadExams, setError, setSuccess, loadExamsStart, updateExamStart, updateExamSuccess, updateExamFailure, setCurrentQuestion, updateQuestionStart, resetCurrentQuestion, updateQuestion } = examsSlice.actions;  
+export const { 
+    setCurrentExam, 
+    clearError, 
+    clearSuccess,
+    addExam, 
+    loadExams, 
+    setError, 
+    setSuccess, 
+    loadExamsStart, 
+    updateExamStart, 
+    updateExamSuccess, 
+    updateExamFailure, 
+    setCurrentQuestion, 
+    updateQuestionStart, 
+    resetCurrentQuestion, 
+    updateQuestion,
+    addNewQuestionStart,
+    addNewQuestion
+} = examsSlice.actions;  

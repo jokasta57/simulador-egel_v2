@@ -55,6 +55,7 @@ export const QuestionCard = memo(({ index, onDelete, isSaved }) => {
 
   const handleSave = useCallback(async () => {
     try {
+      console.log(localQuestion);
       await handleUpdateQuestion(localQuestion)
       await handleSaveQuestion()
       // Aquí puedes manejar el éxito del guardado, por ejemplo, mostrando un mensaje

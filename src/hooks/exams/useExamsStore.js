@@ -13,7 +13,8 @@ import {
     setError,
     setCurrentQuestion,
     updateQuestionStart,
-    resetCurrentQuestion
+    resetCurrentQuestion,
+    updateQuestion
 } from '../../store/exams/examsSlice';
 
 export const useExamsStore = () => {
@@ -75,7 +76,7 @@ export const useExamsStore = () => {
             throw error;
         }
     }, [dispatch]);
-    
+
     const handleLoadQuestionsByExam = useCallback(async (examId) => {
         try {
             const response = await adminApi.get(`/questions/exam/${examId}`);
@@ -86,13 +87,32 @@ export const useExamsStore = () => {
             throw error;
         }
     }, [dispatch]);
-    
+
     const handleUpdateQuestion = useCallback(async (updateData) => {
         dispatch(updateQuestionStart());
         try {
-            await adminApi.put(`/questions/${currentQuestion.id_pregunta}`, updateData);
-            const response = await adminApi.get(`/questions/id/${currentQuestion.id_pregunta}`);
+            await adminApi.put(`/questions/${updateData.id_pregunta}`, updateData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                }
+            });
+
+            // Mapear las opciones para procesarlas individualmente
+            const optionUpdates = updateData.opcion.map(async (opcion) => {
+                await adminApi.put(`/options/${opcion.id_opcion}`, opcion, {
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+            });
+            
+            // Esperar a que todas las opciones se actualicen
+            await Promise.all(optionUpdates);
+
+            const response = await adminApi.get(`/questions/id/${updateData.id_pregunta}`);
             dispatch(updateQuestion(response.data.pregunta))
+
+
             return response.data.preguntas;
         } catch (error) {
             console.log(error);

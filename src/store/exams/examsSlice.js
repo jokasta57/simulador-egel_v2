@@ -24,6 +24,10 @@ export const examsSlice = createSlice({
         updateQuestionStart: (state) => {
             state.isLoading = true;
         },
+        updateQuestion: (state, action) => {
+            state.currentQuestion = action.payload
+            state.isLoading = false        
+        },
         updateExamStart: (state) => {
             state.isLoading = true;
         },
@@ -80,4 +84,4 @@ export const examsSlice = createSlice({
     },
 })
 
-export const { setCurrentExam, clearError, clearSuccess, addExam, loadExams, setError, setSuccess, loadExamsStart, updateExamStart, updateExamSuccess, updateExamFailure, setCurrentQuestion, updateQuestionStart, resetCurrentQuestion } = examsSlice.actions;  
+export const { setCurrentExam, clearError, clearSuccess, addExam, loadExams, setError, setSuccess, loadExamsStart, updateExamStart, updateExamSuccess, updateExamFailure, setCurrentQuestion, updateQuestionStart, resetCurrentQuestion, updateQuestion } = examsSlice.actions;  

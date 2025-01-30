@@ -90,25 +90,59 @@ export const useExamsStore = () => {
     }, [dispatch]);
 
     const handleUpdateQuestion = useCallback(async (updateData) => {
+        console.log(updateData);
         dispatch(updateQuestionStart());
         try {
-            await adminApi.put(`/questions/${updateData.id_pregunta}`, updateData, {
+            const formData = new FormData();
+
+            // Añadir el contenido de la pregunta
+            formData.append("contenido", updateData.contenido);
+
+            // Verificar si hay un archivo de imagen y añadirlo
+            if (updateData.imagen_url) {
+                formData.append("imagen", updateData.imagen_url);
+            }
+
+            await adminApi.put(`/questions/${updateData.id_pregunta}`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 }
             });
 
-            // Mapear las opciones para procesarlas individualmente
-            const optionUpdates = updateData.opcion.map(async (opcion) => {
-                await adminApi.put(`/options/${opcion.id_opcion}`, opcion, {
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
+            // Filtrar opciones válidas: deben tener texto o imagen
+            const opcionesValidas = updateData.opcion.filter(op =>
+                (op.contenido && op.contenido.trim() !== "") || op.imagen_url // ✅ Opción válida si tiene contenido o imagen
+            );
+
+            if (opcionesValidas.length < 2) {
+                throw new Error("Debe haber al menos 2 opciones válidas con texto o imagen."); // ✅ Evitar menos de 2 opciones
+            }
+
+            // Filtrar opciones existentes y nuevas
+            const opcionesExistentes = updateData.opcion.filter(op => op.id_opcion); // Opciones con ID
+            const opcionesNuevas = updateData.opcion.filter(op => !op.id_opcion); // Opciones sin ID
+
+            // Procesar opciones existentes con PUT
+            const updatePromises = opcionesExistentes.map(async (opcion) => {
+                return adminApi.put(`/options/${opcion.id_opcion}`, opcion, {
+                    headers: { "Content-Type": "application/json" },
                 });
             });
-            
-            // Esperar a que todas las opciones se actualicen
-            await Promise.all(optionUpdates);
+
+            // Procesar opciones nuevas con POST
+            const createPromises = opcionesNuevas.map(async (opcion) => {
+                return adminApi.post(`/options`, opcion, {
+                    headers: { "Content-Type": "application/json" },
+                    params: {
+                        id_pregunta: updateData.id_pregunta
+                    }
+                });
+            });
+
+            // Esperar a que todas las opciones se actualicen o creen
+            await Promise.all([...updatePromises, ...createPromises]);
+
+
 
             const response = await adminApi.get(`/questions/id/${updateData.id_pregunta}`);
             dispatch(updateQuestion(response.data.pregunta))
@@ -121,7 +155,7 @@ export const useExamsStore = () => {
             throw error;
         }
     }, [dispatch]);
-    
+
     const handleAddNewQuestion = useCallback(async (data, examId, orden) => {
         dispatch(addNewQuestion());
         try {
@@ -154,7 +188,7 @@ export const useExamsStore = () => {
                 params: {
                     orden,
                     id_examen: examId,
-                }   
+                }
             });
             dispatch(addNewQuestion(response.data.pregunta))
 

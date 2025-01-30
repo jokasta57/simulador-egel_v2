@@ -399,7 +399,7 @@ export const ExamEdit = () => {
                 onDelete={eliminarPregunta}
                 onUpdate={actualizarPregunta}
                 onSave={guardarPregunta}
-                isSaved={preguntasGuardadas[currentQuestion.id]}
+                // isSaved={preguntasGuardadas[currentQuestion.id]}
               />
             </Box>
           ) : (

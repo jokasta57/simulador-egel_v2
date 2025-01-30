@@ -1,21 +1,33 @@
 import React, { memo, useCallback, useState, useEffect } from "react"
-import { Card, CardContent, Typography, TextField, Button, Box } from "@mui/material"
+import { Card, CardContent, Typography, TextField, Button, Box, CircularProgress, Snackbar, Alert } from "@mui/material"
 import { Delete as DeleteIcon, Save as SaveIcon } from "@mui/icons-material"
 import { OptionList } from "./OptionList"
 import { ImageUpload } from "./ImageUpload"
 import { useSelector } from "react-redux"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 
-export const QuestionCard = memo(({ index, onDelete, isSaved }) => {
+export const QuestionCard = memo(({ index, onDelete }) => {
   const { currentQuestion } = useSelector((state) => state.exams)
-  const { handleUpdateQuestion, handleSaveQuestion, handleResetCurrentQuestion } = useExamsStore()
+  const { handleUpdateQuestion, handleSaveQuestion, handleResetCurrentQuestion, isLoading } = useExamsStore()
+
+  const [isSaved, setIsSaved] = useState(false)
   const [localQuestion, setLocalQuestion] = useState(currentQuestion || {})
+  const [showSnackbar, setShowSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+
+  const opcionesValidas = localQuestion.opcion?.filter(op =>
+    (op.contenido?.trim() !== "" || op.imagen_url !== null)
+  ) || [];
+
 
   useEffect(() => {
     if (currentQuestion) {
-      setLocalQuestion(currentQuestion)
+      setLocalQuestion({
+        ...currentQuestion,
+        imagen_url: currentQuestion.imagen_url || null, // ✅ Asegurar que la imagen cambia
+      });
     }
-  }, [currentQuestion])
+  }, [currentQuestion]);
 
   useEffect(() => {
     return () => {
@@ -26,12 +38,16 @@ export const QuestionCard = memo(({ index, onDelete, isSaved }) => {
 
   const handleQuestionChange = useCallback((e) => {
     const newContent = e.target.value
+    setIsSaved(false)
     setLocalQuestion((prev) => ({ ...prev, contenido: newContent }))
   }, [])
 
-  const handleImageUpload = useCallback((imageData) => {
-    setLocalQuestion((prev) => ({ ...prev, imagen_url: imageData }))
-  }, [])
+  const handleImageUpload = useCallback((imageFile) => {
+    setLocalQuestion((prev) => ({
+      ...prev,
+      imagen_url: imageFile, // ✅ Almacenar correctamente la imagen nueva
+    }));
+  }, []);
 
   const handleOptionUpdate = useCallback((opcionIndex, campo, valor) => {
     setLocalQuestion((prev) => {
@@ -50,19 +66,59 @@ export const QuestionCard = memo(({ index, onDelete, isSaved }) => {
   }, [])
 
   const handleCorrectAnswerChange = useCallback((opcionIndex) => {
+    setIsSaved(false)
     setLocalQuestion((prev) => ({ ...prev, es_correcta: opcionIndex }))
   }, [])
 
   const handleSave = useCallback(async () => {
+    // Filtrar opciones para eliminar las vacías antes de enviarlas
+    const opcionesNoVacias = localQuestion.opcion?.filter(op =>
+      (op.contenido?.trim() !== "" || op.imagen_url !== null)
+    ) || [];
+
+    // Validar pregunta y opciones
+    if (!localQuestion.contenido || localQuestion.contenido.trim() === "") {
+      setSnackbarMessage("❌ La pregunta no puede estar vacía");
+      setShowSnackbar(true);
+      return;
+    }
+
+    if (opcionesNoVacias.length < 2) {
+      setSnackbarMessage("❌ Debes agregar al menos 2 opciones con texto o imagen.");
+      setShowSnackbar(true);
+      return;
+    }
     try {
-      console.log(localQuestion);
-      await handleUpdateQuestion(localQuestion)
-      await handleSaveQuestion()
+      // ✅ Actualizar `localQuestion` antes de enviarlo al backend
+      const preguntaFiltrada = {
+        ...localQuestion,
+        opcion: opcionesNoVacias // ⬅️ Aquí eliminamos las opciones vacías
+      };
+
+      const response = await handleUpdateQuestion(preguntaFiltrada)
+      // await handleSaveQuestion()
+      setIsSaved(true);
+      setSnackbarMessage(response?.msg || "Pregunta guardada con éxito ✅");
+      setShowSnackbar(true);
       // Aquí puedes manejar el éxito del guardado, por ejemplo, mostrando un mensaje
     } catch (error) {
-      // Aquí puedes manejar el error, por ejemplo, mostrando un mensaje de error
+      console.error("Error al guardar la pregunta:", error.response.data.errors.contenido.msg);
+
+      let errorMessage = "❌ Error al guardar la pregunta";
+
+      if (error.response?.data?.errors) {
+        // ✅ Extraer y concatenar los mensajes de error
+        errorMessage = Object.values(error.response.data.errors)
+          .map(err => err.msg) // Obtener solo los mensajes
+          .join(", "); // Unir en un solo string
+      } else if (typeof error.response?.data?.msg === "string") {
+        errorMessage = error.response.data.msg;
+      }
+
+      setSnackbarMessage(errorMessage);
+      setShowSnackbar(true);
     }
-  }, [localQuestion, handleUpdateQuestion, handleSaveQuestion])
+  }, [localQuestion, handleUpdateQuestion])
 
   if (!localQuestion) {
     return null
@@ -103,11 +159,15 @@ export const QuestionCard = memo(({ index, onDelete, isSaved }) => {
             value={localQuestion.contenido || ""}
             onChange={handleQuestionChange}
             sx={{ mb: 2 }}
+            error={!localQuestion.contenido || localQuestion.contenido.trim() === ""}
+            helperText={!localQuestion.contenido || localQuestion.contenido.trim() === "" ? "La pregunta no puede estar vacía" : ""}
+            required
           />
 
           <ImageUpload
             currentImage={localQuestion.imagen_url}
             onImageUpload={handleImageUpload}
+            setIsSaved={setIsSaved}
             label="Imagen de la pregunta"
           />
         </Box>
@@ -117,6 +177,8 @@ export const QuestionCard = memo(({ index, onDelete, isSaved }) => {
           respuestaCorrecta={localQuestion.es_correcta}
           onOptionUpdate={handleOptionUpdate}
           onCorrectAnswerChange={handleCorrectAnswerChange}
+          isSaved={isSaved}
+          setIsSaved={setIsSaved}
         />
 
         <Box sx={{ mt: { xs: 2, sm: 3 } }}>
@@ -125,12 +187,31 @@ export const QuestionCard = memo(({ index, onDelete, isSaved }) => {
             color={isSaved ? "success" : "primary"}
             startIcon={<SaveIcon />}
             onClick={handleSave}
+            disabled={
+              isLoading ||
+              !localQuestion.contenido ||
+              localQuestion.contenido.trim() === "" ||
+              (localQuestion.opcion?.filter(op => (op.contenido?.trim() !== "" || op.imagen_url)) || []).length < 2 ||
+              opcionesValidas.length < 2
+            }
             sx={{ width: { xs: "100%", sm: "auto" } }}
           >
-            {isSaved ? "Guardado" : "Guardar Pregunta"}
+            {/* {isSaved ? "Guardado" : "Guardar Pregunta"} */}
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : (isSaved ? "Guardado" : "Guardar Pregunta")}
           </Button>
         </Box>
       </CardContent>
+      {/* Snackbar para notificaciones */}
+      <Snackbar
+        open={showSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setShowSnackbar(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity={snackbarMessage.includes("Error") ? "error" : "success"} variant="filled">
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Card>
   )
 })

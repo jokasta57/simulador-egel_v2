@@ -8,13 +8,15 @@ import { DashboardRoutes } from '../dashboard/routes/DashboardRoutes'
 import { useAuthStore } from '../hooks/useAuthStore'
 import { useEffect } from 'react'
 import { LoadingSpinner } from '../simulator/components/LoadingSpinner'
+import { useSelector } from 'react-redux'
 
 export const AppRouter = () => {
-    const {isAuthenticated, checkAuthToken, isLoading} = useAuthStore();
+    const { isAuthenticated, checkAuthToken, isLoading } = useAuthStore();
+    // const { token } = useSelector((state) => state.users)
     const isExamFinished = false
 
     useEffect(() => {
-        checkAuthToken()
+        checkAuthToken();
     }, [])
 
     if (isLoading) {
@@ -24,33 +26,43 @@ export const AppRouter = () => {
     return (
         <Routes>
             {/* Rutas comunes */}
-            <Route path='/' element={<HomePage/>} />
+            <Route path='/' element={<HomePage />} />
 
             {/* Rutas del administrador */}
-            <Route path='/login' element={<LoginPage/>}/> 
-            <Route path ='/admin/*' element={
+            <Route
+                path='/login'
+                element={
+                    isAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <LoginPage />
+                }
+            />
+            <Route path='/admin/*' element={
                 // Ruta privada para DashboardPage
-                <PrivateRoute 
+                <PrivateRoute
                     isAuthenticated={isAuthenticated}
                     redirectTo='/login'
                 >
-                    <DashboardRoutes/>
+                    <DashboardRoutes />
                 </PrivateRoute>
-            }/>
+            } />
 
             {/* Ruta para estudiantes */}
-            <Route path='/student/register' element={<RegisterPage/>}/>
+            <Route 
+                path='/student/register' 
+                element={
+                    isAuthenticated ? <Navigate to="/exams" replace /> : <RegisterPage />
+                } 
+            />
             {/* Ruta para acceder a todos los examenes disponibles */}
             <Route path='/exams' element={
-                isAuthenticated ? <SimulatorPage /> : <Navigate to="/student/register" />
+                isAuthenticated ? <SimulatorPage /> : <Navigate to="/student/register" replace/>
             } />
             {/* Ruta para acceder al examen seleccionado */}
             <Route path='/exams/:examId' element={
-                isAuthenticated ? <ExamPage /> : <Navigate to="/student/register" />
+                isAuthenticated ? <ExamPage /> : <Navigate to="/student/register" replace />
             } />
             {/* Ruta para acceder al resultado final del examen */}
             <Route path='/exams/:examId/result' element={
-                isExamFinished && isAuthenticated ? <ExamResultPage /> : <Navigate to="/exams/:examId" />
+                isExamFinished && isAuthenticated ? <ExamResultPage /> : <Navigate to="/exams/:examId" replace />
             } />
 
             {/* Ruta para manejo de error 404 */}

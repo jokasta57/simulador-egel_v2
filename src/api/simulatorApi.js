@@ -14,7 +14,7 @@ simulatorApi.interceptors.request.use( config => {
     //Envia el token en cada peticion mientras sea valido
     config.headers = {
         ...config.headers,
-        'x-token': localStorage.getItem("token")
+        'x-token': localStorage.getItem('token')
     }
 
     return config

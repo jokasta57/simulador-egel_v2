@@ -19,7 +19,7 @@ export const useAuthStore = () => {
             //Accedemos al objeto admin
             const {admin} = data;
             //Se dispara la accion en redux y en store
-            dispatch(onLoginSuccess({nombre: admin.nombre, id: admin.id_admin}))
+            dispatch(onLoginSuccess({nombre: admin.nombre, id: admin.id_admin, token: admin.token}))
         } catch (error) {
             console.log(error);
             dispatch(onLoginFailure('Credenciales incorrectas'));
@@ -74,17 +74,19 @@ export const useAuthStore = () => {
         }
     }
     const checkAuthToken = async() => {
-        const token = localStorage.getItem("token");
+        dispatch(onChecking());
+        const token = localStorage.getItem('token');
         if( !token ) return dispatch(onLogout());
 
         //Revalida el token y lo setea
         try {
-            const {data} = await calendarApi.get('/auth/renew');
+            const {data} = await simulatorApi.get('users/renew');
+            console.log(data);
             localStorage.setItem('token', data.token)
             localStorage.setItem('token-init-date', new Date().getTime());
             //Dependiendo el rol del usuario, es el guardado en redux
             if(data.role === 'admin'){
-                dispatch(onLoginSuccess({nombre: data.nombre, id: data.id_admin}))
+                dispatch(onLoginSuccess({nombre: data.nombre, id: data.id_admin, token: data.token}))
             } else if(data.role === 'estudiante'){
                 dispatch(onLoginSuccess({nombre: data.nombre, numero_cuenta: data.numero_cuenta, carrera: data.carrera}))
             }

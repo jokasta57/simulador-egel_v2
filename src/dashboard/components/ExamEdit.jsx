@@ -74,7 +74,7 @@ export const ExamEdit = () => {
     handleClearSuccess,
     handleLoadQuestionsByExam,
     handleUpdateQuestion,
-    handleResetCurrentQuestion
+    handleResetCurrentQuestion,
   } = useExamsStore()
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -115,11 +115,7 @@ export const ExamEdit = () => {
           estado: exam.estado || "activo",
         })
         setTotalQuestions(questionsLength.length || 0)
-
-        if (exam.total_preguntas > 0) {
-          setCurrentOrder(1)
-          await handleLoadQuestion(id, 1)
-        }
+        // Removemos la carga automática de la primera pregunta
       } catch (error) {
         console.error("Error loading exam:", error)
       } finally {
@@ -131,13 +127,19 @@ export const ExamEdit = () => {
     if (id) {
       loadExam()
     }
-  }, [id, handleLoadExam, handleLoadQuestion, reset, handleLoadQuestionsByExam])
+  }, [id, handleLoadExam, handleLoadQuestionsByExam, reset])
+
   useEffect(() => {
-    // Esta función se ejecutará cuando el componente se desmonte
     return () => {
       handleResetCurrentQuestion()
     }
   }, [handleResetCurrentQuestion])
+
+  useEffect(() => {
+    if (currentOrder) {
+      handleLoadQuestion(id, currentOrder)
+    }
+  }, [currentOrder, id])
 
   const handleQuestionSelect = async (orden) => {
     try {
@@ -182,7 +184,10 @@ export const ExamEdit = () => {
       await handleUpdateExam(id, {
         ...currentExam,
         total_preguntas: newOrder,
-        preguntas: [...(currentExam.preguntas || []), newQuestion],
+        preguntas: [
+          ...(currentExam.preguntas || []),
+          { id_examen: id, orden: newOrder, pregunta: "", opciones: [] },
+        ],
       })
       setTotalQuestions(newOrder)
       setCurrentOrder(newOrder)
@@ -229,6 +234,7 @@ export const ExamEdit = () => {
       console.error("Error saving question:", error)
     }
   }
+
 
   if (isInitialLoading) {
     return (
@@ -375,16 +381,38 @@ export const ExamEdit = () => {
             onQuestionSelect={handleQuestionSelect}
           />
 
-          {currentQuestion && (
+          {/* {currentQuestion && (
             <QuestionCard
               key={currentQuestion.id}
-              // pregunta={currentQuestion}
               index={currentOrder - 1}
               onDelete={eliminarPregunta}
               onUpdate={actualizarPregunta}
               onSave={guardarPregunta}
               isSaved={preguntasGuardadas[currentQuestion.id]}
             />
+          )} */}
+          {currentOrder && currentQuestion ? (
+            <Box>
+              <QuestionCard
+                key={currentQuestion.id}
+                index={currentOrder - 1}
+                onDelete={eliminarPregunta}
+                onUpdate={actualizarPregunta}
+                onSave={guardarPregunta}
+                isSaved={preguntasGuardadas[currentQuestion.id]}
+              />
+            </Box>
+          ) : (
+            <Box>
+              <Typography variant="h6">
+                {currentOrder ? `Detalles de la Pregunta ${currentOrder}` : "Sin pregunta seleccionada"}
+              </Typography>
+              <Typography variant="subtitle1" color="textSecondary">
+                {currentOrder
+                  ? "No hay detalles disponibles para esta pregunta."
+                  : "Seleccione una pregunta del panel para ver sus detalles o cree una nueva para continuar."}
+              </Typography>
+            </Box>
           )}
         </>
       )}
@@ -412,4 +440,3 @@ export const ExamEdit = () => {
     </Box>
   )
 }
-

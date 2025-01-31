@@ -15,7 +15,8 @@ import {
     updateQuestionStart,
     resetCurrentQuestion,
     updateQuestion,
-    addNewQuestion
+    addNewQuestion,
+    addNewQuestionStart
 } from '../../store/exams/examsSlice';
 
 export const useExamsStore = () => {
@@ -69,6 +70,11 @@ export const useExamsStore = () => {
                     id_examen: examId
                 }
             });
+            if (!response.data.pregunta) {
+                dispatch(setCurrentQuestion(null)); // En lugar de generar error, establecer null
+                return null;
+            }
+
             dispatch(setCurrentQuestion(response.data.pregunta))
             return response.data.pregunta;
         } catch (error) {
@@ -150,16 +156,19 @@ export const useExamsStore = () => {
 
             return response.data.preguntas;
         } catch (error) {
-            console.log(error);
-            dispatch(setError(error.response?.data || 'Error al cargar las preguntas'));
+            let errorMessage = "Error al actualizar la pregunta";
+            if (error.response?.data) {
+                errorMessage = error.response.data.msg || JSON.stringify(error.response.data);
+            }
+            dispatch(setError({ message: errorMessage, type: 'error' }));
             throw error;
         }
     }, [dispatch]);
 
     const handleAddNewQuestion = useCallback(async (data, examId, orden) => {
-        dispatch(addNewQuestion());
+        dispatch(addNewQuestionStart());
         try {
-            await adminApi.post(`/questions`, data, {
+            const questionData = await adminApi.post(`/questions`, data, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
@@ -169,6 +178,8 @@ export const useExamsStore = () => {
                 }
             });
 
+            const { pregunta } = questionData.data;
+
             // Mapear las opciones para procesarlas individualmente
             const newOptions = data.opcion.map(async (opcion) => {
                 await adminApi.post(`/options`, opcion, {
@@ -176,7 +187,7 @@ export const useExamsStore = () => {
                         "Content-Type": "application/json",
                     },
                     params: {
-                        // id_pregunta: examId
+                        id_pregunta: pregunta.id_pregunta
                     }
                 });
             });
@@ -190,7 +201,8 @@ export const useExamsStore = () => {
                     id_examen: examId,
                 }
             });
-            dispatch(addNewQuestion(response.data.pregunta))
+
+            dispatch(addNewQuestion(response.data.pregunta));
 
 
             return response.data.preguntas;
@@ -227,6 +239,7 @@ export const useExamsStore = () => {
         handleLoadQuestion,
         handleLoadQuestionsByExam,
         handleUpdateQuestion,
-        handleResetCurrentQuestion
+        handleResetCurrentQuestion,
+        handleAddNewQuestion
     };
 };

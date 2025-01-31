@@ -17,15 +17,16 @@ export const OptionList = ({
   onCorrectAnswerChange,
   isSaved,
   setIsSaved,
+  hasAttemptedSave
 }) => {
   const options = opciones.length > 0 ? opciones : opcion.length > 0 ? opcion : defaultOptions
 
   const handleOptionTextChange = (index, value) => {
     setIsSaved(false);
-    
+
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], contenido: value };
-  
+
     onOptionUpdate(-1, "update_all", newOptions);
   };
 
@@ -41,10 +42,10 @@ export const OptionList = ({
         es_correcta: false,
         public_id_imagen: null,
       };
-  
+
       const updatedOptions = [...options, newOption];
       onOptionUpdate(-1, "update_all", updatedOptions);
-  
+
       // ✅ Deshabilitar el botón si la nueva opción es vacía
       setIsSaved(false);
     }
@@ -62,14 +63,7 @@ export const OptionList = ({
       <RadioGroup value={respuestaCorrecta} onChange={(e) => onCorrectAnswerChange(Number(e.target.value))}>
         <Stack spacing={1.5}>
           {options.map((opcion, index) => (
-            <Box
-              key={index}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
+            <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <FormControlLabel
                 value={index}
                 control={
@@ -78,10 +72,10 @@ export const OptionList = ({
                     onChange={(e) => {
                       const newOptions = options.map((opt, i) => ({
                         ...opt,
-                        es_correcta: i === index,
-                      }))
-                      onOptionUpdate(-1, "update_all", newOptions)
-                      onCorrectAnswerChange(index)
+                        es_correcta: i === index, // ✅ Marca correctamente la opción seleccionada
+                      }));
+                      onOptionUpdate(-1, "update_all", newOptions);
+                      onCorrectAnswerChange(index); // ✅ Actualizar estado global
                     }}
                     sx={{
                       "&.Mui-checked": {
@@ -99,8 +93,8 @@ export const OptionList = ({
                 value={opcion.contenido || ""}
                 onChange={(e) => handleOptionTextChange(index, e.target.value)}
                 size="small"
-                error={!opcion.contenido?.trim() && !opcion.imagen_url} // ❌ Si no tiene texto ni imagen, marcar como error
-                helperText={!opcion.contenido?.trim() && !opcion.imagen_url ? "Debe agregar texto o una imagen. Si no, elimínela" : ""}
+                error={hasAttemptedSave && (!opcion.contenido?.trim() && !opcion.imagen_url)} // ❌ Si no tiene texto ni imagen, marcar como error
+                helperText={hasAttemptedSave && (!opcion.contenido?.trim() && !opcion.imagen_url) ? "Debe agregar texto o una imagen. Si no, elimínela" : ""}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     backgroundColor: "#fff",

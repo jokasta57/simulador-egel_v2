@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Tooltip, IconButton, Avatar } from '@mui/material';
+import { Box, Tooltip, IconButton, Avatar, Snackbar, Alert } from '@mui/material';
 import { Image as ImageIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
 export const ImageUpload = ({ currentImage, onImageUpload, label, setIsSaved }) => {
   const [previewUrl, setPreviewUrl] = useState(currentImage)
+
 
   useEffect(() => {
     if (currentImage instanceof File) {
@@ -14,6 +15,7 @@ export const ImageUpload = ({ currentImage, onImageUpload, label, setIsSaved }) 
       setPreviewUrl(null); // ✅ Si es null o undefined, no mostrar imagen
     }
   }, [currentImage]);
+
 
 
   const handleImageUpload = (event) => {
@@ -61,6 +63,12 @@ export const ImageUpload = ({ currentImage, onImageUpload, label, setIsSaved }) 
           </IconButton>
         </Tooltip>
       )}
+      {/* <Snackbar open={Boolean(error || success)} autoHideDuration={3000} onClose={handleCloseSnackbar}>
+        <Alert severity={error ? "error" : "success"} variant="filled">
+          {error ? (typeof error === 'string' ? error : JSON.stringify(error)) :
+            (typeof success === 'string' ? success : JSON.stringify(success))}
+        </Alert>
+      </Snackbar> */}
     </Box>
   );
 };

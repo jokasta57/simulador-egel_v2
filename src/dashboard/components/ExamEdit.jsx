@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import {
   Box,
   Typography,
@@ -21,7 +21,10 @@ import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import EditIcon from "@mui/icons-material/Edit"
 import { QuestionCard } from "./QuestionCard"
 import { FloatingAddButton } from "./FloatingAddButton"
-import { useSelector } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
+import { setIsLoadingFalse } from "../../store/exams/examsSlice"
+import Swal from "sweetalert2"
+import QuestionPanel from "./QuestionPanel"
 
 const generatePeriodOptions = () => {
   const currentYear = new Date().getFullYear()
@@ -38,27 +41,6 @@ const generatePeriodOptions = () => {
   return options
 }
 
-const QuestionPanel = ({ totalQuestions, currentOrder, onQuestionSelect }) => (
-  <Box sx={{ mb: 3, p: 2, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
-    <Typography variant="subtitle1" sx={{ mb: 2 }}>
-      Panel de Preguntas
-    </Typography>
-    <Grid container spacing={1}>
-      {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((orden) => (
-        <Grid item key={orden}>
-          <Chip
-            label={`P${orden}`}
-            onClick={() => onQuestionSelect(orden)}
-            color={orden === currentOrder ? "primary" : "default"}
-            variant={orden === currentOrder ? "filled" : "outlined"}
-            sx={{ cursor: "pointer" }}
-          />
-        </Grid>
-      ))}
-    </Grid>
-  </Box>
-)
-
 export const ExamEdit = () => {
   const { exams, currentQuestion, resetCurrentQuestion } = useSelector((state) => state.exams)
   const { id } = useParams()
@@ -68,20 +50,42 @@ export const ExamEdit = () => {
     handleLoadQuestion,
     currentExam,
     isLoading,
-    error,
-    success,
+    // error,
+    // success,
     handleClearError,
     handleClearSuccess,
     handleLoadQuestionsByExam,
     handleUpdateQuestion,
     handleResetCurrentQuestion,
+    handleAddNewQuestion
   } = useExamsStore()
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [isExamInfoEditable, setIsExamInfoEditable] = useState(false)
   const [totalQuestions, setTotalQuestions] = useState(0)
   const [currentOrder, setCurrentOrder] = useState(null)
-  const [preguntasGuardadas, setPreguntasGuardadas] = useState({})
+  const [preguntaNueva, setPreguntaNueva] = useState(null);
+  const [isDirty, setIsDirty] = useState(false); // Estado para saber si hay cambios sin guardar
+  const [prevTotalQuestions, setPrevTotalQuestions] = useState(0); // ✅ Guardar estado previo
+
+
+  const navigate = useNavigate();
+
+
+
+
+  const dispatch = useDispatch();
+  const { error, success } = useSelector((state) => state.exams);
+
+  const handleCloseSnackbar = () => {
+
+    if (error) handleClearError();
+    if (success) handleClearSuccess();
+    if (isLoading) {
+      dispatch(setIsLoadingFalse())
+    };
+  };
+
 
   const { control, handleSubmit, reset, watch } = useForm({
     defaultValues: {
@@ -94,11 +98,34 @@ export const ExamEdit = () => {
     },
   })
 
+  const iniciarNuevaPregunta = () => {
+    setPreguntaNueva({
+      id_examen: id,
+      contenido: "",
+      imagen_url: null,
+      opcion: [
+        { contenido: "", imagen_url: null },
+        { contenido: "", imagen_url: null },
+      ],
+      es_correcta: 0,
+      orden: totalQuestions + 1,
+    });
+    setTotalQuestions((prev) => prev + 1); // ✅ Actualiza visualmente el panel
+    setIsDirty(true);
+  };
+
   const examInfo = watch()
 
   const isExamInfoComplete = useMemo(() => {
     return Object.values(examInfo).every((value) => value !== "")
   }, [examInfo])
+
+  useEffect(() => {
+    if (preguntaNueva) {
+      setIsDirty(true); // Marca que hay cambios sin guardar
+    }
+  }, [preguntaNueva]);
+
 
   useEffect(() => {
     const loadExam = async () => {
@@ -116,6 +143,11 @@ export const ExamEdit = () => {
         })
         setTotalQuestions(questionsLength.length || 0)
         // Removemos la carga automática de la primera pregunta
+        // Si hay una pregunta seleccionada, asegurarnos de que se mantenga
+        setPrevTotalQuestions(questionsLength.length || 0); // ✅ Guardamos el número original
+        if (currentOrder) {
+          await handleLoadQuestion(id, currentOrder)
+        }
       } catch (error) {
         console.error("Error loading exam:", error)
       } finally {
@@ -141,9 +173,11 @@ export const ExamEdit = () => {
     }
   }, [currentOrder, id])
 
+
   const handleQuestionSelect = async (orden) => {
+    if (preguntaNueva && orden === preguntaNueva.orden) return; // Evita sobrescribir la nueva pregunta
     try {
-      await handleLoadQuestion(id, orden)
+      const pregunta = await handleLoadQuestion(id, orden)
       setCurrentOrder(orden)
     } catch (error) {
       console.error("Error loading question:", error)
@@ -157,6 +191,9 @@ export const ExamEdit = () => {
     try {
       await handleUpdateExam(id, data)
       setIsExamInfoEditable(false)
+      if (currentOrder) {
+        await handleLoadQuestion(id, currentOrder) // Recargar la pregunta actual después de guardar el examen
+      }
     } catch (error) {
       console.error(error)
     }
@@ -170,29 +207,23 @@ export const ExamEdit = () => {
     const newOrder = totalQuestions + 1
     const newQuestion = {
       id_examen: id,
-      pregunta: "",
-      imagen: null,
+      contenido: "",
+      imagen_url: null,
       opciones: [
-        { texto: "", imagen: null },
-        { texto: "", imagen: null },
+        { contenido: "", imagen_url: null },
+        { contenido: "", imagen_url: null },
       ],
-      respuestaCorrecta: 0,
+      es_correcta: 0,
       orden: newOrder,
     }
 
     try {
-      await handleUpdateExam(id, {
-        ...currentExam,
-        total_preguntas: newOrder,
-        preguntas: [
-          ...(currentExam.preguntas || []),
-          { id_examen: id, orden: newOrder, pregunta: "", opciones: [] },
-        ],
-      })
-      setTotalQuestions(newOrder)
-      setCurrentOrder(newOrder)
+      const preguntaGuardada = await handleAddNewQuestion(newQuestion, id, newOrder);
+
+      setTotalQuestions(newOrder);
+      setCurrentOrder(newOrder);
     } catch (error) {
-      console.error("Error adding question:", error)
+      console.error("Error al agregar la pregunta:", error);
     }
   }
 
@@ -222,14 +253,12 @@ export const ExamEdit = () => {
     if (!currentQuestion) return
     const updatedQuestion = { ...currentQuestion, [campo]: valor }
     handleUpdateQuestion(preguntaId, updatedQuestion)
-    setPreguntasGuardadas((prev) => ({ ...prev, [preguntaId]: false }))
   }
 
   const guardarPregunta = async (preguntaId) => {
     if (!currentQuestion) return
     try {
       await handleUpdateQuestion(preguntaId, currentQuestion)
-      setPreguntasGuardadas((prev) => ({ ...prev, [preguntaId]: true }))
     } catch (error) {
       console.error("Error saving question:", error)
     }
@@ -356,12 +385,12 @@ export const ExamEdit = () => {
             <Button
               type="submit"
               variant="contained"
-              disabled={isLoading || !isExamInfoComplete}
+              disabled={isLoading || !isExamInfoComplete || !isExamInfoEditable}
               sx={{
                 width: { xs: "100%", sm: "auto" },
               }}
             >
-              {isLoading ? <CircularProgress size={24} color="inherit" /> : "Guardar información"}
+              {isExamInfoEditable ? (isLoading ? <CircularProgress size={24} color="inherit" /> : "Guardar información") : "Edite con el ícono de arriba"}
             </Button>
           </Box>
         </form>
@@ -376,22 +405,35 @@ export const ExamEdit = () => {
       {!isExamInfoEditable && (
         <>
           <QuestionPanel
-            totalQuestions={totalQuestions}
-            currentOrder={currentOrder}
+            totalQuestions={totalQuestions} // ✅ Muestra la nueva pregunta en el panel
+            prevTotalQuestions={prevTotalQuestions}
+            setTotalQuestions={setTotalQuestions} // ✅ Muestra la nueva pregunta en el panel
+            currentOrder={preguntaNueva ? preguntaNueva.orden : currentOrder}
             onQuestionSelect={handleQuestionSelect}
+            isDirty={isDirty}
+            setIsDirty={setIsDirty}
           />
-
-          {/* {currentQuestion && (
-            <QuestionCard
-              key={currentQuestion.id}
-              index={currentOrder - 1}
-              onDelete={eliminarPregunta}
-              onUpdate={actualizarPregunta}
-              onSave={guardarPregunta}
-              isSaved={preguntasGuardadas[currentQuestion.id]}
-            />
-          )} */}
-          {currentOrder && currentQuestion ? (
+          {preguntaNueva ? (
+            <Box>
+              <QuestionCard
+                key="nueva"
+                index={totalQuestions} // Se muestra como la última pregunta
+                preguntaNueva={preguntaNueva}
+                onDelete={() => {
+                  setPreguntaNueva(null);
+                  setTotalQuestions(prevTotalQuestions); // ✅ Volvemos al número original
+                }} // Si el usuario cancela, se oculta
+                onUpdate={(campo, valor) =>
+                  setPreguntaNueva((prev) => ({ ...prev, [campo]: valor }))
+                }
+                onSave={async () => {
+                  await handleAddNewQuestion(preguntaNueva, id, preguntaNueva.orden);
+                  setPreguntaNueva(null);
+                  setPrevTotalQuestions(totalQuestions); // ✅ Guardamos el nuevo estado
+                }}
+              />
+            </Box>
+          ) : currentOrder && currentQuestion ? (
             <Box>
               <QuestionCard
                 key={currentQuestion.id}
@@ -399,7 +441,6 @@ export const ExamEdit = () => {
                 onDelete={eliminarPregunta}
                 onUpdate={actualizarPregunta}
                 onSave={guardarPregunta}
-                // isSaved={preguntasGuardadas[currentQuestion.id]}
               />
             </Box>
           ) : (
@@ -417,24 +458,21 @@ export const ExamEdit = () => {
         </>
       )}
 
-      <FloatingAddButton onClick={agregarPregunta} disabled={isExamInfoEditable} />
+      <FloatingAddButton onClick={iniciarNuevaPregunta} disabled={isExamInfoEditable} />
 
       <Snackbar
         open={Boolean(error || success)}
-        autoHideDuration={5000}
-        onClose={() => {
-          error ? handleClearError() : handleClearSuccess()
-        }}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => {
-            error ? handleClearError() : handleClearSuccess()
-          }}
-          severity={error ? "error" : "success"}
-          sx={{ width: "100%" }}
+          onClose={handleCloseSnackbar}
+          severity={error ? 'error' : 'success'}
+          variant="filled"
         >
-          {error || success}
+          {error ? (typeof error === 'string' ? error : JSON.stringify(error)) :
+            (typeof success === 'string' ? success : JSON.stringify(success))}
         </Alert>
       </Snackbar>
     </Box>

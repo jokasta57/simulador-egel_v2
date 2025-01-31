@@ -1,8 +1,10 @@
 import React from 'react';
-import { Fab, Tooltip, Box } from '@mui/material';
+import { Fab, Tooltip, Box, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
+import { useExamsStore } from '../../hooks/exams/useExamsStore';
 
 export const FloatingAddButton = ({ onClick, disabled }) => {
+  const { isLoading } = useExamsStore();
   return (
     <Box
       sx={{
@@ -17,7 +19,7 @@ export const FloatingAddButton = ({ onClick, disabled }) => {
           <Fab
             color="primary"
             onClick={onClick}
-            disabled={disabled}
+            disabled={disabled || isLoading}
             sx={{
               bgcolor: 'black',
               '&:hover': {
@@ -28,7 +30,7 @@ export const FloatingAddButton = ({ onClick, disabled }) => {
               },
             }}
           >
-            <AddIcon />
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : <AddIcon />}
           </Fab>
         </span>
       </Tooltip>

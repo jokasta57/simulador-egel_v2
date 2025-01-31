@@ -15,14 +15,19 @@ export const OptionList = ({
   respuestaCorrecta,
   onOptionUpdate,
   onCorrectAnswerChange,
+  isSaved,
+  setIsSaved,
 }) => {
   const options = opciones.length > 0 ? opciones : opcion.length > 0 ? opcion : defaultOptions
 
   const handleOptionTextChange = (index, value) => {
-    const newOptions = [...options]
-    newOptions[index] = { ...newOptions[index], contenido: value }
-    onOptionUpdate(-1, "update_all", newOptions)
-  }
+    setIsSaved(false);
+    
+    const newOptions = [...options];
+    newOptions[index] = { ...newOptions[index], contenido: value };
+  
+    onOptionUpdate(-1, "update_all", newOptions);
+  };
 
   const handleOptionImageUpload = (index, imageData) => {
     onOptionUpdate(index, "imagen_url", imageData)
@@ -30,16 +35,20 @@ export const OptionList = ({
 
   const handleAddOption = () => {
     if (options.length < 6) {
-      // Limitamos a un máximo de 6 opciones
       const newOption = {
         contenido: "",
         imagen_url: null,
         es_correcta: false,
         public_id_imagen: null,
-      }
-      onOptionUpdate(-1, "update_all", [...options, newOption])
+      };
+  
+      const updatedOptions = [...options, newOption];
+      onOptionUpdate(-1, "update_all", updatedOptions);
+  
+      // ✅ Deshabilitar el botón si la nueva opción es vacía
+      setIsSaved(false);
     }
-  }
+  };
 
   const handleDeleteOption = (index) => {
     if (options.length > 2) {
@@ -90,6 +99,8 @@ export const OptionList = ({
                 value={opcion.contenido || ""}
                 onChange={(e) => handleOptionTextChange(index, e.target.value)}
                 size="small"
+                error={!opcion.contenido?.trim() && !opcion.imagen_url} // ❌ Si no tiene texto ni imagen, marcar como error
+                helperText={!opcion.contenido?.trim() && !opcion.imagen_url ? "Debe agregar texto o una imagen. Si no, elimínela" : ""}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     backgroundColor: "#fff",

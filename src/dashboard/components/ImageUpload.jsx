@@ -1,26 +1,45 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Tooltip, IconButton, Avatar } from '@mui/material';
 import { Image as ImageIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
-export const ImageUpload = ({ currentImage, onImageUpload, label }) => {
+export const ImageUpload = ({ currentImage, onImageUpload, label, setIsSaved }) => {
+  const [previewUrl, setPreviewUrl] = useState(currentImage)
+
+  useEffect(() => {
+    if (currentImage instanceof File) {
+      setPreviewUrl(URL.createObjectURL(currentImage)); // ✅ Solo crea URL si es un File
+    } else if (typeof currentImage === "string") {
+      setPreviewUrl(currentImage); // ✅ Si es una URL, úsala directamente
+    } else {
+      setPreviewUrl(null); // ✅ Si es null o undefined, no mostrar imagen
+    }
+  }, [currentImage]);
+
+
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onImageUpload(reader.result);
-      };
-      reader.readAsDataURL(file);
+      // Crear una URL temporal para la vista previa
+      const objectUrl = URL.createObjectURL(file)
+      setPreviewUrl(objectUrl)
+
+      // Enviar el archivo original al componente padre
+      onImageUpload(file)
+
+      // Marcar como no guardado
+      setIsSaved(false)
     }
   };
 
   const handleDeleteImage = () => {
+    setPreviewUrl(null)
+    setIsSaved(false)
     onImageUpload(null);
   };
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <Tooltip title={currentImage ? 'Cambiar Imagen' : 'Agregar Imagen'}>
+      <Tooltip title={previewUrl ? 'Cambiar Imagen' : 'Agregar Imagen'}>
         <IconButton component="label" size="small">
           <input
             type="file"
@@ -28,18 +47,14 @@ export const ImageUpload = ({ currentImage, onImageUpload, label }) => {
             accept="image/*"
             onChange={handleImageUpload}
           />
-          {currentImage ? (
-            <Avatar
-              src={currentImage}
-              alt={label}
-              sx={{ width: 24, height: 24 }}
-            />
+          {previewUrl ? (
+            <Avatar src={previewUrl} alt={label} sx={{ width: 24, height: 24 }} />
           ) : (
             <ImageIcon fontSize="small" />
           )}
         </IconButton>
       </Tooltip>
-      {currentImage && (
+      {previewUrl && (
         <Tooltip title="Eliminar imagen">
           <IconButton onClick={handleDeleteImage} size="small">
             <DeleteIcon fontSize="small" />

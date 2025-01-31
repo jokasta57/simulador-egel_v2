@@ -81,7 +81,6 @@ export const useAuthStore = () => {
         //Revalida el token y lo setea
         try {
             const {data} = await simulatorApi.get('users/renew');
-            console.log(data);
             localStorage.setItem('token', data.token)
             localStorage.setItem('token-init-date', new Date().getTime());
             //Dependiendo el rol del usuario, es el guardado en redux

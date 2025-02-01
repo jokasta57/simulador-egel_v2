@@ -3,7 +3,7 @@ import { Fab, Tooltip, Box, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useExamsStore } from '../../hooks/exams/useExamsStore';
 
-export const FloatingAddButton = ({ onClick, disabled }) => {
+export const FloatingAddButton = ({ onClick, disabled, isDirty }) => {
   const { isLoading } = useExamsStore();
   return (
     <Box
@@ -19,7 +19,7 @@ export const FloatingAddButton = ({ onClick, disabled }) => {
           <Fab
             color="primary"
             onClick={onClick}
-            disabled={disabled || isLoading}
+            disabled={disabled || isLoading || isDirty}
             sx={{
               bgcolor: 'black',
               '&:hover': {

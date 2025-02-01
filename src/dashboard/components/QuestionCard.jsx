@@ -6,7 +6,7 @@ import { ImageUpload } from "./ImageUpload"
 import { useSelector } from "react-redux"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 
-export const QuestionCard = memo(({ index, onDelete, preguntaNueva }) => {
+export const QuestionCard = memo(({ index, onDelete, preguntaNueva, setIsDirty }) => {
   const { currentQuestion, currentExam } = useSelector((state) => state.exams)
   const { handleUpdateQuestion, handleSaveQuestion, handleResetCurrentQuestion, isLoading, handleAddNewQuestion } = useExamsStore()
 
@@ -123,6 +123,7 @@ export const QuestionCard = memo(({ index, onDelete, preguntaNueva }) => {
       setIsSaved(true);
       setSnackbarMessage(response?.msg || "Pregunta guardada con éxito ✅");
       setShowSnackbar(true);
+      setIsDirty(false)
       // Aquí puedes manejar el éxito del guardado, por ejemplo, mostrando un mensaje
     } catch (error) {
       console.log(error);

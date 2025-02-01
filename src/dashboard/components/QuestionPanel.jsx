@@ -18,8 +18,8 @@ const QuestionPanel = ({ totalQuestions, prevTotalQuestions, currentOrder, onQue
             }).then((result) => {
                 if (result.isConfirmed) {
                     setIsDirty(false);
-                    setTotalQuestions((prev) => prev - 1); // Ajustar número total de preguntas si es necesario
-                    onQuestionSelect(orden); // ✅ Asegura que la pregunta se actualiza
+                    setTotalQuestions(prevTotalQuestions); // ✅ Restaurar el número original de preguntas
+                    onQuestionSelect(orden);
                 }
             });
         } else {

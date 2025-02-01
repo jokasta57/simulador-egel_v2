@@ -108,9 +108,10 @@ export const ExamEdit = () => {
         { contenido: "", imagen_url: null },
       ],
       es_correcta: 0,
-      orden: totalQuestions + 1,
+      orden: currentOrder ? currentOrder + 1 : totalQuestions + 1,
     });
-    setTotalQuestions((prev) => prev + 1); // ✅ Actualiza visualmente el panel
+    setPrevTotalQuestions(totalQuestions); // ✅ Guardar número previo de preguntas
+    setTotalQuestions((prev) => prev + 1); // ✅ Agregar pregunta visualmente
     setIsDirty(true);
   };
 
@@ -431,6 +432,7 @@ export const ExamEdit = () => {
                   setPreguntaNueva(null);
                   setPrevTotalQuestions(totalQuestions); // ✅ Guardamos el nuevo estado
                 }}
+                setIsDirty={setIsDirty}
               />
             </Box>
           ) : currentOrder && currentQuestion ? (
@@ -458,7 +460,7 @@ export const ExamEdit = () => {
         </>
       )}
 
-      <FloatingAddButton onClick={iniciarNuevaPregunta} disabled={isExamInfoEditable} />
+      <FloatingAddButton onClick={iniciarNuevaPregunta} disabled={isExamInfoEditable} isDirty={isDirty}/>
 
       <Snackbar
         open={Boolean(error || success)}

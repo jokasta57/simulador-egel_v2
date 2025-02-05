@@ -75,7 +75,6 @@ export const RegisterPage = () => {
     if (validateForm()) {
       try {
         // Here you would typically make an API call to save the student
-        console.log('Saving student:', formData);
         //ENVIO AL SERVIDOR
         startRegisterStudent(formData)
 
@@ -85,7 +84,7 @@ export const RegisterPage = () => {
           message: 'Estudiante registrado exitosamente',
           severity: 'success',
         });
-        navigate('/exams');
+        navigate('/student/home');
         
         // Optional: Clear form after successful submission
         setFormData({

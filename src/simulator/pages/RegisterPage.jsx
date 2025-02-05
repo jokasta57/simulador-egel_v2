@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
-import { Box, Paper, Typography, TextField, Button, Grid, MenuItem, FormControl, InputLabel, Select, Alert, Snackbar,} from '@mui/material';
-import { Save as SaveIcon } from '@mui/icons-material';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Box, Paper, Typography, TextField, Button, Grid, MenuItem, FormControl, InputLabel, Select, Alert, Snackbar, IconButton } from '@mui/material';
+import { ArrowBack, Save as SaveIcon } from '@mui/icons-material';
 import { validateStudentForm } from '../helpers/formValidation';
 import { useAuthStore } from '../../hooks/useAuthStore';
 import { useSelector } from 'react-redux';
@@ -69,9 +69,13 @@ export const RegisterPage = () => {
     }
   };
 
+  const handleGoBack = useCallback(() => {
+    navigate(-1)
+  }, [navigate])
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    
+
     if (validateForm()) {
       try {
         // Here you would typically make an API call to save the student
@@ -85,7 +89,7 @@ export const RegisterPage = () => {
           severity: 'success',
         });
         navigate('/student/home');
-        
+
         // Optional: Clear form after successful submission
         setFormData({
           nombre: '',
@@ -127,12 +131,23 @@ export const RegisterPage = () => {
   }, [error]);
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       maxWidth: { xs: '100%', sm: '600px' },
       mx: 'auto',
       p: { xs: 2, sm: 3 },
     }}>
       <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
+        <IconButton
+          onClick={handleGoBack}
+          sx={{
+            position: "absolute",
+            top: "16px",  // Puedes usar "1rem" si prefieres
+            left: "16px",
+          }}
+          aria-label="regresar"
+        >
+          <ArrowBack />
+        </IconButton>
         <Typography variant="h5" component="h2" gutterBottom sx={{ mb: 3 }}>
           Registro de Estudiante
         </Typography>
@@ -287,22 +302,22 @@ export const RegisterPage = () => {
             </Grid>
 
             <Grid item xs={12}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  startIcon={<SaveIcon />}
-                  sx={{ 
-                    mt: 2,
-                    bgcolor: theme => theme.palette.primary.main,
-                    '&:hover': {
-                      bgcolor: theme => theme.palette.primary.dark,
-                    },
-                  }}
-                  fullWidth 
-                >
-                  Registrar Estudiante
-                </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                startIcon={<SaveIcon />}
+                sx={{
+                  mt: 2,
+                  bgcolor: theme => theme.palette.primary.main,
+                  '&:hover': {
+                    bgcolor: theme => theme.palette.primary.dark,
+                  },
+                }}
+                fullWidth
+              >
+                Registrar Estudiante
+              </Button>
             </Grid>
           </Grid>
         </form>
@@ -313,8 +328,8 @@ export const RegisterPage = () => {
         autoHideDuration={6000}
         onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
       >
-        <Alert 
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+        <Alert
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >

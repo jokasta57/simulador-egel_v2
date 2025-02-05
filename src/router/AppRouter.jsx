@@ -31,7 +31,18 @@ export const AppRouter = () => {
             <Route path="/" element={<HomePage />} />
 
             {/* Página de login: Redirige según el rol si ya está autenticado */}
-            <Route path="/login" element={<LoginPage />}/>
+            <Route
+                path='/login'
+                element={
+                    isAuthenticated ? (
+                        userRole === "admin"
+                            ? <Navigate to="/admin/dashboard" replace />
+                            : <Navigate to="/student/home" replace />
+                    ) : (
+                        <LoginPage />
+                    )
+                }
+            />
 
             {/* Rutas del Administrador */}
             <Route path="/admin/*" element={
@@ -41,7 +52,7 @@ export const AppRouter = () => {
             } />
 
             {/* Rutas del Estudiante */}
-            <Route path="/student/register" element={<RegisterPage />}/>
+            <Route path="/student/register" element={<RegisterPage />} />
 
             {/* Rutas del Estudiante */}
             <Route path="/student/*" element={

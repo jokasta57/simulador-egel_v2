@@ -26,7 +26,7 @@ export const examsSlice = createSlice({
         },
         updateQuestion: (state, action) => {
             state.currentQuestion = action.payload
-            state.isLoading = false        
+            state.isLoading = false
         },
         // Acción para agregar un nueva pregunta
         addNewQuestionStart: (state) => {
@@ -54,26 +54,28 @@ export const examsSlice = createSlice({
             state.error = action.payload;
         },
 
-        
-        
+
+
         // Acción para agregar un nuevo examen
         addExam: (state, action) => {
             state.exams.push(action.payload) // Agrega un nuevo examen al array
         },
-        
+
         // Acción para cargar los exámenes (simulando una carga)
         loadExams: (state, action) => {
-            state.isLoading = false
+            state.isLoading = false;
             state.exams = action.payload // Establece la lista de exámenes
         },
-        
+
         // Acción para manejar errores de carga de exámenes
         setError: (state, action) => {
-            state.error = action.payload // Establece el mensaje de error
+            state.isLoading = false; // Ahora cambia isLoading correctamente
+            state.error = action.payload;
         },
-        
+
         // Acción para limpiar los errores
         clearError: (state) => {
+            isLoading = false;
             state.error = null
         },
         // Acción para limpiar el éxito de una operación
@@ -96,21 +98,21 @@ export const examsSlice = createSlice({
     },
 })
 
-export const { 
-    setCurrentExam, 
-    clearError, 
+export const {
+    setCurrentExam,
+    clearError,
     clearSuccess,
-    addExam, 
-    loadExams, 
-    setError, 
-    setSuccess, 
-    loadExamsStart, 
-    updateExamStart, 
-    updateExamSuccess, 
-    updateExamFailure, 
-    setCurrentQuestion, 
-    updateQuestionStart, 
-    resetCurrentQuestion, 
+    addExam,
+    loadExams,
+    setError,
+    setSuccess,
+    loadExamsStart,
+    updateExamStart,
+    updateExamSuccess,
+    updateExamFailure,
+    setCurrentQuestion,
+    updateQuestionStart,
+    resetCurrentQuestion,
     updateQuestion,
     addNewQuestionStart,
     addNewQuestion,

@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Button, TextField, Paper, Typography, Box, InputAdornment, IconButton, useTheme, useMediaQuery, Snackbar, Alert } from '@mui/material';
-import { LockOutlined as LockOutlinedIcon, Visibility, VisibilityOff, Badge as BadgeIcon } from '@mui/icons-material';
+import { LockOutlined as LockOutlinedIcon, Visibility, VisibilityOff, Badge as BadgeIcon, ArrowBack } from '@mui/icons-material';
 import { useAuthStore } from '../../hooks/useAuthStore';
 import { useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 
 export const LoginPage = () => {
   const { startLoginAdmin, startLoginStudent } = useAuthStore();
@@ -45,15 +45,15 @@ export const LoginPage = () => {
         message: !numeroIdentificacion && !nip
           ? 'Por favor, ingrese número de identificación y NIP'
           : !numeroIdentificacion
-          ? 'Por favor, ingrese número de identificación'
-          : 'Por favor, ingrese NIP',
+            ? 'Por favor, ingrese número de identificación'
+            : 'Por favor, ingrese NIP',
         severity: 'warning',
       });
       return;
     }
 
     try {
-      if(role === "admin"){
+      if (role === "admin") {
         await startLoginAdmin(numeroIdentificacion, nip);
         setSnackbar({
           open: true,
@@ -61,7 +61,7 @@ export const LoginPage = () => {
           severity: 'success',
         });
         navigate('/admin/dashboard');
-      } else if(role === "student"){
+      } else if (role === "student") {
         await startLoginStudent(numeroIdentificacion, nip);
         setSnackbar({
           open: true,
@@ -86,6 +86,10 @@ export const LoginPage = () => {
   const handleCloseSnackbar = useCallback(() => {
     setSnackbar(prev => ({ ...prev, open: false }));
   }, []);
+
+  const handleGoBack = useCallback(() => {
+    navigate(-1)
+  }, [navigate])
 
   const paperStyles = useMemo(() => ({
     padding: theme.spacing(4),
@@ -123,6 +127,17 @@ export const LoginPage = () => {
       }}
     >
       <Paper elevation={3} sx={paperStyles}>
+        <IconButton
+          onClick={handleGoBack}
+          sx={{
+            position: "absolute",
+            top: theme.spacing(2),
+            left: theme.spacing(2),
+          }}
+          aria-label="regresar"
+        >
+          <ArrowBack />
+        </IconButton>
         <Box
           sx={{
             backgroundColor: theme.palette.primary.main,
@@ -135,6 +150,11 @@ export const LoginPage = () => {
         </Box>
         <Typography component="h1" variant="h4" gutterBottom fontWeight="bold">
           Iniciar Sesión
+        </Typography>
+        <Typography variant="h6" color="primary" gutterBottom>
+          {
+            role === "admin" ? "Administrador" : "Estudiante"
+          }
         </Typography>
         <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
           {
@@ -197,6 +217,27 @@ export const LoginPage = () => {
           >
             Iniciar Sesión
           </Button>
+          {role === "student" && (
+            <Box sx={{ mt: 2, textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary">
+                ¿No tienes cuenta?{" "}
+                <Link
+                  component={RouterLink}
+                  to="/student/register"
+                  sx={{
+                    color: theme.palette.primary.main,
+                    textDecoration: "none",
+                    fontWeight: "medium",
+                    "&:hover": {
+                      textDecoration: "underline",
+                    },
+                  }}
+                >
+                  Regístrate
+                </Link>
+              </Typography>
+            </Box>
+          )}
         </Box>
       </Paper>
       <Snackbar
@@ -205,8 +246,8 @@ export const LoginPage = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >

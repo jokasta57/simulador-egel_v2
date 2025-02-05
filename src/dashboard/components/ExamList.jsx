@@ -39,7 +39,7 @@ export const ExamList = () => {
 
   useEffect(() => {
     handleLoadExams()
-  }, [handleLoadExams])
+  }, [])
 
   const { exams } = useSelector((state) => state.exams)
 

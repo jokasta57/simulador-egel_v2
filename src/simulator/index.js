@@ -1,6 +1,3 @@
-export * from './pages/SimulatorPage'
 export * from './pages/HomePage'
 export * from './pages/RegisterPage'
-export * from './pages/ExamPage'
-export * from './pages/ExamResultPage'
 export * from './pages/NotFoundPage'

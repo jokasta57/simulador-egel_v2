@@ -3,12 +3,15 @@ import { Button, TextField, Paper, Typography, Box, InputAdornment, IconButton, 
 import { LockOutlined as LockOutlinedIcon, Visibility, VisibilityOff, Badge as BadgeIcon } from '@mui/icons-material';
 import { useAuthStore } from '../../hooks/useAuthStore';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const LoginPage = () => {
-  const { startLoginAdmin } = useAuthStore();
+  const { startLoginAdmin, startLoginStudent } = useAuthStore();
   const { error } = useSelector(state => state.auth);
   const navigate = useNavigate();
+
+  const location = useLocation();
+  const role = location.state?.role || 'student';
 
   const [formData, setFormData] = useState({
     numeroIdentificacion: '',
@@ -50,13 +53,23 @@ export const LoginPage = () => {
     }
 
     try {
-      await startLoginAdmin(numeroIdentificacion, nip);
-      setSnackbar({
-        open: true,
-        message: 'Inicio de sesión exitoso',
-        severity: 'success',
-      });
-      navigate('/admin/dashboard');
+      if(role === "admin"){
+        await startLoginAdmin(numeroIdentificacion, nip);
+        setSnackbar({
+          open: true,
+          message: 'Inicio de sesión exitoso',
+          severity: 'success',
+        });
+        navigate('/admin/dashboard');
+      } else if(role === "student"){
+        await startLoginStudent(numeroIdentificacion, nip);
+        setSnackbar({
+          open: true,
+          message: 'Inicio de sesión exitoso',
+          severity: 'success',
+        });
+        navigate('/student/home');
+      }
     } catch (error) {
       setSnackbar({
         open: true,
@@ -124,7 +137,9 @@ export const LoginPage = () => {
           Iniciar Sesión
         </Typography>
         <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
-          Accede a la dashboard para administradores de EGEL
+          {
+            role === "admin" ? "Accede a la dashboard para administradores de EGEL" : "Pon a prueba tus conocimientos y prepárate para el EGEL con nuestros exámenes simulados."
+          }
         </Typography>
         <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
           <TextField

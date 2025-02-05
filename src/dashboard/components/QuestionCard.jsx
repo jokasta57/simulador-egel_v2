@@ -6,7 +6,7 @@ import { ImageUpload } from "./ImageUpload"
 import { useSelector } from "react-redux"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 
-export const QuestionCard = memo(({ index, onDelete, preguntaNueva, setIsDirty }) => {
+export const QuestionCard = memo(({ index, onDelete, preguntaNueva, onUpdate, setIsDirty }) => {
   const { currentQuestion, currentExam } = useSelector((state) => state.exams)
   const { handleUpdateQuestion, handleSaveQuestion, handleResetCurrentQuestion, isLoading, handleAddNewQuestion } = useExamsStore()
 

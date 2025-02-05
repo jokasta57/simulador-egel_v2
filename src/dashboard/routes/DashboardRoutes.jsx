@@ -10,8 +10,8 @@ export const DashboardRoutes = () => {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/examenes" element={<ExamList />} />
                 <Route path="/crear-examen" element={<CreateExam />} />
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/exams/:id/edit" element={<ExamEdit />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Routes>
         </DashboardLayout>
     )

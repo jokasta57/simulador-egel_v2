@@ -1,10 +1,11 @@
 import { Box, Button, Typography, Paper, Container, Grid, useTheme, useMediaQuery } from '@mui/material';
 import { School as SchoolIcon, AdminPanelSettings as AdminIcon } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export const HomePage = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const navigate = useNavigate();
 
     return (
         <Box
@@ -92,20 +93,19 @@ export const HomePage = () => {
                                 >
                                     Accede para realizar simulacros y evaluar tu preparación.
                                 </Typography>
-                                <Link to='/student/register'>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        size="large"
-                                        fullWidth={isMobile}
-                                        sx={{
-                                            mt: 'auto',
-                                            py: 1.5,
-                                        }}
-                                        >
-                                        Ingresar como Estudiante
-                                    </Button>
-                                </Link>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    size="large"
+                                    fullWidth={isMobile}
+                                    sx={{
+                                        mt: 'auto',
+                                        py: 1.5,
+                                    }}
+                                    onClick={() => navigate('/login', {state: {role: 'student'}})} //Envias el tipo de rol
+                                    >
+                                    Ingresar como Estudiante
+                                </Button>
                             </Paper>
                         </Grid>
 
@@ -154,20 +154,19 @@ export const HomePage = () => {
                                 >
                                     Acceso único para administradores.
                                 </Typography>
-                                <Link to='/login'>
-                                    <Button
-                                        variant="contained"
-                                        color="secondary"
-                                        size="large"
-                                        fullWidth={isMobile}
-                                        sx={{
-                                            mt: 'auto',
-                                            py: 1.5,
-                                        }}
-                                        >
-                                        Ingresar como Administrador
-                                    </Button>
-                                </Link>
+                                <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    size="large"
+                                    fullWidth={isMobile}
+                                    sx={{
+                                        mt: 'auto',
+                                        py: 1.5,
+                                    }}
+                                    onClick={() => navigate('/login', {state: {role: 'admin'}})} //Envias el tipo de rol
+                                    >
+                                    Ingresar como Administrador
+                                </Button>
                             </Paper>
                         </Grid>
                     </Grid>

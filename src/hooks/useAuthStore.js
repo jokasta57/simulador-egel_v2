@@ -46,6 +46,7 @@ export const useAuthStore = () => {
             //Esto es para hacer calculos de lo que dqeuda del token 
             localStorage.setItem('token-init-date', new Date().getTime());
             //Se dispara la accion en redux y en store
+            console.log(estudiante);
             dispatch(onLoginSuccess({nombre: estudiante.nombre, numero_cuenta: estudiante.numero_cuenta, carrera: estudiante.carrera, role: "student"}))
         } catch (error) {
             dispatch(onLoginFailure('Credenciales incorrectas'));

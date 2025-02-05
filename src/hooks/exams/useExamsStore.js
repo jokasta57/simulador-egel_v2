@@ -16,8 +16,10 @@ import {
     resetCurrentQuestion,
     updateQuestion,
     addNewQuestion,
-    addNewQuestionStart
+    addNewQuestionStart,
+    setIsLoadingFalse
 } from '../../store/exams/examsSlice';
+import simulatorApi from '../../api/simulatorApi';
 
 export const useExamsStore = () => {
     const dispatch = useDispatch();
@@ -33,8 +35,29 @@ export const useExamsStore = () => {
             console.log(error);
             dispatch(setError(error.response?.data || 'Error al cargar examenes'));
             throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
     }, [dispatch]);
+
+    const handleLoadExamsByCareer = useCallback(async (carrera) => {
+        dispatch(loadExamsStart());
+        try {
+            const response = await simulatorApi.get('/exams/career', {
+                params: {
+                    carrera: carrera
+                }
+            });
+            dispatch(loadExams(response.data.examenes));
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data || 'Error al cargar examenes'));
+            throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
+    })
 
     const handleLoadExam = useCallback(async (id) => {
         dispatch(loadExamsStart());
@@ -46,6 +69,8 @@ export const useExamsStore = () => {
             console.log(error);
             dispatch(setError(error.response?.data || 'Error al cargar el examen'));
             throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
     }, [dispatch]);
 
@@ -59,6 +84,8 @@ export const useExamsStore = () => {
             console.log(error);
             dispatch(updateExamFailure(error.response?.data || 'Error al actualizar el examen'));
             throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
     }, [dispatch]);
 
@@ -81,6 +108,8 @@ export const useExamsStore = () => {
             console.log(error);
             dispatch(setError(error.response?.data || 'Error al cargar la pregunta'));
             throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
     }, [dispatch]);
 
@@ -92,6 +121,8 @@ export const useExamsStore = () => {
             console.log(error);
             dispatch(setError(error.response?.data || 'Error al cargar las preguntas'));
             throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
     }, [dispatch]);
 
@@ -162,6 +193,8 @@ export const useExamsStore = () => {
             }
             dispatch(setError({ message: errorMessage, type: 'error' }));
             throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
     }, [dispatch]);
 
@@ -210,7 +243,9 @@ export const useExamsStore = () => {
             console.log(error);
             dispatch(setError(error.response?.data || 'Error al cargar las preguntas'));
             throw error;
-        }
+        } finally {
+        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+    }
     }, [dispatch]);
 
     const handleClearError = useCallback(() => {
@@ -240,6 +275,7 @@ export const useExamsStore = () => {
         handleLoadQuestionsByExam,
         handleUpdateQuestion,
         handleResetCurrentQuestion,
-        handleAddNewQuestion
+        handleAddNewQuestion, 
+        handleLoadExamsByCareer
     };
 };

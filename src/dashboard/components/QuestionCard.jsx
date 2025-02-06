@@ -6,8 +6,8 @@ import { ImageUpload } from "./ImageUpload"
 import { useSelector } from "react-redux"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 
-export const QuestionCard = memo(({ index, onDelete, preguntaNueva, onUpdate, setIsDirty }) => {
-  const { currentQuestion, currentExam } = useSelector((state) => state.exams)
+export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
+  const { currentQuestion, preguntaNueva, currentOrder, currentExam } = useSelector((state) => state.exams)
   const { handleUpdateQuestion, handleSaveQuestion, handleResetCurrentQuestion, isLoading, handleAddNewQuestion } = useExamsStore()
 
   const [isSaved, setIsSaved] = useState(false)
@@ -21,6 +21,11 @@ export const QuestionCard = memo(({ index, onDelete, preguntaNueva, onUpdate, se
     (op.contenido?.trim() !== "" || op.imagen_url !== null)
   ) || [];
 
+  const questionToShow = preguntaNueva || currentQuestion;
+
+  if (!questionToShow) {
+    return null;
+  }
 
   useEffect(() => {
     if (currentQuestion) {
@@ -41,6 +46,7 @@ export const QuestionCard = memo(({ index, onDelete, preguntaNueva, onUpdate, se
 
 
   const handleQuestionChange = useCallback((e) => {
+    setIsDirty(true)
     const newContent = e.target.value
     setIsSaved(false)
     setLocalQuestion((prev) => ({ ...prev, contenido: newContent }))
@@ -54,6 +60,7 @@ export const QuestionCard = memo(({ index, onDelete, preguntaNueva, onUpdate, se
   }, []);
 
   const handleOptionUpdate = useCallback((opcionIndex, campo, valor) => {
+    setIsDirty(true)
     setLocalQuestion((prev) => {
       const nuevasOpciones = [...(prev.opcion || [])]
       if (campo === "add") {
@@ -159,7 +166,7 @@ export const QuestionCard = memo(({ index, onDelete, preguntaNueva, onUpdate, se
           }}
         >
           <Typography variant="h6" sx={{ mb: { xs: 1, sm: 0 } }}>
-            Pregunta {localQuestion.orden || index + 1}
+            Pregunta {questionToShow.orden}
           </Typography>
           <Button
             variant="outlined"
@@ -186,13 +193,21 @@ export const QuestionCard = memo(({ index, onDelete, preguntaNueva, onUpdate, se
             required
           />
 
-          <ImageUpload
+          {/* <ImageUpload
             currentImage={localQuestion.imagen_url}
             onImageUpload={handleImageUpload}
             setIsSaved={setIsSaved}
             label="Imagen de la pregunta"
+          /> */}
+
+          <ImageUpload
+            currentImage={localQuestion.imagen_url}
+            onImageUpload={handleImageUpload}
+            label="Imagen de la pregunta"
           />
+
         </Box>
+
 
         <OptionList
           opciones={localQuestion.opcion}
@@ -210,17 +225,8 @@ export const QuestionCard = memo(({ index, onDelete, preguntaNueva, onUpdate, se
             color={isSaved ? "success" : "primary"}
             startIcon={<SaveIcon />}
             onClick={handleSave}
-            // disabled={
-            //   isLoading ||
-            //   !localQuestion.contenido ||
-            //   localQuestion.contenido.trim() === "" ||
-            //   (localQuestion.opcion?.filter(op => (op.contenido?.trim() !== "" || op.imagen_url)) || []).length < 2 ||
-            //   opcionesValidas.length < 2 ||
-            //   localQuestion.es_correcta === undefined
-            // }
             sx={{ width: { xs: "100%", sm: "auto" } }}
           >
-            {/* {isSaved ? "Guardado" : "Guardar Pregunta"} */}
             {isLoading ? <CircularProgress size={24} color="inherit" /> : (isSaved ? "Guardado" : "Guardar Pregunta")}
           </Button>
         </Box>

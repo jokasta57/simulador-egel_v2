@@ -127,7 +127,6 @@ export const useExamsStore = () => {
     }, [dispatch]);
 
     const handleUpdateQuestion = useCallback(async (updateData) => {
-        console.log(updateData);
         dispatch(updateQuestionStart());
         try {
             const formData = new FormData();
@@ -241,11 +240,37 @@ export const useExamsStore = () => {
             return response.data.preguntas;
         } catch (error) {
             console.log(error);
-            dispatch(setError(error.response?.data || 'Error al cargar las preguntas'));
+            dispatch(setError(error.response?.data || 'Error al agregar pregunta'));
             throw error;
         } finally {
         dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
     }
+    }, [dispatch]);
+
+    const handleDeleteQuestion = useCallback(async (id_pregunta) => {
+        dispatch(updateQuestionStart());
+        try {
+            const preguntaResp = await adminApi.get(`/questions/id/${id_pregunta}`);
+
+            const {opcion} = preguntaResp.data.pregunta;
+
+            // Mapear las opciones para procesarlas individualmente
+            const deleteOptions = opcion.map(async (opcionEliminar) => {
+                await adminApi.delete(`/options/${opcionEliminar.id_opcion}`);
+            });
+
+            // Esperar a que todas las opciones se actualicen
+            await Promise.all(deleteOptions);
+
+            const response = await adminApi.delete(`/questions/${id_pregunta}`);
+            return response.data.preguntas;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data || 'Error al eliminar pregunta'));
+            throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
     }, [dispatch]);
 
     const handleClearError = useCallback(() => {
@@ -276,6 +301,7 @@ export const useExamsStore = () => {
         handleUpdateQuestion,
         handleResetCurrentQuestion,
         handleAddNewQuestion, 
-        handleLoadExamsByCareer
+        handleLoadExamsByCareer, 
+        handleDeleteQuestion
     };
 };

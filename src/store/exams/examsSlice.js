@@ -10,6 +10,9 @@ export const examsSlice = createSlice({
         error: null,
         success: null,
         currentQuestion: {},
+        currentOrder: null,
+        totalQuestions: 0,
+        preguntaNueva: null,
     },
     reducers: {
         // Acción para establecer el examen actual
@@ -75,7 +78,7 @@ export const examsSlice = createSlice({
 
         // Acción para limpiar los errores
         clearError: (state) => {
-            isLoading = false;
+            state.isLoading = false;
             state.error = null
         },
         // Acción para limpiar el éxito de una operación
@@ -94,6 +97,43 @@ export const examsSlice = createSlice({
         },
         setIsLoadingFalse: (state) => {
             state.isLoading = false
+        },
+
+        //uso del orden
+        setCurrentOrder: (state, action) => {
+            state.currentOrder = action.payload;
+        },
+        setTotalQuestions: (state, action) => {
+            state.totalQuestions = action.payload;
+        },
+        addNewQuestionTemp: (state) => {
+            const newOrder = state.totalQuestions + 1;
+            state.preguntaNueva = {
+                id_examen: state.currentExam?.id,
+                contenido: "",
+                imagen_url: null,
+                opcion: [
+                    { contenido: "", imagen_url: null },
+                    { contenido: "", imagen_url: null },
+                ],
+                es_correcta: 0,
+                orden: newOrder,
+            };
+            state.totalQuestions += 1;
+            state.currentOrder = newOrder;
+            state.currentQuestion = {};
+        },
+        resetPreguntaNueva: (state) => {
+            state.preguntaNueva = null;
+        },
+        setPreguntaNueva: (state, action) => {
+            state.preguntaNueva = action.payload;
+        },
+        resetCurrentOrder: (state) => {
+            state.currentOrder = null;
+        },
+        resetTotalQuestions: (state) => {
+            state.totalQuestions = null;
         }
     },
 })
@@ -116,5 +156,12 @@ export const {
     updateQuestion,
     addNewQuestionStart,
     addNewQuestion,
-    setIsLoadingFalse
+    setIsLoadingFalse,
+    setCurrentOrder,
+    setTotalQuestions,
+    addNewQuestionTemp,
+    resetPreguntaNueva,
+    setPreguntaNueva,
+    resetCurrentOrder, 
+    resetTotalQuestions
 } = examsSlice.actions;  

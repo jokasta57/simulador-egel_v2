@@ -22,7 +22,7 @@ import EditIcon from "@mui/icons-material/Edit"
 import { QuestionCard } from "./QuestionCard"
 import { FloatingAddButton } from "./FloatingAddButton"
 import { useDispatch, useSelector } from "react-redux"
-import { setIsLoadingFalse } from "../../store/exams/examsSlice"
+import { addNewQuestionTemp, resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setIsLoadingFalse, setPreguntaNueva, setTotalQuestions } from "../../store/exams/examsSlice"
 import Swal from "sweetalert2"
 import QuestionPanel from "./QuestionPanel"
 
@@ -42,7 +42,6 @@ const generatePeriodOptions = () => {
 }
 
 export const ExamEdit = () => {
-  const { exams, currentQuestion, resetCurrentQuestion } = useSelector((state) => state.exams)
   const { id } = useParams()
   const {
     handleLoadExam,
@@ -57,14 +56,13 @@ export const ExamEdit = () => {
     handleLoadQuestionsByExam,
     handleUpdateQuestion,
     handleResetCurrentQuestion,
-    handleAddNewQuestion
+    handleAddNewQuestion,
+    handleDeleteQuestion
   } = useExamsStore()
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [isExamInfoEditable, setIsExamInfoEditable] = useState(false)
-  const [totalQuestions, setTotalQuestions] = useState(0)
-  const [currentOrder, setCurrentOrder] = useState(null)
-  const [preguntaNueva, setPreguntaNueva] = useState(null);
+
   const [isDirty, setIsDirty] = useState(false); // Estado para saber si hay cambios sin guardar
   const [prevTotalQuestions, setPrevTotalQuestions] = useState(0); // ✅ Guardar estado previo
 
@@ -75,7 +73,7 @@ export const ExamEdit = () => {
 
 
   const dispatch = useDispatch();
-  const { error, success } = useSelector((state) => state.exams);
+  const { error, success, totalQuestions, currentOrder, preguntaNueva, currentQuestion, resetCurrentQuestion } = useSelector((state) => state.exams);
 
   const handleCloseSnackbar = () => {
 
@@ -98,22 +96,11 @@ export const ExamEdit = () => {
     },
   })
 
+
   const iniciarNuevaPregunta = () => {
-    setPreguntaNueva({
-      id_examen: id,
-      contenido: "",
-      imagen_url: null,
-      opcion: [
-        { contenido: "", imagen_url: null },
-        { contenido: "", imagen_url: null },
-      ],
-      es_correcta: 0,
-      orden: currentOrder ? currentOrder + 1 : totalQuestions + 1,
-    });
-    setPrevTotalQuestions(totalQuestions); // ✅ Guardar número previo de preguntas
-    setTotalQuestions((prev) => prev + 1); // ✅ Agregar pregunta visualmente
-    setIsDirty(true);
+    dispatch(addNewQuestionTemp());
   };
+
 
   const examInfo = watch()
 
@@ -142,10 +129,9 @@ export const ExamEdit = () => {
           area: exam.area || "",
           estado: exam.estado || "activo",
         })
-        setTotalQuestions(questionsLength.length || 0)
+        dispatch(setTotalQuestions(questionsLength.length || 0))
         // Removemos la carga automática de la primera pregunta
         // Si hay una pregunta seleccionada, asegurarnos de que se mantenga
-        setPrevTotalQuestions(questionsLength.length || 0); // ✅ Guardamos el número original
         if (currentOrder) {
           await handleLoadQuestion(id, currentOrder)
         }
@@ -165,21 +151,36 @@ export const ExamEdit = () => {
   useEffect(() => {
     return () => {
       handleResetCurrentQuestion()
+      dispatch(resetCurrentOrder())
+      dispatch(resetTotalQuestions())
+      dispatch(resetPreguntaNueva())
     }
   }, [handleResetCurrentQuestion])
 
   useEffect(() => {
-    if (currentOrder) {
-      handleLoadQuestion(id, currentOrder)
+    if (currentOrder && !preguntaNueva && totalQuestions > 0) {
+      // ✅ Verificamos que `currentOrder` no apunte a una pregunta eliminada
+      if (currentOrder > totalQuestions) {
+        console.warn("La pregunta seleccionada no existe, actualizando currentOrder...");
+        dispatch(setCurrentOrder(totalQuestions > 0 ? totalQuestions : null)); // 🔹 Si no hay preguntas, currentOrder debe ser null
+        return;
+      }
+
+      // ✅ Si todo está bien, cargar la pregunta con un delay para evitar errores de estado
+      setTimeout(() => {
+        handleLoadQuestion(id, currentOrder).catch((error) => {
+          console.error("Error al cargar la pregunta:", error);
+        });
+      }, 100);
     }
-  }, [currentOrder, id])
+  }, [currentOrder, id, preguntaNueva, totalQuestions]);
 
 
   const handleQuestionSelect = async (orden) => {
     if (preguntaNueva && orden === preguntaNueva.orden) return; // Evita sobrescribir la nueva pregunta
     try {
       const pregunta = await handleLoadQuestion(id, orden)
-      setCurrentOrder(orden)
+      dispatch(setCurrentOrder(orden))
     } catch (error) {
       console.error("Error loading question:", error)
     }
@@ -201,54 +202,70 @@ export const ExamEdit = () => {
   }
 
   const toggleExamInfoEdit = () => {
-    setIsExamInfoEditable(!isExamInfoEditable)
-  }
-
-  const agregarPregunta = async () => {
-    const newOrder = totalQuestions + 1
-    const newQuestion = {
-      id_examen: id,
-      contenido: "",
-      imagen_url: null,
-      opciones: [
-        { contenido: "", imagen_url: null },
-        { contenido: "", imagen_url: null },
-      ],
-      es_correcta: 0,
-      orden: newOrder,
-    }
-
-    try {
-      const preguntaGuardada = await handleAddNewQuestion(newQuestion, id, newOrder);
-
-      setTotalQuestions(newOrder);
-      setCurrentOrder(newOrder);
-    } catch (error) {
-      console.error("Error al agregar la pregunta:", error);
+    if (isDirty) {
+      Swal.fire({
+        title: "¡Cambios sin guardar!",
+        text: "Si cambias de pregunta, perderás los cambios no guardados.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, cambiar",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setIsDirty(false);
+          dispatch(setCurrentOrder(null))
+          dispatch(setTotalQuestions(totalQuestions - 1))
+          dispatch(setPreguntaNueva(null))
+          setIsExamInfoEditable(!isExamInfoEditable)
+        }
+      });
+    } else {
+      setIsExamInfoEditable(!isExamInfoEditable)
     }
   }
 
   const eliminarPregunta = async (preguntaId) => {
-    try {
-      const updatedQuestions = currentExam.preguntas.filter((p) => p.id !== preguntaId)
-      await handleUpdateExam(id, {
-        ...currentExam,
-        total_preguntas: totalQuestions - 1,
-        preguntas: updatedQuestions,
-      })
-      setTotalQuestions((prev) => prev - 1)
+    Swal.fire({
+      title: "¿Estás seguro de eliminar esta pregunta?",
+      text: "Esta acción eliminará la pregunta de forma permanente.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setIsDirty(false);
 
-      if (currentOrder > 1) {
-        await handleQuestionSelect(currentOrder - 1)
-      } else if (totalQuestions > 1) {
-        await handleQuestionSelect(1)
-      } else {
-        setCurrentOrder(null)
+        if (!preguntaId || preguntaNueva) {
+          // 🔹 Si es una pregunta nueva, solo la eliminamos de Redux
+          dispatch(resetPreguntaNueva());
+          dispatch(setTotalQuestions(Math.max(0, totalQuestions - 1)));
+          dispatch(setCurrentOrder(currentOrder - 1)); // ✅ Evita que el `useEffect` cargue una pregunta eliminada
+          return;
+        }
+
+        try {
+          // 🔹 Si la pregunta tiene ID, la eliminamos del backend
+          dispatch(setTotalQuestions(totalQuestions - 1));
+          handleDeleteQuestion(preguntaId);
+
+          if (totalQuestions > 1) {
+            const newOrder = Math.max(1, currentOrder - 1);
+            dispatch(setCurrentOrder(newOrder));
+            setTimeout(() => handleQuestionSelect(newOrder), 100); // 🔹 Retrasar la selección para evitar errores
+          } else {
+            dispatch(setCurrentOrder(null));
+          }
+        } catch (error) {
+          console.error("Error deleting question:", error);
+        }
       }
-    } catch (error) {
-      console.error("Error deleting question:", error)
-    }
-  }
+    });
+  };
 
   const actualizarPregunta = (preguntaId, campo, valor) => {
     if (!currentQuestion) return
@@ -406,10 +423,6 @@ export const ExamEdit = () => {
       {!isExamInfoEditable && (
         <>
           <QuestionPanel
-            totalQuestions={totalQuestions} // ✅ Muestra la nueva pregunta en el panel
-            prevTotalQuestions={prevTotalQuestions}
-            setTotalQuestions={setTotalQuestions} // ✅ Muestra la nueva pregunta en el panel
-            currentOrder={preguntaNueva ? preguntaNueva.orden : currentOrder}
             onQuestionSelect={handleQuestionSelect}
             isDirty={isDirty}
             setIsDirty={setIsDirty}
@@ -418,19 +431,17 @@ export const ExamEdit = () => {
             <Box>
               <QuestionCard
                 key="nueva"
-                index={totalQuestions} // Se muestra como la última pregunta
-                preguntaNueva={preguntaNueva}
-                onDelete={() => {
-                  setPreguntaNueva(null);
-                  setTotalQuestions(prevTotalQuestions); // ✅ Volvemos al número original
-                }} // Si el usuario cancela, se oculta
-                onUpdate={(campo, valor) =>
-                  setPreguntaNueva((prev) => ({ ...prev, [campo]: valor }))
-                }
+                // onDelete={() => {
+                //   dispatch(resetPreguntaNueva()); // 🔹 Limpiar pregunta nueva en Redux
+                // }}
+                onDelete={eliminarPregunta}
+                onUpdate={(campo, valor) => {
+                  dispatch(setPreguntaNueva({ ...preguntaNueva, [campo]: valor })); // 🔹 Actualizar Redux
+                }}
                 onSave={async () => {
-                  await handleAddNewQuestion(preguntaNueva, id, preguntaNueva.orden);
-                  setPreguntaNueva(null);
-                  setPrevTotalQuestions(totalQuestions); // ✅ Guardamos el nuevo estado
+                  await handleAddNewQuestion(preguntaNueva, currentExam.id, preguntaNueva.orden);
+                  dispatch(resetPreguntaNueva()); // 🔹 Limpiar pregunta nueva después de guardar
+                  dispatch(setTotalQuestions(totalQuestions + 1)); // 🔹 Actualizar total de preguntas
                 }}
                 setIsDirty={setIsDirty}
               />
@@ -443,6 +454,7 @@ export const ExamEdit = () => {
                 onDelete={eliminarPregunta}
                 onUpdate={actualizarPregunta}
                 onSave={guardarPregunta}
+                setIsDirty={setIsDirty}
               />
             </Box>
           ) : (
@@ -460,7 +472,7 @@ export const ExamEdit = () => {
         </>
       )}
 
-      <FloatingAddButton onClick={iniciarNuevaPregunta} disabled={isExamInfoEditable} isDirty={isDirty}/>
+      <FloatingAddButton onClick={iniciarNuevaPregunta} disabled={isExamInfoEditable} isDirty={isDirty} />
 
       <Snackbar
         open={Boolean(error || success)}

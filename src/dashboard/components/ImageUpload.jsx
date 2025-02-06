@@ -40,35 +40,76 @@ export const ImageUpload = ({ currentImage, onImageUpload, label, setIsSaved }) 
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <Tooltip title={previewUrl ? 'Cambiar Imagen' : 'Agregar Imagen'}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%" }}>
+      <Tooltip title={previewUrl ? "Cambiar Imagen" : "Agregar Imagen"}>
         <IconButton component="label" size="small">
-          <input
-            type="file"
-            hidden
-            accept="image/*"
-            onChange={handleImageUpload}
-          />
-          {previewUrl ? (
-            <Avatar src={previewUrl} alt={label} sx={{ width: 24, height: 24 }} />
-          ) : (
-            <ImageIcon fontSize="small" />
-          )}
+          <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+          {!previewUrl && <ImageIcon className="w-6 h-6" />}
         </IconButton>
       </Tooltip>
+
       {previewUrl && (
-        <Tooltip title="Eliminar imagen">
-          <IconButton onClick={handleDeleteImage} size="small">
-            <DeleteIcon fontSize="small" />
+        <Box
+          sx={{
+            position: "relative",
+            width: { xs: "100%", sm: "60%", md: "50%", lg: "40%" },
+            maxWidth: "400px",
+            maxHeight: "250px",
+            overflow: "hidden",
+            borderRadius: "8px",
+            border: "1px solid #ccc",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            transition: "box-shadow 0.3s ease-in-out",
+            "&:hover": {
+              boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.3)", // 🔹 Aumenta la sombra al pasar el mouse
+            },
+          }}
+        >
+          {/* Imagen */}
+          <img
+            src={previewUrl}
+            alt={label}
+            style={{
+              width: "100%",
+              height: "auto",
+              objectFit: "contain",
+            }}
+          />
+
+          {/* Ícono de eliminación con mayor visibilidad */}
+          <IconButton
+            onClick={handleDeleteImage}
+            size="small"
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              backgroundColor: "rgba(255, 255, 255, 0.9)", // ✅ Más blanco para mejor visibilidad
+              color: "#d32f2f", // ✅ Rojo más intenso
+              borderRadius: "50%", // ✅ Circular
+              border: "2px solid rgba(0, 0, 0, 0.3)", // ✅ Borde más grueso
+              boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.4)", // ✅ Sombra más visible
+              transition: "transform 0.3s ease-in-out, background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 1)", // 🔹 Se vuelve completamente blanco
+                transform: "scale(1.2)", // 🔹 Hace que el botón crezca más al pasar el mouse
+                boxShadow: "0px 6px 12px rgba(0, 0, 0, 0.5)", // 🔹 Aumenta la sombra para destacar más
+              },
+              "&:active": {
+                transform: "scale(1.1)", // 🔹 Reduce el efecto cuando se hace clic
+              },
+              "@media (max-width: 600px)": {
+                width: "40px", // 🔹 Aumenta el tamaño en móviles
+                height: "40px",
+              },
+            }}
+          >
+            <DeleteIcon fontSize="medium" />
           </IconButton>
-        </Tooltip>
+        </Box>
       )}
-      {/* <Snackbar open={Boolean(error || success)} autoHideDuration={3000} onClose={handleCloseSnackbar}>
-        <Alert severity={error ? "error" : "success"} variant="filled">
-          {error ? (typeof error === 'string' ? error : JSON.stringify(error)) :
-            (typeof success === 'string' ? success : JSON.stringify(success))}
-        </Alert>
-      </Snackbar> */}
     </Box>
   );
 };

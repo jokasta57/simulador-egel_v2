@@ -3,7 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 export const createExamSlice = createSlice({
     name: 'createExam',
     initialState: {
-        examInfo: {
+        newExamInfo: {
             id_examen: '',
             nombre: '',
             duracion: '',
@@ -18,7 +18,7 @@ export const createExamSlice = createSlice({
     },
     reducers: {
         onUpdateExamInfo: (state, action) => {
-            state.examInfo = { ...state.examInfo, ...action.payload, isSaved: false };
+            state.newExamInfo = { ...state.examInfo, ...action.payload, isSaved: false };
         },
         clearError: (state) => {
             state.error = null;
@@ -31,7 +31,7 @@ export const createExamSlice = createSlice({
         },
         saveExamInfoSuccess: (state, action) => {
             state.isLoading = false;
-            state.examInfo = { ...action.payload, isSaved: true };
+            state.newExamInfo = { ...action.payload, isSaved: true };
             state.success = 'Información del examen guardada exitosamente';
             state.lastSaved = new Date().toISOString();
         },
@@ -39,7 +39,10 @@ export const createExamSlice = createSlice({
             state.isLoading = false;
             state.error = action.payload || 'Error al guardar la información del examen';
         },
+        resetNewExamInfo: (state) => {
+            state.newExamInfo = {};
+        },
     },
 });
 
-export const { onUpdateExamInfo, clearError, clearSuccess, saveExamInfoStart, saveExamInfoSuccess, saveExamInfoFailure } = createExamSlice.actions;  
+export const { onUpdateExamInfo, clearError, clearSuccess, saveExamInfoStart, saveExamInfoSuccess, saveExamInfoFailure, resetNewExamInfo } = createExamSlice.actions;  

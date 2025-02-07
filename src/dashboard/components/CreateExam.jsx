@@ -1,158 +1,304 @@
-import React, { useState, useMemo, useCallback } from "react"
+"use client"
+
+import { useState, useMemo, useEffect, useCallback } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Box,
   Typography,
+  TextField,
   Button,
   Stack,
-  Snackbar,
-  Alert,
   CircularProgress,
+  Alert,
+  FormControlLabel,
+  Switch,
+  Autocomplete,
   IconButton,
-  Grid,
-  Paper,
-  Chip,
+  Snackbar,
 } from "@mui/material"
+import { useExamsStore } from "../../hooks/exams/useExamsStore"
+import { useCreateExamStore } from "../../hooks/useCreateExamStore"
 import EditIcon from "@mui/icons-material/Edit"
-import { saveExam, saveQuestion, loadSavedExam } from "../../actions/examActions"
-import { ExamInfo } from "./ExamInfo"
 import { QuestionCard } from "./QuestionCard"
 import { FloatingAddButton } from "./FloatingAddButton"
-import { useCreateExamStore } from "../../hooks/useCreateExamStore"
+import { useDispatch, useSelector } from "react-redux"
+import {
+  addNewQuestionTemp,
+  resetCurrentOrder,
+  resetPreguntaNueva,
+  resetTotalQuestions,
+  setCurrentOrder,
+  setIsLoadingFalse,
+  setPreguntaNueva,
+  setTotalQuestions,
+} from "../../store/exams/examsSlice"
+import Swal from "sweetalert2"
+import QuestionPanel from "./QuestionPanel"
+import { resetNewExamInfo } from "../../store"
+
+const generatePeriodOptions = () => {
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth()
+  const startYear = currentMonth < 6 ? currentYear : currentYear + 1
+  const options = []
+
+  for (let i = 0; i < 4; i++) {
+    const year = startYear + Math.floor(i / 2)
+    const period = i % 2 === 0 ? "1" : "2"
+    options.push(`${year}-${period}`)
+  }
+
+  return options
+}
 
 export const CreateExam = () => {
-  const [examInfo, setExamInfo] = useState({
-    titulo: "",
-    duracion: "",
-    carrera: "",
-    periodo: "",
-    area: "",
-  })
+  const {
+    handleUpdateExam,
+    handleLoadQuestion,
+    isLoading,
+    handleClearError,
+    handleClearSuccess,
+    handleUpdateQuestion,
+    handleResetCurrentQuestion,
+    handleAddNewQuestion,
+    handleDeleteQuestion,
+    handleLoadExam,
+  } = useExamsStore()
 
   const { handleSaveExamInfo } = useCreateExamStore()
 
-  const [preguntas, setPreguntas] = useState([])
-  const [preguntasGuardadas, setPreguntasGuardadas] = useState({})
+  const [examInfo, setExamInfo] = useState({
+    nombre: "",
+    periodo: "",
+    duracion: "",
+    carrera: "",
+    area: "",
+    estado: "borrador",
+  })
+
+  const [isExamInfoEditable, setIsExamInfoEditable] = useState(true)
+  const [isDirty, setIsDirty] = useState(false)
+  const [isExamCreated, setIsExamCreated] = useState(false)
+  const [isExamInfoSaved, setIsExamInfoSaved] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState(null)
-  const [isExamInfoSaved, setIsExamInfoSaved] = useState(false)
-  const [isExamInfoEditable, setIsExamInfoEditable] = useState(true)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
-  const handleExamInfoChange = useCallback((newExamInfo) => {
-    setExamInfo(newExamInfo)
-    setIsExamInfoSaved(false)
-  }, [])
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const { totalQuestions, currentOrder, preguntaNueva, currentQuestion } = useSelector((state) => state.exams)
+  const { newExamInfo } = useSelector((state) => state.createExam)
 
-  const isExamInfoComplete = useMemo(() => {
-    return (
-      examInfo.titulo.trim() !== "" &&
-      examInfo.duracion.toString().trim() !== "" &&
-      examInfo.carrera !== "" &&
-      examInfo.periodo !== "" &&
-      examInfo.area !== ""
-    )
-  }, [examInfo])
-
-  const guardarInformacionExamen = useCallback(async () => {
-    if (!isExamInfoComplete) {
-      setError("Por favor, complete toda la información del examen antes de guardar.")
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      await handleSaveExamInfo(examInfo.titulo, examInfo.duracion, examInfo.carrera, examInfo.periodo, examInfo.area)
-      setIsExamInfoSaved(true)
-      setIsExamInfoEditable(false)
-      setSuccess("Información del examen guardada exitosamente")
-      setLastSaved(new Date())
-    } catch (error) {
-      console.error(error)
-      setError("Error al guardar la información del examen")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [examInfo, isExamInfoComplete, handleSaveExamInfo])
-
-  const agregarPregunta = useCallback(() => {
-    if (!isExamInfoSaved) {
-      setError("Por favor, guarde la información del examen antes de agregar preguntas.")
-      return
-    }
-
-    const nuevaPregunta = {
-      id: Date.now(),
-      pregunta: "",
-      imagen: null,
-      opciones: Array(4)
-        .fill("")
-        .map(() => ({ texto: "", imagen: null, es_correcta: false })),
-      respuestaCorrecta: 0,
-    }
-    setPreguntas((prev) => [...prev, nuevaPregunta])
-    setCurrentQuestionIndex(preguntas.length)
-  }, [isExamInfoSaved, preguntas])
-
-  const eliminarPregunta = useCallback(
-    (preguntaId) => {
-      setPreguntas((prev) => prev.filter((p) => p.id !== preguntaId))
-      setPreguntasGuardadas((prev) => {
-        const newPreguntasGuardadas = { ...prev }
-        delete newPreguntasGuardadas[preguntaId]
-        return newPreguntasGuardadas
-      })
-      if (currentQuestionIndex >= preguntas.length - 1) {
-        setCurrentQuestionIndex(Math.max(0, preguntas.length - 2))
-      }
-    },
-    [preguntas, currentQuestionIndex],
-  )
-
-  const actualizarPregunta = useCallback((preguntaId, campo, valor) => {
-    setPreguntas((prev) => prev.map((p) => (p.id === preguntaId ? { ...p, [campo]: valor } : p)))
-    setPreguntasGuardadas((prev) => ({ ...prev, [preguntaId]: false }))
-  }, [])
-
-  const guardarPregunta = useCallback(
-    async (preguntaId) => {
-      const pregunta = preguntas.find((p) => p.id === preguntaId)
-      if (!pregunta) return
-
-      setIsSaving(true)
-      try {
-        await saveQuestion(pregunta)
-        setPreguntasGuardadas((prev) => ({ ...prev, [preguntaId]: true }))
-        setLastSaved(new Date())
-        setSuccess("Pregunta guardada exitosamente")
-      } catch (error) {
-        console.error("Error al guardar la pregunta:", error)
-        setError("Error al guardar la pregunta")
-      } finally {
-        setIsSaving(false)
-      }
-    },
-    [preguntas],
-  )
-
-  const currentQuestion = useMemo(() => {
-    return preguntas[currentQuestionIndex]
-  }, [preguntas, currentQuestionIndex])
-
-  const handleCloseSnackbar = useCallback(() => {
+  const handleCloseSnackbar = () => {
     setError(null)
     setSuccess(null)
-  }, [])
+    if (isLoading) {
+      dispatch(setIsLoadingFalse())
+    }
+  }
 
-  const toggleExamInfoEdit = useCallback(() => {
-    setIsExamInfoEditable((prev) => !prev)
-  }, [])
+  const handleInputChange = (event) => {
+    const { name, value } = event.target
+    setExamInfo((prev) => ({ ...prev, [name]: value }))
+    setIsDirty(true)
+  }
 
-  const handleQuestionSelect = useCallback((index) => {
-    setCurrentQuestionIndex(index)
-  }, [])
+  const handleAutocompleteChange = (name, value) => {
+    setExamInfo((prev) => ({ ...prev, [name]: value }))
+    setIsDirty(true)
+  }
+
+  const handleSwitchChange = (event) => {
+    setExamInfo((prev) => ({ ...prev, estado: event.target.checked ? "activo" : "borrador" }))
+    setIsDirty(true)
+  }
+
+  const isExamInfoComplete = useMemo(() => {
+    return Object.values(examInfo).every((value) => value !== "")
+  }, [examInfo])
+
+  const guardarInformacionExamen = useCallback(
+    async (e) => {
+      e.preventDefault()
+      if (!isExamInfoComplete) {
+        setError("Por favor, complete toda la información del examen antes de guardar.")
+        return
+      }
+
+      dispatch(setIsLoadingFalse(true))
+      try {
+        console.log(examInfo);
+        let examen
+        if (newExamInfo.id_examen) {
+          // Si ya existe un ID de examen, actualizar con PUT
+          examen = await handleUpdateExam(newExamInfo.id_examen, examInfo)
+        } else {
+          // Si no existe un ID de examen, crear nuevo con POST
+          examen = await handleSaveExamInfo(
+            examInfo.nombre,
+            examInfo.duracion,
+            examInfo.carrera,
+            examInfo.periodo,
+            examInfo.area,
+          )
+        }
+
+        setIsExamInfoSaved(true)
+        setIsExamInfoEditable(false)
+        setIsExamCreated(true)
+        setSuccess("Información del examen guardada exitosamente")
+        setLastSaved(new Date())
+        // await handleLoadExam(newExamInfo.id_examen)
+        setIsDirty(false)
+      } catch (error) {
+        console.error(error)
+        setError("Error al guardar la información del examen")
+      } finally {
+        dispatch(setIsLoadingFalse(false))
+      }
+    },
+    [
+      examInfo,
+      newExamInfo.id_examen,
+      isExamInfoComplete,
+      handleUpdateExam,
+      handleSaveExamInfo,
+      handleLoadExam,
+      dispatch,
+    ],
+  )
+
+  const iniciarNuevaPregunta = () => {
+    dispatch(addNewQuestionTemp())
+  }
+
+  useEffect(() => {
+    if (preguntaNueva) {
+      setIsDirty(true)
+    }
+  }, [preguntaNueva])
+
+  useEffect(() => {
+    return () => {
+      handleResetCurrentQuestion()
+      dispatch(resetCurrentOrder())
+      dispatch(resetTotalQuestions())
+      dispatch(resetPreguntaNueva())
+    }
+  }, [handleResetCurrentQuestion, dispatch])
+
+  useEffect(() => {
+    return () => {
+      dispatch(resetNewExamInfo()); // ✅ Se ejecuta cuando se desmonta el componente
+    };
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (currentOrder && !preguntaNueva && totalQuestions > 0) {
+      if (currentOrder > totalQuestions) {
+        console.warn("La pregunta seleccionada no existe, actualizando currentOrder...")
+        dispatch(setCurrentOrder(totalQuestions > 0 ? totalQuestions : null))
+        return
+      }
+
+      setTimeout(() => {
+        handleLoadQuestion(newExamInfo.id_examen, currentOrder).catch((error) => {
+          console.error("Error al cargar la pregunta:", error)
+        })
+      }, 100)
+    }
+  }, [currentOrder, examInfo.id_examen, preguntaNueva, totalQuestions, dispatch, handleLoadQuestion])
+
+  const handleQuestionSelect = async (orden) => {
+    if (preguntaNueva && orden === preguntaNueva.orden) return
+    try {
+      const examId = newExamInfo.id_examen
+      if (!examId) throw new Error("No se pudo determinar el ID del examen.")
+      const pregunta = await handleLoadQuestion(examId, orden)
+      dispatch(setCurrentOrder(orden))
+    } catch (error) {
+      console.error("Error loading question:", error)
+    }
+  }
+
+  const toggleExamInfoEdit = () => {
+    if (isDirty) {
+      Swal.fire({
+        title: "¡Cambios sin guardar!",
+        text: "Si cambias de pregunta, perderás los cambios no guardados.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, cambiar",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setIsDirty(false)
+          dispatch(setCurrentOrder(null))
+          dispatch(setTotalQuestions(totalQuestions - 1))
+          dispatch(setPreguntaNueva(null))
+          setIsExamInfoEditable(!isExamInfoEditable)
+        }
+      })
+    } else {
+      setIsExamInfoEditable(!isExamInfoEditable)
+    }
+  }
+
+  const eliminarPregunta = async (preguntaId) => {
+    Swal.fire({
+      title: "¿Estás seguro de eliminar esta pregunta?",
+      text: "Esta acción eliminará la pregunta de forma permanente.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setIsDirty(false)
+
+        if (!preguntaId || preguntaNueva) {
+          dispatch(resetPreguntaNueva())
+          dispatch(setTotalQuestions(Math.max(0, totalQuestions - 1)))
+          dispatch(setCurrentOrder(currentOrder - 1))
+          return
+        }
+
+        try {
+          dispatch(setTotalQuestions(totalQuestions - 1))
+          handleDeleteQuestion(preguntaId)
+
+          if (totalQuestions > 1) {
+            const newOrder = Math.max(1, currentOrder - 1)
+            dispatch(setCurrentOrder(newOrder))
+            setTimeout(() => handleQuestionSelect(newOrder), 100)
+          } else {
+            dispatch(setCurrentOrder(null))
+          }
+        } catch (error) {
+          console.error("Error deleting question:", error)
+        }
+      }
+    })
+  }
+
+  const actualizarPregunta = (preguntaId, campo, valor) => {
+    if (!currentQuestion) return
+    const updatedQuestion = { ...currentQuestion, [campo]: valor }
+    handleUpdateQuestion(preguntaId, updatedQuestion)
+  }
+
+  const guardarPregunta = async (preguntaId) => {
+    if (!currentQuestion) return
+    try {
+      await handleUpdateQuestion(preguntaId, currentQuestion)
+    } catch (error) {
+      console.error("Error saving question:", error)
+    }
+  }
 
   return (
     <Box
@@ -176,83 +322,165 @@ export const CreateExam = () => {
       </Typography>
 
       <Box sx={{ position: "relative", mb: 4 }}>
-        <ExamInfo examInfo={examInfo} onExamInfoChange={handleExamInfoChange} disabled={!isExamInfoEditable} />
-        {isExamInfoSaved && (
+        <form onSubmit={guardarInformacionExamen}>
+          <Stack spacing={3}>
+            <TextField
+              label="Nombre del Examen"
+              fullWidth
+              name="nombre"
+              value={examInfo.nombre}
+              onChange={handleInputChange}
+              disabled={!isExamInfoEditable}
+            />
+
+            <Autocomplete
+              value={examInfo.periodo}
+              onChange={(event, newValue) => handleAutocompleteChange("periodo", newValue)}
+              options={generatePeriodOptions()}
+              renderInput={(params) => <TextField {...params} label="Periodo" />}
+              disabled={!isExamInfoEditable}
+            />
+
+            <TextField
+              label="Duración (HH:MM:SS)"
+              fullWidth
+              name="duracion"
+              value={examInfo.duracion}
+              onChange={handleInputChange}
+              disabled={!isExamInfoEditable}
+            />
+
+            <Autocomplete
+              value={examInfo.carrera}
+              onChange={(event, newValue) => handleAutocompleteChange("carrera", newValue)}
+              options={["Ingeniería en Software", "Medicina", "Licenciatura en Administración", "Enfermería"]}
+              renderInput={(params) => <TextField {...params} label="Carrera" />}
+              disabled={!isExamInfoEditable}
+            />
+
+            <TextField
+              label="Área"
+              fullWidth
+              name="area"
+              value={examInfo.area}
+              onChange={handleInputChange}
+              disabled={!isExamInfoEditable}
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={examInfo.estado === "activo"}
+                  onChange={handleSwitchChange}
+                  color="primary"
+                  disabled={!isExamInfoEditable}
+                />
+              }
+              label={examInfo.estado === "activo" ? "Activo" : "Borrador"}
+            />
+          </Stack>
+
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              mt: { xs: 1, sm: 2 },
+              mb: { xs: 2, sm: 4 },
+            }}
+          >
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isLoading || !isExamInfoComplete || !isExamInfoEditable}
+              sx={{
+                width: { xs: "100%", sm: "auto" },
+              }}
+            >
+              {isExamInfoEditable ? (
+                isLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Guardar información"
+                )
+              ) : (
+                "Edite con el ícono de arriba"
+              )}
+            </Button>
+          </Box>
+        </form>
+
+        {!isExamInfoEditable && (
           <IconButton onClick={toggleExamInfoEdit} sx={{ position: "absolute", top: 0, right: 0 }}>
             <EditIcon />
           </IconButton>
         )}
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "flex-end",
-          mt: { xs: 1, sm: 2 },
-          mb: { xs: 2, sm: 4 },
-        }}
-      >
-        <Button
-          variant="contained"
-          onClick={guardarInformacionExamen}
-          disabled={isLoading || !isExamInfoComplete || (isExamInfoSaved && !isExamInfoEditable)}
-          sx={{
-            bgcolor: isExamInfoSaved ? "success.main" : "primary.main",
-            "&:hover": {
-              bgcolor: isExamInfoSaved ? "success.dark" : "primary.dark",
-            },
-            width: { xs: "100%", sm: "auto" },
-          }}
-        >
-          {isLoading ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : isExamInfoSaved && !isExamInfoEditable ? (
-            "Información guardada"
-          ) : isExamInfoComplete ? (
-            "Guardar información"
-          ) : (
-            "Debe completar la información"
-          )}
-        </Button>
-      </Box>
-
-      {isExamInfoSaved && (
+      {isExamCreated && !isExamInfoEditable && (
         <>
-          <Box sx={{ mb: 3, display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {preguntas.map((_, index) => (
-              <Chip
-                key={index}
-                label={`P${index + 1}`}
-                onClick={() => handleQuestionSelect(index)}
-                color={index === currentQuestionIndex ? "primary" : "default"}
-                variant={index === currentQuestionIndex ? "filled" : "outlined"}
+          <QuestionPanel onQuestionSelect={handleQuestionSelect} isDirty={isDirty} setIsDirty={setIsDirty} />
+          {preguntaNueva ? (
+            <Box>
+              <QuestionCard
+                key="nueva"
+                onDelete={eliminarPregunta}
+                onUpdate={(campo, valor) => {
+                  dispatch(setPreguntaNueva({ ...preguntaNueva, [campo]: valor }))
+                }}
+                onSave={async () => {
+                  await handleAddNewQuestion(preguntaNueva, examInfo.id_examen, preguntaNueva.orden)
+                  dispatch(resetPreguntaNueva())
+                  dispatch(setTotalQuestions(totalQuestions + 1))
+                }}
+                setIsDirty={setIsDirty}
               />
-            ))}
-          </Box>
-
-          {currentQuestion && (
-            <QuestionCard
-              key={currentQuestion.id}
-              pregunta={currentQuestion}
-              index={currentQuestionIndex}
-              onDelete={eliminarPregunta}
-              onSave={guardarPregunta}
-              // isSaved={preguntasGuardadas[currentQuestion.id]}
-            />
+            </Box>
+          ) : currentOrder && currentQuestion ? (
+            <Box>
+              <QuestionCard
+                key={currentQuestion.id}
+                index={currentOrder - 1}
+                onDelete={eliminarPregunta}
+                onUpdate={actualizarPregunta}
+                onSave={guardarPregunta}
+                setIsDirty={setIsDirty}
+              />
+            </Box>
+          ) : (
+            <Box>
+              <Typography variant="h6">
+                {currentOrder ? `Detalles de la Pregunta ${currentOrder}` : "Sin pregunta seleccionada"}
+              </Typography>
+              <Typography variant="subtitle1" color="textSecondary">
+                {currentOrder
+                  ? "No hay detalles disponibles para esta pregunta."
+                  : "Seleccione una pregunta del panel para ver sus detalles o cree una nueva para continuar."}
+              </Typography>
+            </Box>
           )}
         </>
       )}
 
-      <FloatingAddButton onClick={agregarPregunta} disabled={!isExamInfoSaved} />
+      <FloatingAddButton
+        onClick={iniciarNuevaPregunta}
+        disabled={!isExamCreated || isExamInfoEditable}
+        isDirty={isDirty}
+      />
 
       <Snackbar
-        open={error !== null || success !== null}
-        autoHideDuration={5000}
+        open={Boolean(error || success)}
+        autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={error ? "error" : "success"} sx={{ width: "100%" }}>
-          {error || success}
+        <Alert onClose={handleCloseSnackbar} severity={error ? "error" : "success"} variant="filled">
+          {error
+            ? typeof error === "string"
+              ? error
+              : JSON.stringify(error)
+            : typeof success === "string"
+              ? success
+              : JSON.stringify(success)}
         </Alert>
       </Snackbar>
     </Box>

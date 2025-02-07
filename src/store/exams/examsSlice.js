@@ -98,6 +98,9 @@ export const examsSlice = createSlice({
         setIsLoadingFalse: (state) => {
             state.isLoading = false
         },
+        setIsLoading: (state) => {
+            state.isLoading = true
+        },
 
         //uso del orden
         setCurrentOrder: (state, action) => {
@@ -157,6 +160,7 @@ export const {
     addNewQuestionStart,
     addNewQuestion,
     setIsLoadingFalse,
+    setIsLoading,
     setCurrentOrder,
     setTotalQuestions,
     addNewQuestionTemp,

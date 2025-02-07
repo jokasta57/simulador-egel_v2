@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Box,
   Typography,
@@ -16,6 +16,7 @@ import {
   Select,
   InputLabel,
   Button,
+  Switch,
 } from "@mui/material"
 import {
   Edit as EditIcon,
@@ -34,12 +35,13 @@ export const ExamList = () => {
   const theme = useTheme()
   const [searchTerm, setSearchTerm] = useState("")
   const [periodoFilter, setPeriodoFilter] = useState("Todos")
+  const [stateFilter, setStateFilter] = useState("Todos")
 
-  const { handleLoadExams, handleClearError, handleClearSuccess } = useExamsStore()
+  const { handleLoadExams, handleClearError, handleClearSuccess, handleSwitchState } = useExamsStore()
 
   useEffect(() => {
     handleLoadExams()
-  }, [])
+  }, [handleLoadExams]) // Added handleLoadExams to dependencies
 
   const { exams } = useSelector((state) => state.exams)
 
@@ -65,7 +67,8 @@ export const ExamList = () => {
     exams?.filter((examen) => {
       const matchesSearch = examen.nombre.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesPeriodo = filtrarPorPeriodo(examen)
-      return matchesSearch && matchesPeriodo
+      const matchesState = stateFilter === "Todos" || examen.estado === stateFilter
+      return matchesSearch && matchesPeriodo && matchesState
     }) || []
 
   const handleDelete = (examenId, examenNombre) => {
@@ -87,10 +90,38 @@ export const ExamList = () => {
     })
   }
 
+  const handleToggleState = async (examen) => {
+    const nuevoEstado = examen.estado === "activo" ? "borrador" : "activo"
+    console.log(nuevoEstado)
+
+    try {
+      // ✅ Petición al backend para actualizar estado
+      const examenActualizado = await handleSwitchState(nuevoEstado, examen.id_examen)
+
+      await handleLoadExams()
+    } catch (error) {
+      console.error("Error al cambiar el estado", error)
+      Swal.fire("Error", "No se pudo actualizar el estado del examen", "error")
+    }
+  }
+
   // Función para formatear la duración del formato "HH:MM:SS" a minutos
   const formatDuration = (duration) => {
     const [hours, minutes] = duration.split(":")
     return Number.parseInt(hours) * 60 + Number.parseInt(minutes)
+  }
+
+  const getStateStyle = (state) => {
+    switch (state.toLowerCase()) {
+      case "activo":
+        return { color: theme.palette.success.main }
+      case "inactivo":
+        return { color: theme.palette.error.main }
+      case "borrador":
+        return { color: theme.palette.warning.main }
+      default:
+        return { color: theme.palette.text.secondary }
+    }
   }
 
   return (
@@ -111,7 +142,7 @@ export const ExamList = () => {
             fontWeight: "bold",
           }}
         >
-          Exámenes EGEL de {exams?.[0]?.carrera || "Ingeniería"}
+          Exámenes EGEL de Ingeniería de Software
         </Typography>
         <Button
           variant="contained"
@@ -157,6 +188,14 @@ export const ExamList = () => {
                 {periodo}
               </MenuItem>
             ))}
+          </Select>
+        </FormControl>
+        <FormControl sx={{ flex: 1, minWidth: 200 }}>
+          <InputLabel>Estado</InputLabel>
+          <Select value={stateFilter} label="Estado" onChange={(e) => setStateFilter(e.target.value)}>
+            <MenuItem value="Todos">Todos</MenuItem>
+            <MenuItem value="borrador">Borrador</MenuItem>
+            <MenuItem value="activo">Activo</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -213,10 +252,35 @@ export const ExamList = () => {
                   sx={{
                     color: theme.palette.primary.main,
                     fontWeight: 500,
+                    mb: 1,
                   }}
                 >
                   Última actualización: {new Date(examen.fecha_modificacion).toLocaleDateString()}
                 </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <Switch
+                    checked={examen.estado === "activo"}
+                    onChange={() => handleToggleState(examen)}
+                    color="primary"
+                    size="small"
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: "medium",
+                      textTransform: "uppercase",
+                      ...getStateStyle(examen.estado),
+                    }}
+                  >
+                    {examen.estado}
+                  </Typography>
+                </Box>
               </Box>
               <Box
                 sx={{
@@ -258,3 +322,4 @@ export const ExamList = () => {
     </Box>
   )
 }
+

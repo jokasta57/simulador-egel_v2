@@ -273,6 +273,24 @@ export const useExamsStore = () => {
         }
     }, [dispatch]);
 
+    const handleSwitchState = useCallback(async (estado, id_examen) => {
+        dispatch(updateQuestionStart());
+        try {
+            const response = await adminApi.put(`/exams/state/${id_examen}`, {}, {
+                params: {
+                    estado
+                }
+            });
+            return response.data.examen;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data || 'Error al eliminar pregunta'));
+            throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
+    }, [dispatch]);
+
     const handleClearError = useCallback(() => {
         dispatch(clearError());
     }, [dispatch]);
@@ -302,6 +320,7 @@ export const useExamsStore = () => {
         handleResetCurrentQuestion,
         handleAddNewQuestion, 
         handleLoadExamsByCareer, 
-        handleDeleteQuestion
+        handleDeleteQuestion,
+        handleSwitchState
     };
 };

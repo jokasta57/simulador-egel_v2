@@ -2,16 +2,18 @@ import React, { useEffect } from "react";
 import { Box, Typography, Grid, Chip } from "@mui/material";
 import Swal from "sweetalert2";
 import { useDispatch, useSelector } from "react-redux";
-import { setCurrentOrder, setPreguntaNueva, setTotalQuestions } from "../../store/exams/examsSlice";
+import { setCurrentOrder, setIsLoading, setIsLoadingFalse, setPreguntaNueva, setTotalQuestions } from "../../store/exams/examsSlice";
 
 const QuestionPanel = ({ onQuestionSelect, isDirty, setIsDirty, }) => {
     const dispatch = useDispatch();
-    const { totalQuestions, currentOrder, preguntaNueva } = useSelector((state) => state.exams);
+    const { totalQuestions, currentOrder, preguntaNueva, isLoading } = useSelector((state) => state.exams);
 
     const handleQuestionClick = (orden) => {
+        // dispatch(setIsLoading());
 
         if (preguntaNueva && preguntaNueva.orden === orden) {
             setCurrentOrder(orden); // Mantener la nueva pregunta seleccionada
+            dispatch(setIsLoadingFalse());
             return;
         }
 
@@ -30,14 +32,19 @@ const QuestionPanel = ({ onQuestionSelect, isDirty, setIsDirty, }) => {
                     setIsDirty(false);
                     onQuestionSelect(orden);
                     dispatch(setCurrentOrder(orden))
+                    dispatch(setIsLoadingFalse());
                     if(preguntaNueva !== null && preguntaNueva !== undefined) {
                         dispatch(setTotalQuestions(totalQuestions - 1))
                         dispatch(setPreguntaNueva(null))
+                        dispatch(setIsLoadingFalse());
                     }
+                } else{
+                    dispatch(setIsLoadingFalse());
                 }
             });
         } else {
             onQuestionSelect(orden);
+            dispatch(setIsLoadingFalse());
         }
     };
 

@@ -5,10 +5,13 @@ import { OptionList } from "./OptionList"
 import { ImageUpload } from "./ImageUpload"
 import { useSelector } from "react-redux"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
+import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
   const { currentQuestion, preguntaNueva, currentOrder, currentExam } = useSelector((state) => state.exams)
   const { handleUpdateQuestion, handleSaveQuestion, handleResetCurrentQuestion, isLoading, handleAddNewQuestion } = useExamsStore()
+  const { newExamInfo } = useSelector((state) => state.createExam)
+
 
   const [isSaved, setIsSaved] = useState(false)
   const [localQuestion, setLocalQuestion] = useState(currentQuestion || {})
@@ -123,8 +126,13 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
         // Si ya existe, actualizar con PUT
         response = await handleUpdateQuestion(preguntaFiltrada);
       } else {
-        // Si es nueva, guardarla con POST
-        response = await handleAddNewQuestion(preguntaFiltrada, currentExam.id_examen, preguntaNueva.orden);
+        const examId = currentExam?.id_examen || newExamInfo?.id_examen;
+        // Si no, usar POST
+        if (examId) {
+          response = await handleAddNewQuestion(preguntaFiltrada, examId, preguntaNueva.orden);
+        } else {
+          console.error("No se pudo determinar el ID del examen.");
+        }
       }
       // await handleSaveQuestion()
       setIsSaved(true);
@@ -153,6 +161,14 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
     return null
   }
 
+  if (isLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+        <LoadingSpinner />
+      </Box>
+    );
+  }
+
   return (
     <Card id={`pregunta-${localQuestion.id_pregunta}`}>
       <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
@@ -166,7 +182,7 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
           }}
         >
           <Typography variant="h6" sx={{ mb: { xs: 1, sm: 0 } }}>
-            Pregunta {questionToShow.orden}
+            Pregunta {currentOrder}
           </Typography>
           <Button
             variant="outlined"
@@ -192,13 +208,6 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
             helperText={hasAttemptedSave && (!localQuestion.contenido || localQuestion.contenido.trim() === "") ? "La pregunta no puede estar vacía" : ""}
             required
           />
-
-          {/* <ImageUpload
-            currentImage={localQuestion.imagen_url}
-            onImageUpload={handleImageUpload}
-            setIsSaved={setIsSaved}
-            label="Imagen de la pregunta"
-          /> */}
 
           <ImageUpload
             currentImage={localQuestion.imagen_url}

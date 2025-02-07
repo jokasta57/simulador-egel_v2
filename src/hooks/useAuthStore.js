@@ -24,6 +24,9 @@ export const useAuthStore = () => {
             dispatch(onLoginSuccess({nombre: admin.nombre, id: admin.id_admin, token: admin.token, role: "admin"}))
         } catch (error) {
             console.log(error);
+            if (error.response?.data) {
+                errorMessage = error.response.data.msg || JSON.stringify(error.response.data);
+            }
             dispatch(onLoginFailure('Credenciales incorrectas'));
             dispatch(onLogout());
             setTimeout(() => {
@@ -51,6 +54,9 @@ export const useAuthStore = () => {
         } catch (error) {
             dispatch(onLoginFailure('Credenciales incorrectas'));
             dispatch(onLogout());
+            if (error.response?.data) {
+                errorMessage = error.response.data.msg || JSON.stringify(error.response.data);
+            }
             setTimeout(() => {
                 dispatch(clearErrorMessage())
             }, 10)
@@ -72,7 +78,9 @@ export const useAuthStore = () => {
         } catch (error) {
             const errorMessage = error.response?.data?.msg || "Error desconocido";
             console.error("Error al registrar estudiante:", errorMessage);
-
+            if (error.response?.data) {
+                errorMessage = error.response.data.msg || JSON.stringify(error.response.data);
+            }
             dispatch(onLoginFailure(errorMessage));
             setTimeout(() => {
                 dispatch(clearErrorMessage())

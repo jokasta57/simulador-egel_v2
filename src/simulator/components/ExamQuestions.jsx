@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Container, Box, Snackbar } from "@mui/material"
+import { Container, Box, Snackbar, CircularProgress, Typography } from "@mui/material"
 import { QuestionForm, QuestionPanel, ExamHeader } from "./"
 import { useParams } from "react-router-dom"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
+import { useSelector } from "react-redux"
 
 
 
@@ -31,53 +32,65 @@ const sampleQuestions = [
   },
 ]
 
-// Configuración del examen
-const examConfig = {
-  name: "Simulador EGEL - Bases de Datos",
-  duration: 3600, // Duración en segundos (1 hora)
-}
-
 export const ExamQuestions = () => {
   const { id } = useParams()
-
+  
   const [currentQuestion, setCurrentQuestion] = useState(1)
   const [answers, setAnswers] = useState({})
   const [snackbarOpen, setSnackbarOpen] = useState(false)
-  const [remainingTime, setRemainingTime] = useState(examConfig.duration)
-    const {
-      handleLoadExam,
-      handleUpdateExam,
-      handleLoadQuestion,
-      currentExam,
-      isLoading,
-      // error,
-      // success,
-      handleClearError,
-      handleClearSuccess,
-      handleLoadQuestionsByExam,
-      handleUpdateQuestion,
-      handleResetCurrentQuestion,
-      handleAddNewQuestion,
-      handleDeleteQuestion
-    } = useExamsStore()
+  const [remainingTime, setRemainingTime] = useState(null)
+  const [loading, setLoading] = useState(true) // ✅ Estado de carga
+  
+  const { handleLoadExam } = useExamsStore()
+  const { currentExam } = useSelector((state) => state.exams)
 
-  // Efecto para el temporizador
   useEffect(() => {
-    handleLoadExam(id);
-    
+    const fetchExamInfo = async () => {
+      setLoading(true)
+      await handleLoadExam(id)
+      setLoading(false)
+    }
+    fetchExamInfo()
+  }, [id])
+
+  // ✅ Configurar el tiempo restante en segundos cuando el examen esté listo
+  useEffect(() => {
+    if (currentExam?.duracion) {
+      const [horas, minutos, segundos] = currentExam.duracion.split(":").map(Number)
+      setRemainingTime(horas * 3600 + minutos * 60 + segundos) // Convierte a segundos
+    }
+  }, [currentExam])
+
+  // ✅ Temporizador que decrementa el tiempo cada segundo
+  useEffect(() => {
+    if (remainingTime === null) return // Evitar que el temporizador se ejecute si no hay tiempo establecido
+
     const timer = setInterval(() => {
       setRemainingTime((prevTime) => {
         if (prevTime <= 1) {
-          clearInterval(timer)
-          // Aquí puedes agregar la lógica para cuando se acabe el tiempo
+          clearInterval(timer) // Detener el temporizador cuando llegue a 0
           return 0
         }
         return prevTime - 1
       })
     }, 1000)
 
-    return () => clearInterval(timer)
-  }, [])
+    return () => clearInterval(timer) // Limpiar temporizador al desmontar el componente
+  }, [remainingTime])
+
+  // ✅ Mostrar un indicador de carga mientras los datos no estén listos
+  if (loading || !currentExam) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ py: 4, textAlign: "center" }}>
+          <CircularProgress />
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Cargando examen...
+          </Typography>
+        </Box>
+      </Container>
+    )
+  }
 
   const handleQuestionSelect = (questionNumber) => {
     setCurrentQuestion(questionNumber)
@@ -108,10 +121,18 @@ export const ExamQuestions = () => {
     setSnackbarOpen(false)
   }
 
+  // ✅ Convertir segundos a formato HH:MM:SS
+  const formatTime = (totalSeconds) => {
+    const horas = Math.floor(totalSeconds / 3600)
+    const minutos = Math.floor((totalSeconds % 3600) / 60)
+    const segundos = totalSeconds % 60
+    return `${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}:${String(segundos).padStart(2, "0")}`
+  }
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 4 }}>
-        <ExamHeader examName={examConfig.name} remainingTime={remainingTime} />
+        <ExamHeader examName={currentExam.nombre} remainingTime={remainingTime} />
 
         <QuestionPanel
           totalQuestions={sampleQuestions.length}
@@ -141,4 +162,3 @@ export const ExamQuestions = () => {
     </Container>
   )
 }
-

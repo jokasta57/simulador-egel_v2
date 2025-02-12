@@ -8,8 +8,8 @@ export const StudentRoutes = () => {
     <StudentLayout>
       <Routes>
         <Route path="/home" element={<Exams />} />
-        <Route path="/exams/:examId" element={<ExamQuestions />} />
-        <Route path="/exams/:examId/result" element={<ExamResult />}/>
+        <Route path="/exams/:id" element={<ExamQuestions />} />
+        <Route path="/exams/:id/result" element={<ExamResult />}/>
         <Route path="/perfil" element={<Profile />} />
         <Route path="/resultados" element={<Results />} />
         <Route path="/" element={<Navigate to="/home" replace />} />

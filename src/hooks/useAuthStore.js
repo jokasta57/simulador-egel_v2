@@ -50,7 +50,7 @@ export const useAuthStore = () => {
             localStorage.setItem('token-init-date', new Date().getTime());
             //Se dispara la accion en redux y en store
             console.log(estudiante);
-            dispatch(onLoginSuccess({nombre: estudiante.nombre, numero_cuenta: estudiante.numero_cuenta, carrera: estudiante.carrera, role: "student"}))
+            dispatch(onLoginSuccess({nombre: estudiante.nombre, numero_cuenta: numero_cuenta, carrera: estudiante.carrera, role: "student"}))
         } catch (error) {
             dispatch(onLoginFailure('Credenciales incorrectas'));
             dispatch(onLogout());
@@ -76,7 +76,7 @@ export const useAuthStore = () => {
             //Se dispara la accion en redux y en store
             dispatch(onLoginSuccess({nombre: estudiante.nombre, numero_cuenta: estudiante.numero_cuenta, carrera: estudiante.carrera, role: "student" }))
         } catch (error) {
-            const errorMessage = error.response?.data?.msg || "Error desconocido";
+            let errorMessage = error.response?.data?.msg || "Error desconocido";
             console.error("Error al registrar estudiante:", errorMessage);
             if (error.response?.data) {
                 errorMessage = error.response.data.msg || JSON.stringify(error.response.data);
@@ -109,6 +109,18 @@ export const useAuthStore = () => {
             dispatch(onLogout());
         }
     }
+    
+    const getUserInfo = async(numero_cuenta) => {
+        try {
+            const {data} = await simulatorApi.get(`students/${numero_cuenta}`);
+
+            return data.estudiante;
+            
+        } catch (error) {
+            let errorMessage = error.response?.data?.msg || "Error desconocido";
+            return errorMessage
+        }
+    }
     const startLogout = () => {
         localStorage.clear();
         dispatch(onLogout());
@@ -126,7 +138,8 @@ export const useAuthStore = () => {
         startLoginStudent,
         startRegisterStudent,
         checkAuthToken,
-        startLogout
+        startLogout,
+        getUserInfo
 
     }
 }

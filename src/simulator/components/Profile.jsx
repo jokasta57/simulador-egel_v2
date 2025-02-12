@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Box,
   Typography,
@@ -22,30 +22,50 @@ import {
   CalendarToday as CalendarIcon,
   Edit as EditIcon,
 } from "@mui/icons-material"
+import { useAuthStore } from "../../hooks/useAuthStore"
+import { useSelector } from "react-redux"
 
 export const Profile = () => {
   const theme = useTheme()
   const [isEditing, setIsEditing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
+  const { user } = useSelector((state) => state.auth)
+
   // Ejemplo de datos del estudiante (reemplazar con datos reales)
   const [studentData, setStudentData] = useState({
-    nombre: "Juan",
-    apellido_paterno: "Pérez",
-    apellido_materno: "García",
-    carrera: "Ingeniería en Sistemas Computacionales",
-    carreras: [
-      "Medicina",
-      "Administración",
-      "Enfermería",
-      "Ingeniería en Software",
-      "Ingeniería en Sistemas Computacionales",
-    ],
-    email: "juan.perez@estudiantes.edu.mx",
-    semestre: "6",
-    grupo: "6A",
-    ciclo_escolar: "2024-1",
+    nombre: "",
+    apellido_paterno: "",
+    apellido_materno: "",
+    carrera: "",
+    email: "",
+    semestre: "",
+    grupo: "",
+    ciclo_escolar: "",
   })
+
+  const carreras = [
+    'Ingeniería de Software',
+    'Medicina',
+    'Administración de Empresas',
+    'Enfermería'
+  ]
+
+  const { getUserInfo } = useAuthStore()
+
+  useEffect(() => {
+    handleUserInfo();
+  }, []);
+
+  const handleUserInfo = async () => {
+    try {
+      const data = await getUserInfo(user.numero_cuenta); // Suponiendo que getUserInfo es asíncrona
+      setStudentData(data); // Guarda la información en el estado
+    } catch (error) {
+      console.error("Error al obtener la información del usuario:", error);
+    }
+  };
+
 
   const [formData, setFormData] = useState(studentData)
 
@@ -159,7 +179,7 @@ export const Profile = () => {
                         <TextField
                           fullWidth
                           label="Nombre"
-                          value={formData.nombre}
+                          value={studentData.nombre}
                           onChange={handleInputChange("nombre")}
                           size="small"
                         />
@@ -168,7 +188,7 @@ export const Profile = () => {
                         <TextField
                           fullWidth
                           label="Apellido Paterno"
-                          value={formData.apellido_paterno}
+                          value={studentData.apellido_paterno}
                           onChange={handleInputChange("apellido_paterno")}
                           size="small"
                         />
@@ -177,7 +197,7 @@ export const Profile = () => {
                         <TextField
                           fullWidth
                           label="Apellido Materno"
-                          value={formData.apellido_materno}
+                          value={studentData.apellido_materno}
                           onChange={handleInputChange("apellido_materno")}
                           size="small"
                         />
@@ -209,7 +229,7 @@ export const Profile = () => {
                 label="Carrera"
                 field="carrera"
                 value={studentData.carrera}
-                options={studentData.carreras}
+                options={carreras}
               />
             </CardContent>
           </Card>

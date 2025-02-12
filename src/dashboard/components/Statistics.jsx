@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Box,
   Typography,
@@ -34,6 +34,9 @@ import {
   Pie,
   Cell,
 } from "recharts"
+import { useExamsStore } from "../../hooks/exams/useExamsStore"
+import { useSelector } from "react-redux"
+import { useAuthStore } from "../../hooks/useAuthStore"
 
 // Datos de ejemplo basados en la estructura de la base de datos
 const examenesFake = [
@@ -217,6 +220,16 @@ export const Statistics = () => {
     setSearchTerm(event.target.value)
   }
 
+  const { handleLoadExams, handleClearError, handleClearSuccess, handleSwitchState } = useExamsStore()
+  
+
+  useEffect(() => {
+    handleLoadExams();
+  }, []);
+
+  const { exams } = useSelector((state) => state.exams);
+
+
   const selectedQuestionData = rendimientoPreguntasFake.find((q) => q.pregunta === selectedQuestion)
 
   const filteredStudents = useMemo(() => {
@@ -234,7 +247,7 @@ export const Statistics = () => {
         <FormControl fullWidth>
           <InputLabel>Seleccionar Examen</InputLabel>
           <Select value={selectedExam} label="Seleccionar Examen" onChange={handleExamChange}>
-            {examenesFake.map((exam) => (
+            {exams.map((exam) => (
               <MenuItem key={exam.id_examen} value={exam.id_examen}>
                 {exam.nombre} - {exam.periodo}
               </MenuItem>
@@ -252,7 +265,7 @@ export const Statistics = () => {
           <FormControl fullWidth>
             <InputLabel>Seleccionar Examen</InputLabel>
             <Select value={selectedExam} label="Seleccionar Examen" onChange={handleExamChange}>
-              {examenesFake.map((exam) => (
+              {exams.map((exam) => (
                 <MenuItem key={exam.id_examen} value={exam.id_examen}>
                   {exam.nombre} - {exam.periodo}
                 </MenuItem>

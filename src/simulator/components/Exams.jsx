@@ -147,7 +147,7 @@ export const Exams = () => {
               </Box>
               <Button
                 component={Link}
-                to={`/student/exams/${exam.id}`}
+                to={`/student/exams/${exam.id_examen}`}
                 variant="contained"
                 startIcon={<StartIcon />}
                 sx={{

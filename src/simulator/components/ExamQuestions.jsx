@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { Container, Box, Snackbar } from "@mui/material"
 import { QuestionForm, QuestionPanel, ExamHeader } from "./"
+import { useParams } from "react-router-dom"
+import { useExamsStore } from "../../hooks/exams/useExamsStore"
 
 
 
@@ -36,13 +38,33 @@ const examConfig = {
 }
 
 export const ExamQuestions = () => {
+  const { id } = useParams()
+
   const [currentQuestion, setCurrentQuestion] = useState(1)
   const [answers, setAnswers] = useState({})
   const [snackbarOpen, setSnackbarOpen] = useState(false)
   const [remainingTime, setRemainingTime] = useState(examConfig.duration)
+    const {
+      handleLoadExam,
+      handleUpdateExam,
+      handleLoadQuestion,
+      currentExam,
+      isLoading,
+      // error,
+      // success,
+      handleClearError,
+      handleClearSuccess,
+      handleLoadQuestionsByExam,
+      handleUpdateQuestion,
+      handleResetCurrentQuestion,
+      handleAddNewQuestion,
+      handleDeleteQuestion
+    } = useExamsStore()
 
   // Efecto para el temporizador
   useEffect(() => {
+    handleLoadExam(id);
+    
     const timer = setInterval(() => {
       setRemainingTime((prevTime) => {
         if (prevTime <= 1) {

@@ -18,12 +18,14 @@ import { Search as SearchIcon, PlayArrow as StartIcon } from "@mui/icons-materia
 import { Link } from "react-router-dom"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
+import { LoadingSpinner } from "./LoadingSpinner"
 
 
 export const Exams = () => {
   const theme = useTheme()
   const [searchTerm, setSearchTerm] = useState("")
   const [areaFilter, setAreaFilter] = useState("Todas")
+  const [isLoading, setIsLoading] = useState(false)
   const { exams } = useSelector((state) => state.exams)
   const { user } = useSelector((state) => state.auth)
 
@@ -32,7 +34,12 @@ export const Exams = () => {
 
   useEffect(() => {
     if (user?.carrera) {  // ✅ Verifica que user.carrera tenga valor antes de llamar a la API
-      handleLoadExamsByCareer(user.carrera);
+      const fetchExams = async () => {
+        setIsLoading(true);
+        await handleLoadExamsByCareer(user.carrera);
+        setIsLoading(false);
+      }
+      fetchExams();
     }
   }, [user.carrera]); // ✅ Se ejecutará solo cuando user.carrera cambie
 
@@ -48,6 +55,13 @@ export const Exams = () => {
     const matchesArea = areaFilter === "Todas" || exam.area === areaFilter
     return matchesSearch && matchesArea
   })
+
+  //Estado de carga
+  if(isLoading) {
+    return (
+      <LoadingSpinner />
+    )
+  }
 
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>

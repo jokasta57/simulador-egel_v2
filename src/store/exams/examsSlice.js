@@ -6,10 +6,11 @@ export const examsSlice = createSlice({
     initialState: {
         exams: [],
         currentExam: null,
+        currentQuestion: {},
+        currentAttempt: {},
         isLoading: false,
         error: null,
         success: null,
-        currentQuestion: {},
         currentOrder: null,
         totalQuestions: 0,
         preguntaNueva: null,
@@ -22,6 +23,10 @@ export const examsSlice = createSlice({
         },
         setCurrentQuestion: (state, action) => {
             state.currentQuestion = action.payload
+            state.isLoading = false
+        },
+        setCurrentAttempt: (state, action) => {
+            state.currentAttempt = action.payload
             state.isLoading = false
         },
         updateQuestionStart: (state) => {
@@ -167,5 +172,6 @@ export const {
     resetPreguntaNueva,
     setPreguntaNueva,
     resetCurrentOrder, 
-    resetTotalQuestions
+    resetTotalQuestions,
+    setCurrentAttempt
 } = examsSlice.actions;  

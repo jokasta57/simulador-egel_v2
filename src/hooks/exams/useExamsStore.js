@@ -17,7 +17,9 @@ import {
     updateQuestion,
     addNewQuestion,
     addNewQuestionStart,
-    setIsLoadingFalse
+    setIsLoadingFalse,
+    setIsLoading,
+    setCurrentAttempt
 } from '../../store/exams/examsSlice';
 import simulatorApi from '../../api/simulatorApi';
 
@@ -33,7 +35,23 @@ export const useExamsStore = () => {
             return response.data;
         } catch (error) {
             console.log(error);
-            dispatch(setError(error.response?.data || 'Error al cargar examenes'));
+            dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
+            throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
+    }, [dispatch]);
+    
+    const handleNewAttempt = useCallback(async (numero_cuenta, id_examen) => {
+        dispatch(setIsLoading());
+        try {
+            const response = await simulatorApi.post('/attempt', {numero_cuenta, id_examen}
+            );
+            dispatch(setCurrentAttempt(response.data.intento));
+            return response.data.intento;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
             throw error;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -52,7 +70,7 @@ export const useExamsStore = () => {
             return response.data;
         } catch (error) {
             console.log(error);
-            dispatch(setError(error.response?.data || 'Error al cargar examenes'));
+            dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
             throw error;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -67,7 +85,7 @@ export const useExamsStore = () => {
             return response.data.examen;
         } catch (error) {
             console.log(error);
-            dispatch(setError(error.response?.data || 'Error al cargar el examen'));
+            dispatch(setError(error.response?.data.msg || 'Error al cargar el examen'));
             throw error;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -82,7 +100,7 @@ export const useExamsStore = () => {
             return response.data;
         } catch (error) {
             console.log(error);
-            dispatch(updateExamFailure(error.response?.data || 'Error al actualizar el examen'));
+            dispatch(updateExamFailure(error.response?.data.msg || 'Error al actualizar el examen'));
             throw error;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -106,7 +124,7 @@ export const useExamsStore = () => {
             return response.data.pregunta;
         } catch (error) {
             console.log(error);
-            dispatch(setError(error.response?.data || 'Error al cargar la pregunta'));
+            dispatch(setError(error.response?.data.msg || 'Error al cargar la pregunta'));
             throw error;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -119,7 +137,7 @@ export const useExamsStore = () => {
             return response.data.preguntas;
         } catch (error) {
             console.log(error);
-            dispatch(setError(error.response?.data || 'Error al cargar las preguntas'));
+            dispatch(setError(error.response?.data.msg || 'Error al cargar las preguntas'));
             throw error;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -240,7 +258,7 @@ export const useExamsStore = () => {
             return response.data.preguntas;
         } catch (error) {
             console.log(error);
-            dispatch(setError(error.response?.data || 'Error al agregar pregunta'));
+            dispatch(setError(error.response?.data.msg || 'Error al agregar pregunta'));
             throw error;
         } finally {
         dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -266,7 +284,7 @@ export const useExamsStore = () => {
             return response.data.preguntas;
         } catch (error) {
             console.log(error);
-            dispatch(setError(error.response?.data || 'Error al eliminar pregunta'));
+            dispatch(setError(error.response?.data.msg || 'Error al eliminar pregunta'));
             throw error;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -284,11 +302,26 @@ export const useExamsStore = () => {
             return response.data.examen;
         } catch (error) {
             console.log(error);
-            dispatch(setError(error.response?.data || 'Error al eliminar pregunta'));
+            dispatch(setError(error.response?.data.msg || 'Error al eliminar pregunta'));
             throw error;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
+    }, [dispatch]);
+
+    const handleSaveAnswer = useCallback(async (id_intento, id_opcion) => {
+        dispatch(setIsLoading());
+        try {
+            const response = await simulatorApi.post(`/answers`, {id_intento, id_opcion});
+
+            return response.data.respuesta;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al agregar pregunta'));
+            throw error;
+        } finally {
+        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+    }
     }, [dispatch]);
 
     const handleClearError = useCallback(() => {
@@ -321,6 +354,8 @@ export const useExamsStore = () => {
         handleAddNewQuestion, 
         handleLoadExamsByCareer, 
         handleDeleteQuestion,
-        handleSwitchState
+        handleSwitchState,
+        handleNewAttempt,
+        handleSaveAnswer
     };
 };

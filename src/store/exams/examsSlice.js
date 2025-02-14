@@ -14,6 +14,7 @@ export const examsSlice = createSlice({
         currentOrder: null,
         totalQuestions: 0,
         preguntaNueva: null,
+        answeredQuestions: []
     },
     reducers: {
         // Acción para establecer el examen actual
@@ -24,6 +25,18 @@ export const examsSlice = createSlice({
         setCurrentQuestion: (state, action) => {
             state.currentQuestion = action.payload
             state.isLoading = false
+        },
+        setAnsweredQuestion: (state, action) => {
+            const orden = action.payload;
+          
+            if (!state.answeredQuestions) {
+              state.answeredQuestions = []; // Evitar `null`
+            }
+          
+            // Solo agregar si aún no está en la lista
+            if (!state.answeredQuestions.includes(orden)) {
+              state.answeredQuestions.push(orden);
+            }
         },
         setCurrentAttempt: (state, action) => {
             state.currentAttempt = action.payload
@@ -134,6 +147,9 @@ export const examsSlice = createSlice({
         resetPreguntaNueva: (state) => {
             state.preguntaNueva = null;
         },
+        resetAnsweredQuestions: (state) => {
+            state.answeredQuestions = [];
+        },
         setPreguntaNueva: (state, action) => {
             state.preguntaNueva = action.payload;
         },
@@ -173,5 +189,7 @@ export const {
     setPreguntaNueva,
     resetCurrentOrder, 
     resetTotalQuestions,
-    setCurrentAttempt
+    setCurrentAttempt,
+    setAnsweredQuestion,
+    resetAnsweredQuestions
 } = examsSlice.actions;  

@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux"
-import { onChecking, onLoginFailure, onLoginSuccess, onLogout,clearErrorMessage } from "../store";
+import { onChecking, onLoginFailure, onLoginSuccess, onLogout, clearErrorMessage, setError } from "../store/auth/authSlice";
 import simulatorApi from "../api/simulatorApi"
 import { useNavigate } from "react-router-dom";
 
@@ -54,12 +54,14 @@ export const useAuthStore = () => {
         } catch (error) {
             dispatch(onLoginFailure('Credenciales incorrectas'));
             dispatch(onLogout());
-            if (error.response?.data) {
-                errorMessage = error.response.data.msg || JSON.stringify(error.response.data);
+            if (error.response?.data) { 
+                let errorMessage = error.response?.data.msg || JSON.stringify(error.response.data);
+                dispatch(setError(errorMessage));
+                throw error
             }
-            setTimeout(() => {
-                dispatch(clearErrorMessage())
-            }, 10)
+            // setTimeout(() => {
+            //     dispatch(clearErrorMessage())
+            // }, 10)
         }
     }
 

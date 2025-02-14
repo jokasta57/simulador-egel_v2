@@ -1,43 +1,55 @@
-import { Typography, RadioGroup, FormControlLabel, Radio, Paper, Box, Button } from "@mui/material";
-import { useSelector } from "react-redux";
-import { LoadingSpinner } from "./LoadingSpinner";
-import { useNavigate, useParams } from "react-router-dom";
+"use client"
 
-export const QuestionForm = ({
-  loading,
-  selectedAnswer,
-  onAnswerChange,
-  onSaveAnswer,
-  onNextQuestion,
-  isLastQuestion,
-}) => {
+import { useEffect, useMemo, useState } from "react"
+import { Typography, RadioGroup, FormControlLabel, Radio, Paper, Box, Button } from "@mui/material"
+import { useSelector, useDispatch } from "react-redux"
+import { LoadingSpinner } from "./LoadingSpinner"
+import { useNavigate, useParams } from "react-router-dom"
+import { setCurrentQuestion } from "../../store"
+
+export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQuestion }) => {
+  const dispatch = useDispatch();
   const { currentQuestion, totalQuestions, currentOrder } = useSelector((state) => state.exams);
-  const navigate = useNavigate(); // ✅ Hook para redirigir
-  const { id } = useParams(); // ✅ Obtener el id del examen desde la URL
+  const navigate = useNavigate();
+  const { id } = useParams();
 
-  // ✅ Verificar si la pregunta no está lista
+  const [selectedValue, setSelectedValue] = useState("");
+
+  // **Mantiene la respuesta seleccionada en el estado global**
+  useEffect(() => {
+    if (currentQuestion && Array.isArray(currentQuestion.opcion)) {
+      const answeredOption = currentQuestion.opcion.find(option => option.respuesta && option.respuesta.length > 0);
+      setSelectedValue(answeredOption ? answeredOption.id_opcion.toString() : "");
+    }
+  }, [currentQuestion]);
+
   if (loading || !currentQuestion || !Array.isArray(currentQuestion.opcion)) {
     return <LoadingSpinner />;
   }
 
-  // ✅ Manejar la acción del botón "Terminar Intento"
+  // **Manejo del cambio de selección**
+  const handleRadioChange = (event) => {
+    const newValue = event.target.value;
+    setSelectedValue(newValue);
+    onAnswerChange(newValue);
+  };
+
   const handleFinishExam = () => {
     navigate(`/student/exams/${id}/result`);
   };
 
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-      {/* Pregunta con el texto arriba y la imagen abajo */}
       <Box display="flex" flexDirection="column" alignItems="flex-start" mb={3}>
         <Typography variant="h6" sx={{ color: "text.primary", mb: 2 }}>
           {currentQuestion.contenido}
         </Typography>
         {currentQuestion.imagen_url && (
           <img
-            src={currentQuestion.imagen_url}
+            src={currentQuestion.imagen_url || "/placeholder.svg"}
             alt="Imagen de la Pregunta"
             style={{
-              width: "100%", 
+              width: "100%",
               maxWidth: "450px",
               maxHeight: "300px",
               objectFit: "contain",
@@ -47,37 +59,29 @@ export const QuestionForm = ({
         )}
       </Box>
 
-      {/* Opciones con imágenes más grandes */}
-      <RadioGroup value={selectedAnswer || ""} onChange={(e) => onAnswerChange(e.target.value)}>
+      <RadioGroup value={selectedValue} onChange={handleRadioChange}>
         {currentQuestion.opcion.map((option) => (
-          <FormControlLabel
-            key={option.id_opcion}
-            value={option.id_opcion}
-            control={<Radio />}
-            label={
-              <Box display="flex" alignItems="center">
-                {option.imagen_url && (
-                  <img
-                    src={option.imagen_url}
-                    alt={`Opción ${option.id_opcion}`}
-                    style={{
-                      width: "200px", 
-                      height: "200px",
-                      objectFit: "contain",
-                      marginRight: "16px",
-                    }}
-                  />
-                )}
-                <Typography sx={{ fontSize: "1.2rem" }}>{option.contenido}</Typography>
-              </Box>
-            }
-            sx={{
-              mb: 2,
-              "& .MuiFormControlLabel-label": {
-                color: "text.primary",
-              },
-            }}
-          />
+          <Box key={option.id_opcion} display="flex" alignItems="center" mb={2}>
+            <FormControlLabel
+              value={option.id_opcion.toString()}
+              control={<Radio />}
+              label=""
+              sx={{ marginRight: "8px" }}
+            />
+            {option.imagen_url && (
+              <img
+                src={option.imagen_url || "/placeholder.svg"}
+                alt={`Opción ${option.id_opcion}`}
+                style={{
+                  width: "200px",
+                  height: "200px",
+                  objectFit: "contain",
+                  marginRight: "16px",
+                }}
+              />
+            )}
+            <Typography sx={{ fontSize: "1.2rem" }}>{option.contenido}</Typography>
+          </Box>
         ))}
       </RadioGroup>
 
@@ -85,7 +89,7 @@ export const QuestionForm = ({
         <Button
           variant="contained"
           onClick={onSaveAnswer}
-          disabled={!selectedAnswer}
+          disabled={!selectedValue}
           sx={{
             bgcolor: "grey.300",
             color: "text.primary",
@@ -98,7 +102,7 @@ export const QuestionForm = ({
 
         <Button
           variant="contained"
-          onClick={totalQuestions === currentOrder ? handleFinishExam : onNextQuestion} // ✅ Lógica de redirección
+          onClick={totalQuestions === currentOrder ? handleFinishExam : onNextQuestion}
           sx={{
             bgcolor: "#e23d28",
             color: "white",

@@ -186,6 +186,25 @@ export const ExamEdit = () => {
     }
   }
 
+  const formatDuration = (value) => {
+    let cleanValue = value.replace(/[^0-9]/g, "") // Remove non-digit characters
+
+    // Ensure only up to 6 digits (HHMMSS)
+    if (cleanValue.length > 6) {
+      cleanValue = cleanValue.slice(0, 6)
+    }
+
+    // Automatically insert ":" after every two digits
+    let formatted = cleanValue.replace(/(\d{2})(?=\d)/g, "$1:")
+
+    // If the user deletes everything, leave it empty
+    if (cleanValue.length === 0) {
+      formatted = ""
+    }
+
+    return formatted
+  }
+
   const onSubmit = async (data) => {
     if (!isExamInfoComplete) return
     console.log(data);
@@ -320,8 +339,14 @@ export const ExamEdit = () => {
               control={control}
               rules={{ required: true }}
               render={({ field }) => (
-                <TextField label="Nombre del Examen" fullWidth {...field} disabled={!isExamInfoEditable} />
+                <TextField
+                  label="Nombre del Examen"
+                  fullWidth {...field}
+                  disabled={!isExamInfoEditable}
+                  placeholder="Ej: Simulacro EGEL - Bases de datos"
+                />
               )}
+
             />
 
             <Controller
@@ -344,9 +369,18 @@ export const ExamEdit = () => {
             <Controller
               name="duracion"
               control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <TextField label="Duración (HH:MM:SS)" fullWidth {...field} disabled={!isExamInfoEditable} />
+              rules={{ required: true, pattern: /^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/ }}
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <TextField
+                  label="Duración"
+                  fullWidth
+                  value={value}
+                  onChange={(e) => onChange(formatDuration(e.target.value))}
+                  disabled={!isExamInfoEditable}
+                  placeholder="00:00:00"
+                  helperText={error ? "Formato inválido. Use HH:MM:SS" : "Formato: HH:MM:SS"}
+                  error={!!error}
+                />
               )}
             />
 
@@ -360,8 +394,9 @@ export const ExamEdit = () => {
                   onChange={(event, newValue) => {
                     onChange(newValue)
                   }}
-                  options={["Ingeniería en Software", "Medicina", "Licenciatura en Administración", "Enfermería"]}
-                  renderInput={(params) => <TextField {...params} label="Carrera" />}
+                  options={["Ingeniería de Software", "Medicina", "Licenciatura en Administración", "Enfermería"]}
+                  disableClearable // No permite limpiar el campo manualmente
+                  renderInput={(params) => <TextField {...params} label="Carrera" inputProps={{ ...params.inputProps, readOnly: true }} />}
                   disabled={!isExamInfoEditable}
                 />
               )}
@@ -370,7 +405,13 @@ export const ExamEdit = () => {
             <Controller
               name="area"
               control={control}
-              render={({ field }) => <TextField label="Área" fullWidth {...field} disabled={!isExamInfoEditable} />}
+              render={({ field }) =>
+                <TextField
+                  label="Área"
+                  fullWidth {...field}
+                  disabled={!isExamInfoEditable}
+                  placeholder="Ej: Bases de datos, Bioquímica, Economía"
+                />}
             />
 
             <Controller

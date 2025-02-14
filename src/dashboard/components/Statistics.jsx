@@ -19,6 +19,8 @@ import {
   TableRow,
   TextField,
   Chip,
+  IconButton,
+  Button,
 } from "@mui/material"
 import {
   LineChart,
@@ -37,6 +39,9 @@ import {
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
 import { useAuthStore } from "../../hooks/useAuthStore"
+import { DeleteIcon } from "lucide-react"
+import Swal from "sweetalert2"
+import { PersonRemove } from "@mui/icons-material"
 
 // Datos de ejemplo basados en la estructura de la base de datos
 const examenesFake = [
@@ -202,6 +207,8 @@ export const Statistics = () => {
   const [selectedExam, setSelectedExam] = useState("")
   const [selectedQuestion, setSelectedQuestion] = useState(1)
   const [selectedDate, setSelectedDate] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [selectedOption, setSelectedOption] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
 
   const handleExamChange = (event) => {
@@ -220,8 +227,12 @@ export const Statistics = () => {
     setSearchTerm(event.target.value)
   }
 
+  const handleOptionChange = (event) => {
+    setSelectedOption(event.target.value)
+  }
+
   const { handleLoadExams, handleClearError, handleClearSuccess, handleSwitchState } = useExamsStore()
-  
+
 
   useEffect(() => {
     handleLoadExams();
@@ -232,11 +243,43 @@ export const Statistics = () => {
 
   const selectedQuestionData = rendimientoPreguntasFake.find((q) => q.pregunta === selectedQuestion)
 
+
+  const handleDeleteStudent = (numeroCuenta, nombreCompleto) => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `¿Deseas eliminar al alumno ${nombreCompleto}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Aquí iría la lógica para eliminar al estudiante
+        console.log(`Eliminando al estudiante con número de cuenta: ${numeroCuenta}`)
+        // Actualizar el estado o hacer una llamada a la API para eliminar al estudiante
+        Swal.fire(
+          '¡Eliminado!',
+          'El alumno ha sido eliminado.',
+          'success'
+        )
+      }
+    })
+  }
+
   const filteredStudents = useMemo(() => {
-    return calificacionesFake.filter((student) =>
-      Object.values(student).some((value) => value.toString().toLowerCase().includes(searchTerm.toLowerCase())),
-    )
-  }, [searchTerm])
+    return calificacionesFake.filter((student) => {
+      const matchesSearch = Object.values(student).some((value) =>
+        value.toString().toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "passed" && student.calificacion >= 70) ||
+        (statusFilter === "failed" && student.calificacion < 70)
+      return matchesSearch && matchesStatus
+    })
+  }, [searchTerm, statusFilter])
 
   if (!selectedExam) {
     return (
@@ -405,20 +448,35 @@ export const Statistics = () => {
           </Paper>
         </Grid>
 
-        {/* Tabla de Calificaciones por Estudiante */}
-        <Grid item xs={12}>
+                {/* Tabla de Calificaciones por Estudiante */}
+                <Grid item xs={12}>
           <Paper elevation={3} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Calificaciones por Estudiante
             </Typography>
-            <TextField
-              fullWidth
-              label="Buscar estudiante"
-              variant="outlined"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              sx={{ mb: 2 }}
-            />
+            <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+              <TextField
+                label="Buscar estudiante"
+                variant="outlined"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                sx={{ flex: 1 }}
+              />
+              <FormControl sx={{ minWidth: 200 }}>
+                <InputLabel id="status-filter-label">Filtrar por Estado</InputLabel>
+                <Select
+                  labelId="status-filter-label"
+                  id="status-filter"
+                  value={statusFilter}
+                  label="Filtrar por Estado"
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Todos</MenuItem>
+                  <MenuItem value="passed">Aprobados</MenuItem>
+                  <MenuItem value="failed">Reprobados</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
             <TableContainer
               component={Paper}
               sx={{
@@ -448,6 +506,7 @@ export const Statistics = () => {
                     <TableCell>Apellido Materno</TableCell>
                     <TableCell align="right">Calificación</TableCell>
                     <TableCell align="center">Estado</TableCell>
+                    <TableCell align="center">Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -465,6 +524,17 @@ export const Statistics = () => {
                           label={row.calificacion >= 70 ? "Aprobado" : "Reprobado"}
                           color={row.calificacion >= 70 ? "success" : "error"}
                         />
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton aria-label="delete"
+                          onClick={() =>
+                            handleDeleteStudent(
+                              row.numero_cuenta,
+                              `${row.nombre} ${row.apellido_paterno} ${row.apellido_materno}`,
+                            )
+                          } sx={{ color: theme.palette.primary.main }}>
+                          <PersonRemove />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}

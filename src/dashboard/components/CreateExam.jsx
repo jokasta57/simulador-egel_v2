@@ -15,10 +15,12 @@ import {
   Autocomplete,
   IconButton,
   Snackbar,
+  InputAdornment,
 } from "@mui/material"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useCreateExamStore } from "../../hooks/useCreateExamStore"
 import EditIcon from "@mui/icons-material/Edit"
+import ScheduleIcon from "@mui/icons-material/Schedule"
 import { QuestionCard } from "./QuestionCard"
 import { FloatingAddButton } from "./FloatingAddButton"
 import { useDispatch, useSelector } from "react-redux"
@@ -102,6 +104,28 @@ export const CreateExam = () => {
     setExamInfo((prev) => ({ ...prev, [name]: value }))
     setIsDirty(true)
   }
+
+  const handleDurationChange = (event) => {
+    let value = event.target.value.replace(/[^0-9]/g, ""); // Eliminar cualquier caracter no numérico
+
+    // Asegurar que solo tenga hasta 6 dígitos (HHMMSS)
+    if (value.length > 6) {
+      value = value.slice(0, 6);
+    }
+
+    // Insertar ":" automáticamente cada dos dígitos
+    let formatted = value.replace(/(\d{2})(?=\d)/g, "$1:");
+
+    // Si el usuario borra todo, dejar vacío
+    if (value.length === 0) {
+      formatted = "";
+    }
+
+    setExamInfo((prev) => ({ ...prev, duracion: formatted }));
+    setIsDirty(true);
+  };
+
+
 
   const handleAutocompleteChange = (name, value) => {
     setExamInfo((prev) => ({ ...prev, [name]: value }))
@@ -331,6 +355,7 @@ export const CreateExam = () => {
               value={examInfo.nombre}
               onChange={handleInputChange}
               disabled={!isExamInfoEditable}
+              placeholder="Ej: Simulacro EGEL - Bases de datos"
             />
 
             <Autocomplete
@@ -346,16 +371,21 @@ export const CreateExam = () => {
               fullWidth
               name="duracion"
               value={examInfo.duracion}
-              onChange={handleInputChange}
+              onChange={handleDurationChange}
               disabled={!isExamInfoEditable}
+              placeholder="00:00:00"
+              helperText="Formato: HH:MM:SS"
             />
 
             <Autocomplete
               value={examInfo.carrera}
               onChange={(event, newValue) => handleAutocompleteChange("carrera", newValue)}
-              options={["Ingeniería en Software", "Medicina", "Licenciatura en Administración", "Enfermería"]}
-              renderInput={(params) => <TextField {...params} label="Carrera" />}
-              disabled={!isExamInfoEditable}
+              options={["Ingeniería de Software", "Medicina", "Licenciatura en Administración", "Enfermería"]}
+              disableClearable // No permite limpiar el campo manualmente
+              renderInput={(params) => (
+                <TextField {...params} label="Carrera" inputProps={{ ...params.inputProps, readOnly: true }} />
+              )}
+              disabled={!isExamInfoEditable} // Sigue respetando la edición del examen
             />
 
             <TextField
@@ -365,6 +395,7 @@ export const CreateExam = () => {
               value={examInfo.area}
               onChange={handleInputChange}
               disabled={!isExamInfoEditable}
+              placeholder="Ej: Bases de datos, Bioquímica, Economía"
             />
 
             <FormControlLabel

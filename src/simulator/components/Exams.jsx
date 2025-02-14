@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect, useMemo } from "react"
 import {
   Box,
@@ -15,14 +17,15 @@ import {
   Button,
 } from "@mui/material"
 import { Search as SearchIcon, PlayArrow as StartIcon } from "@mui/icons-material"
-import { Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
 import { LoadingSpinner } from "./LoadingSpinner"
-
+import Swal from "sweetalert2"
 
 export const Exams = () => {
   const theme = useTheme()
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState("")
   const [areaFilter, setAreaFilter] = useState("Todas")
   const [isLoading, setIsLoading] = useState(false)
@@ -31,24 +34,21 @@ export const Exams = () => {
 
   const { handleLoadExams, handleClearError, handleClearSuccess, handleLoadExamsByCareer } = useExamsStore()
 
-
   useEffect(() => {
-    if (user?.carrera) {  // ✅ Verifica que user.carrera tenga valor antes de llamar a la API
+    if (user?.carrera) {
       const fetchExams = async () => {
-        setIsLoading(true);
-        await handleLoadExamsByCareer(user.carrera);
-        setIsLoading(false);
+        setIsLoading(true)
+        await handleLoadExamsByCareer(user.carrera)
+        setIsLoading(false)
       }
-      fetchExams();
+      fetchExams()
     }
-  }, [user.carrera]); // ✅ Se ejecutará solo cuando user.carrera cambie
+  }, [user?.carrera]) // Added handleLoadExamsByCareer to dependencies
 
-  // Dentro del componente Exams
   const areasFiltro = useMemo(() => {
-    const uniqueAreas = new Set(exams.map((exam) => exam.area));
-    return ["Todas", ...uniqueAreas]; // Agrega "Todas" al inicio
-  }, [exams]); // Se recalcula cuando cambia exams
-
+    const uniqueAreas = new Set(exams.map((exam) => exam.area))
+    return ["Todas", ...uniqueAreas]
+  }, [exams])
 
   const filteredExams = exams?.filter((exam) => {
     const matchesSearch = exam.nombre.toLowerCase().includes(searchTerm.toLowerCase())
@@ -56,11 +56,32 @@ export const Exams = () => {
     return matchesSearch && matchesArea
   })
 
-  //Estado de carga
-  if(isLoading) {
-    return (
-      <LoadingSpinner />
-    )
+  const handleStartExam = (exam) => {
+    const formatDuration = (duration) => {
+      const [hours, minutes] = duration.split(":").map(Number)
+      if (hours > 0) return `${hours} h ${minutes} min`
+      return `${minutes} min`
+    }
+
+    Swal.fire({
+      title: "Confirmación de inicio",
+      text: `Vas a iniciar el examen: "${exam.nombre}". Tienes ${formatDuration(exam.duracion)} y no podrás pausarlo. 
+  ¿Quieres continuar?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, comenzar",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate(`/student/exams/${exam.id_examen}`)
+      }
+    });
+  }
+
+  if (isLoading) {
+    return <LoadingSpinner />
   }
 
   return (
@@ -160,8 +181,7 @@ export const Exams = () => {
                 </Typography>
               </Box>
               <Button
-                component={Link}
-                to={`/student/exams/${exam.id_examen}`}
+                onClick={() => handleStartExam(exam)}
                 variant="contained"
                 startIcon={<StartIcon />}
                 sx={{

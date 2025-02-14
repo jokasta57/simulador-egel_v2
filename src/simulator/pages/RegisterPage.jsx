@@ -9,9 +9,10 @@ import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 
 const carreras = [
-  'Ingeniería en Software',
-  'Ingeniería en Sistemas Computacionales',
-  'Ingeniería en Tecnologías de la Información',
+  'Ingeniería de Software',
+  "Medicina", 
+  "Licenciatura en Administración", 
+  "Enfermería"
 ];
 
 const semestres = Array.from({ length: 12 }, (_, i) => i + 1);

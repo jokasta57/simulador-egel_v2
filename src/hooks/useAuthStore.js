@@ -8,62 +8,55 @@ export const useAuthStore = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const startLoginAdmin = async(numero_identificacion, nip) => {
-        // console.log({numero_cuenta, nip});
+    const startLoginAdmin = async (numero_identificacion, nip) => {
         dispatch(onChecking());
-
+        let errorMessage = "Credenciales incorrectas"; // Evita errores si no se recibe mensaje
+    
         try {
-            //Disparar accion al backend
-            const {data} = await simulatorApi.post('/admin/auth', {numero_identificacion, nip});
+            const { data } = await simulatorApi.post('/admin/auth', { numero_identificacion, nip });
             localStorage.setItem('token', data.token);
-            //Esto es para hacer calculos de lo que dqeuda del token 
             localStorage.setItem('token-init-date', new Date().getTime());
-            //Accedemos al objeto admin
-            const {admin} = data;
-            //Se dispara la accion en redux y en store
-            dispatch(onLoginSuccess({nombre: admin.nombre, id: admin.id_admin, token: admin.token, role: "admin"}))
+    
+            const { admin } = data;
+            dispatch(onLoginSuccess({ nombre: admin.nombre, id: admin.id_admin, token: admin.token, role: "admin" }));
         } catch (error) {
-            console.log(error);
-            if (error.response?.data) {
-                errorMessage = error.response.data.msg || JSON.stringify(error.response.data);
+            if (error.response?.data?.msg) {
+                errorMessage = error.response.data.msg;
             }
-            dispatch(onLoginFailure('Credenciales incorrectas'));
+            dispatch(onLoginFailure(errorMessage));
             dispatch(onLogout());
-            setTimeout(() => {
-                dispatch(clearErrorMessage())
-            }, 10)
+            setTimeout(() => dispatch(clearErrorMessage()), 5000); // Ahora espera 5 segundos antes de limpiar
         }
-    }
+    };
+    
 
-    const startLoginStudent = async(numero_cuenta, nip) => {
-        // console.log({numero_cuenta, nip});
+    const startLoginStudent = async (numero_cuenta, nip) => {
         dispatch(onChecking());
-
+        let errorMessage = "Credenciales incorrectas";
+    
         try {
-            //Disparar accion al backend
-            const {data} = await simulatorApi.post('/students/auth', {numero_cuenta, nip});
-
-            const {estudiante} = data;
-
+            const { data } = await simulatorApi.post('/students/auth', { numero_cuenta, nip });
+            const { estudiante } = data;
+    
             localStorage.setItem('token', data.token);
-            //Esto es para hacer calculos de lo que dqeuda del token 
             localStorage.setItem('token-init-date', new Date().getTime());
-            //Se dispara la accion en redux y en store
-            console.log(estudiante);
-            dispatch(onLoginSuccess({nombre: estudiante.nombre, numero_cuenta: numero_cuenta, carrera: estudiante.carrera, role: "student"}))
+    
+            dispatch(onLoginSuccess({
+                nombre: estudiante.nombre,
+                numero_cuenta,
+                carrera: estudiante.carrera,
+                role: "student"
+            }));
         } catch (error) {
-            dispatch(onLoginFailure('Credenciales incorrectas'));
-            dispatch(onLogout());
-            if (error.response?.data) { 
-                let errorMessage = error.response?.data.msg || JSON.stringify(error.response.data);
-                dispatch(setError(errorMessage));
-                throw error
+            if (error.response?.data?.msg) {
+                errorMessage = error.response.data.msg;
             }
-            // setTimeout(() => {
-            //     dispatch(clearErrorMessage())
-            // }, 10)
+            dispatch(onLoginFailure(errorMessage));
+            dispatch(onLogout());
+            setTimeout(() => dispatch(clearErrorMessage()), 5000);
         }
-    }
+    };
+    
 
     const startRegisterStudent = async({nombre, apellido_paterno, email, numero_cuenta, carrera, semestre, grupo, ciclo_escolar,nip}) => {
         dispatch(onChecking());
@@ -103,7 +96,7 @@ export const useAuthStore = () => {
             if(data.role === 'admin'){
                 dispatch(onLoginSuccess({nombre: data.nombre, id: data.id_admin, token: data.token, role: data.role}))
             } else if(data.role === 'student'){
-                dispatch(onLoginSuccess({nombre: data.nombre, numero_cuenta: data.numero_cuenta, carrera: data.carrera, role: data.role}))
+                dispatch(onLoginSuccess({nombre: data.nombre, apellido_paterno: data.apellido_paterno, numero_cuenta: data.numero_cuenta, carrera: data.carrera, role: data.role}))
             }
             
         } catch (error) {

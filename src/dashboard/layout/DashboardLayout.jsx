@@ -61,13 +61,13 @@ export const DashboardLayout = ({ children }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [open, setOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
-  const {startLogout} = useAuthStore();
-  
-  const {user} = useSelector( state => state.auth) //Toma el valor que esta en el store state.counter.{counter: 10}
+  const { startLogout } = useAuthStore();
+
+  const { user } = useSelector(state => state.auth) //Toma el valor que esta en el store state.counter.{counter: 10}
 
   const handleDrawerToggle = () => {
     setOpen(!open);
-  };  
+  };
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -175,8 +175,10 @@ export const DashboardLayout = ({ children }) => {
                 '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
               }}
             >
-              <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
-                <PersonIcon />
+              <Avatar
+                sx={{ bgcolor: theme.palette.secondary.main }}
+              >
+                {user.nombre?.[0] ?? ""}
               </Avatar>
             </IconButton>
           </Box>

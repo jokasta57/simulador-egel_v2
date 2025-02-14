@@ -1,3 +1,5 @@
+"use client"
+
 import { useEffect, useState } from "react"
 import {
   Box,
@@ -14,6 +16,7 @@ import {
   Alert,
   Snackbar,
   MenuItem,
+  CircularProgress,
 } from "@mui/material"
 import {
   School as SchoolIcon,
@@ -25,63 +28,80 @@ import {
 import { useAuthStore } from "../../hooks/useAuthStore"
 import { useSelector } from "react-redux"
 
+const initialFormData = {
+  nombre: "",
+  apellido_paterno: "",
+  apellido_materno: "",
+  carrera: "",
+  email: "",
+  semestre: "",
+  grupo: "",
+  ciclo_escolar: "",
+}
+
 export const Profile = () => {
   const theme = useTheme()
   const [isEditing, setIsEditing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const { user } = useSelector((state) => state.auth)
 
-  // Ejemplo de datos del estudiante (reemplazar con datos reales)
-  const [studentData, setStudentData] = useState({
-    nombre: "",
-    apellido_paterno: "",
-    apellido_materno: "",
-    carrera: "",
-    email: "",
-    semestre: "",
-    grupo: "",
-    ciclo_escolar: "",
-  })
+  const [studentData, setStudentData] = useState(initialFormData)
+  const [formData, setFormData] = useState(initialFormData)
 
   const carreras = [
-    'Ingeniería de Software',
-    'Medicina',
-    'Administración de Empresas',
-    'Enfermería'
+    "Ingeniería en Software",
+    "Ingeniería de Software",
+    "Medicina",
+    "Administración de Empresas",
+    "Enfermería",
   ]
 
-  const { getUserInfo } = useAuthStore()
+  const { getUserInfo, updateUserInfo } = useAuthStore()
 
   useEffect(() => {
-    handleUserInfo();
-  }, []);
+    handleUserInfo()
+  }, [])
 
   const handleUserInfo = async () => {
     try {
-      const data = await getUserInfo(user.numero_cuenta); // Suponiendo que getUserInfo es asíncrona
-      setStudentData(data); // Guarda la información en el estado
+      setIsLoading(true)
+      setError(null)
+      const data = await getUserInfo(user.numero_cuenta)
+      const sanitizedData = Object.fromEntries(Object.entries(data).map(([key, value]) => [key, value ?? ""]))
+      setStudentData(sanitizedData)
+      setFormData(sanitizedData)
     } catch (error) {
-      console.error("Error al obtener la información del usuario:", error);
+      console.error("Error al obtener la información del usuario:", error)
+      setError("No se pudo cargar la información del usuario. Por favor, intente de nuevo más tarde.")
+    } finally {
+      setIsLoading(false)
     }
-  };
-
-
-  const [formData, setFormData] = useState(studentData)
-
-  const handleInputChange = (field) => (event) => {
-    setFormData({
-      ...formData,
-      [field]: event.target.value,
-    })
   }
 
-  const handleSave = () => {
-    // Aquí irían las validaciones necesarias
-    setStudentData(formData)
-    setIsEditing(false)
-    setShowSuccess(true)
-    // Aquí iría la llamada a la API para guardar los cambios
+  const handleInputChange = (field) => (event) => {
+    const value = event.target.value
+    setFormData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }))
+  }
+
+  const handleSave = async () => {
+    try {
+      setIsLoading(true)
+      await updateUserInfo(user.numero_cuenta, formData)
+      setStudentData(formData)
+      setIsEditing(false)
+      setShowSuccess(true)
+    } catch (error) {
+      console.error("Error al actualizar la información del usuario:", error)
+      setError("No se pudo actualizar la información. Por favor, intente de nuevo más tarde.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleCloseSnackbar = () => {
@@ -98,7 +118,7 @@ export const Profile = () => {
               select
               fullWidth
               label={label}
-              value={formData[field]}
+              value={formData[field] || ""}
               onChange={handleInputChange(field)}
               variant="outlined"
               size="small"
@@ -114,7 +134,7 @@ export const Profile = () => {
             <TextField
               fullWidth
               label={label}
-              value={formData[field]}
+              value={formData[field] || ""}
               onChange={handleInputChange(field)}
               variant="outlined"
               size="small"
@@ -126,12 +146,28 @@ export const Profile = () => {
             <Typography variant="body2" color="text.secondary">
               {label}
             </Typography>
-            <Typography variant="body1">{value}</Typography>
+            <Typography variant="body1">{value ?? ""}</Typography>
           </>
         )}
       </Box>
     </Box>
   )
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ maxWidth: 600, margin: "0 auto", p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    )
+  }
 
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>
@@ -169,35 +205,38 @@ export const Profile = () => {
                     fontSize: "2rem",
                   }}
                 >
-                  {studentData.nombre[0]}
-                  {studentData.apellido_paterno[0]}
+                  {studentData.nombre?.[0] ?? ""}
+                  {studentData.apellido_paterno?.[0] ?? ""}
                 </Avatar>
                 <Box sx={{ ml: 2, flex: 1 }}>
                   {isEditing ? (
                     <Grid container spacing={2}>
                       <Grid item xs={12}>
                         <TextField
+                          key="nombre-input"
                           fullWidth
                           label="Nombre"
-                          value={studentData.nombre}
+                          value={formData.nombre ?? ""}
                           onChange={handleInputChange("nombre")}
                           size="small"
                         />
                       </Grid>
                       <Grid item xs={6}>
                         <TextField
+                          key="apellido-paterno-input"
                           fullWidth
                           label="Apellido Paterno"
-                          value={studentData.apellido_paterno}
+                          value={formData.apellido_paterno ?? ""}
                           onChange={handleInputChange("apellido_paterno")}
                           size="small"
                         />
                       </Grid>
                       <Grid item xs={6}>
                         <TextField
+                          key="apellido-materno-input"
                           fullWidth
                           label="Apellido Materno"
-                          value={studentData.apellido_materno}
+                          value={formData.apellido_materno ?? ""}
                           onChange={handleInputChange("apellido_materno")}
                           size="small"
                         />
@@ -206,7 +245,9 @@ export const Profile = () => {
                   ) : (
                     <>
                       <Typography variant="h5">
-                        {`${studentData.nombre} ${studentData.apellido_paterno} ${studentData.apellido_materno}`}
+                        {`${studentData.nombre ?? ""} ${studentData.apellido_paterno ?? ""} ${
+                          studentData.apellido_materno ?? ""
+                        }`}
                       </Typography>
                       <Typography variant="body1" color="text.secondary">
                         Estudiante
@@ -258,7 +299,7 @@ export const Profile = () => {
                 icon={<SchoolIcon color="action" sx={{ mt: 1 }} />}
                 label="Semestre"
                 field="semestre"
-                value={`${studentData.semestre}° Semestre`}
+                value={`${studentData.semestre ?? ""}° Semestre`}
               />
               <InfoField
                 icon={<GroupIcon color="action" sx={{ mt: 1 }} />}

@@ -125,8 +125,10 @@ export const StudentLayout = ({ children }) => {
               Hola, {user.nombre}!
             </Typography>
             <IconButton onClick={handleMenuClick} sx={{ padding: 0.5, border: "2px solid white" }}>
-              <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
-                <PersonIcon />
+              <Avatar
+                sx={{ bgcolor: theme.palette.secondary.main }}
+              >
+                {user.nombre?.[0] ?? ""}
               </Avatar>
             </IconButton>
           </Box>

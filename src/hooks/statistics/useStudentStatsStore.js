@@ -9,7 +9,6 @@ export const useStudentStatsStore = () => {
         try {
             //Disparar accion al backend
             const { data } = await simulatorApi.get(`/results/mis-resultados/${numero_cuenta}`);
-            console.log(data);
 
             return data;
 

@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Box, Typography, Card, CardContent, Button, Grid, LinearProgress, Paper } from "@mui/material"
 import { CheckCircle, XCircle, AlertCircle, ArrowLeft } from "lucide-react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 
 const examData = {
   id_intento: 1,
@@ -23,6 +23,21 @@ const examData = {
 export const ExamResult = () => {
   const { id } = useParams();
   const [mostrarDetalles, setMostrarDetalles] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // 🔹 Redirigir a /student/home si el usuario intenta regresar
+    const handleBackButton = () => {
+      navigate("/student/home", { replace: true });
+    };
+
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handleBackButton);
+
+    return () => {
+      window.removeEventListener("popstate", handleBackButton);
+    };
+  }, [navigate]);
 
   const porcentajeCorrectas = (examData.respuestasCorrectas / examData.totalPreguntas) * 100;
 
@@ -116,8 +131,8 @@ export const ExamResult = () => {
       </Card>
 
       <Box sx={{ mt: 4, textAlign: "center" }}>
-        <Button component={Link} to="/student/dashboard" variant="outlined" startIcon={<ArrowLeft size={16} />} sx={{ borderColor: "#B91116", color: "#B91116", "&:hover": { borderColor: "#8B0000", backgroundColor: "rgba(185, 17, 22, 0.04)" } }}>
-          Volver al Dashboard
+        <Button component={Link} to="/student/home" variant="outlined" startIcon={<ArrowLeft size={16} />} sx={{ borderColor: "#B91116", color: "#B91116", "&:hover": { borderColor: "#8B0000", backgroundColor: "rgba(185, 17, 22, 0.04)" } }}>
+          Volver a Exámenes de Práctica
         </Button>
       </Box>
     </Box>

@@ -14,7 +14,8 @@ export const examsSlice = createSlice({
         currentOrder: null,
         totalQuestions: 0,
         preguntaNueva: null,
-        answeredQuestions: []
+        answeredQuestions: [],
+        remainingTime: "00:00:00"
     },
     reducers: {
         // Acción para establecer el examen actual
@@ -28,14 +29,14 @@ export const examsSlice = createSlice({
         },
         setAnsweredQuestion: (state, action) => {
             const orden = action.payload;
-          
+
             if (!state.answeredQuestions) {
-              state.answeredQuestions = []; // Evitar `null`
+                state.answeredQuestions = []; // Evitar `null`
             }
-          
+
             // Solo agregar si aún no está en la lista
             if (!state.answeredQuestions.includes(orden)) {
-              state.answeredQuestions.push(orden);
+                state.answeredQuestions.push(orden);
             }
         },
         setCurrentAttempt: (state, action) => {
@@ -158,7 +159,15 @@ export const examsSlice = createSlice({
         },
         resetTotalQuestions: (state) => {
             state.totalQuestions = null;
-        }
+        },
+        // Añadimos el reducer para setRemainingTime
+        setRemainingTime: (state, action) => {
+            state.remainingTime = action.payload
+        },
+        // Añadimos un reducer para resetear remainingTime si es necesario
+        resetRemainingTime: (state) => {
+            state.remainingTime = "00:00:00"
+        },
     },
 })
 
@@ -187,9 +196,11 @@ export const {
     addNewQuestionTemp,
     resetPreguntaNueva,
     setPreguntaNueva,
-    resetCurrentOrder, 
+    resetCurrentOrder,
     resetTotalQuestions,
     setCurrentAttempt,
     setAnsweredQuestion,
-    resetAnsweredQuestions
+    resetAnsweredQuestions,
+    resetRemainingTime,
+    setRemainingTime
 } = examsSlice.actions;  

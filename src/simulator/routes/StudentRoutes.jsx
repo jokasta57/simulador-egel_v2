@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { StudentLayout } from '../layout/StudentLayout';
-import { ExamQuestions, ExamResult, Exams, Profile, Results } from '../components';
+import { ExamQuestions, ExamResult, ExamReview, Exams, Profile, Results } from '../components';
 
 export const StudentRoutes = () => {
   return (
@@ -10,6 +10,7 @@ export const StudentRoutes = () => {
         <Route path="/home" element={<Exams />} />
         <Route path="/exams/:id" element={<ExamQuestions />} />
         <Route path="/exams/:id/result" element={<ExamResult />}/>
+        <Route path="/exams/:id/review" element={<ExamReview />}/>
         <Route path="/perfil" element={<Profile />} />
         <Route path="/resultados" element={<Results />} />
         <Route path="/" element={<Navigate to="/home" replace />} />

@@ -23,11 +23,12 @@ import {
 } from "@mui/icons-material"
 import { useAuthStore } from "../../hooks/useAuthStore"
 import { useSelector } from "react-redux"
+import { clearErrorMessage } from "../../store/auth/authSlice"; // Importamos la acción para limpiar el error
 import { Link, Link as RouterLink, useLocation, useNavigate } from "react-router-dom"
 
 export const LoginPage = () => {
   const { startLoginAdmin, startLoginStudent } = useAuthStore()
-  const { error } = useSelector((state) => state.auth)
+  const { error: authError } = useSelector((state) => state.auth)
   const navigate = useNavigate()
 
   const location = useLocation()
@@ -38,11 +39,10 @@ export const LoginPage = () => {
     nip: "",
   })
   const [showPassword, setShowPassword] = useState(false)
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  })
+
+  // ✅ Estado para mensajes de éxito y error
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
 
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
@@ -61,46 +61,32 @@ export const LoginPage = () => {
       const { numeroIdentificacion, nip } = formData
 
       if (!numeroIdentificacion || !nip) {
-        setSnackbar({
-          open: true,
-          message:
-            !numeroIdentificacion && !nip
-              ? "Por favor, ingrese número de identificación y NIP"
-              : !numeroIdentificacion
-                ? "Por favor, ingrese número de identificación"
-                : "Por favor, ingrese NIP",
-          severity: "warning",
-        })
+        setError(
+          !numeroIdentificacion && !nip
+            ? "Por favor, ingrese número de identificación y NIP"
+            : !numeroIdentificacion
+            ? "Por favor, ingrese número de identificación"
+            : "Por favor, ingrese NIP"
+        )
         return
       }
 
       try {
         if (role === "admin") {
           await startLoginAdmin(numeroIdentificacion, nip)
-          setSnackbar({
-            open: true,
-            message: "Inicio de sesión exitoso",
-            severity: "success",
-          })
+          setSuccess("Inicio de sesión exitoso")
           navigate("/admin/dashboard")
         } else if (role === "student") {
           await startLoginStudent(numeroIdentificacion, nip)
-          setSnackbar({
-            open: true,
-            message: "Inicio de sesión exitoso",
-            severity: "success",
-          })
+          setSuccess("Inicio de sesión exitoso")
           navigate("/student/home")
         }
-      } catch (error) {
-        setSnackbar({
-          open: true,
-          message: "Error al iniciar sesión. Por favor, verifica tus credenciales.",
-          severity: "error",
-        })
+      } catch (err) {
+        console.error("Error al iniciar sesión:", err)
+        setError(authError || "Error al iniciar sesión. Verifica tus credenciales.")
       }
     },
-    [formData, startLoginAdmin, startLoginStudent, navigate, role],
+    [formData, startLoginAdmin, startLoginStudent, navigate, role, authError]
   )
 
   const handleTogglePasswordVisibility = useCallback(() => {
@@ -108,7 +94,8 @@ export const LoginPage = () => {
   }, [])
 
   const handleCloseSnackbar = useCallback(() => {
-    setSnackbar((prev) => ({ ...prev, open: false }))
+    setError("")
+    setSuccess("")
   }, [])
 
   const handleGoHome = useCallback(() => {
@@ -129,7 +116,7 @@ export const LoginPage = () => {
         maxWidth: "90%",
       },
     }),
-    [theme],
+    [theme]
   )
 
   const buttonStyles = useMemo(
@@ -142,7 +129,7 @@ export const LoginPage = () => {
       textTransform: "none",
       borderRadius: 2,
     }),
-    [],
+    []
   )
 
   return (
@@ -253,17 +240,18 @@ export const LoginPage = () => {
           )}
         </Box>
       </Paper>
+
+      {/* ✅ Snackbar para errores y éxito en el mismo formato */}
       <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
+        open={Boolean(error || success)}
+        autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
-          {snackbar.message}
+        <Alert onClose={handleCloseSnackbar} severity={error ? "error" : "success"} variant="filled">
+          {error || success}
         </Alert>
       </Snackbar>
     </Box>
   )
 }
-

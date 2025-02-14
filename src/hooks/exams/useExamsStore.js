@@ -131,6 +131,30 @@ export const useExamsStore = () => {
         }
     }, [dispatch]);
 
+    const handleLoadQuestionAndAnswer = useCallback(async (examId, orden, id_intento) => {
+        try {
+            const response = await simulatorApi.get(`/questions/answers/${id_intento}`, {
+                params: {
+                    orden, 
+                    id_examen: examId
+                }
+            });
+            if (!response.data.pregunta) {
+                dispatch(setCurrentQuestion(null)); // En lugar de generar error, establecer null
+                return null;
+            }
+
+            dispatch(setCurrentQuestion(response.data.pregunta))
+            return response.data.pregunta;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al cargar la pregunta'));
+            throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
+    }, [dispatch]);
+
     const handleLoadQuestionsByExam = useCallback(async (examId) => {
         try {
             const response = await adminApi.get(`/questions/exam/${examId}`);
@@ -323,6 +347,21 @@ export const useExamsStore = () => {
         dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
     }
     }, [dispatch]);
+    
+    const handleUpdateAnswer = useCallback(async (id_respuesta, id_opcion) => {
+        dispatch(setIsLoading());
+        try {
+            const response = await simulatorApi.put(`/answers/${id_respuesta}`, {id_opcion});
+
+            return response.data.respuesta;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al agregar pregunta'));
+            throw error;
+        } finally {
+        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+    }
+    }, [dispatch]);
 
     const handleClearError = useCallback(() => {
         dispatch(clearError());
@@ -356,6 +395,8 @@ export const useExamsStore = () => {
         handleDeleteQuestion,
         handleSwitchState,
         handleNewAttempt,
-        handleSaveAnswer
+        handleSaveAnswer, 
+        handleLoadQuestionAndAnswer,
+        handleUpdateAnswer
     };
 };

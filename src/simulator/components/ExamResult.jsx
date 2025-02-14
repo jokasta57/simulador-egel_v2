@@ -1,98 +1,125 @@
-import {
-  Typography,
-  Paper,
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  Button,
-} from "@mui/material"
-import CheckCircleIcon from "@mui/icons-material/CheckCircle"
-import CancelIcon from "@mui/icons-material/Cancel"
+"use client"
+
+import { useState } from "react"
+import { Box, Typography, Card, CardContent, Button, Grid, LinearProgress, Paper } from "@mui/material"
+import { CheckCircle, XCircle, AlertCircle, ArrowLeft } from "lucide-react"
+import { Link, useParams } from "react-router-dom"
 
 const examData = {
-  nombre: "Examen de Programación",
+  id_intento: 1,
+  numero_cuenta: 399098,
+  id_examen: 7,
+  fecha_aplicacion: "2025-01-17",
+  calificacion: 90, // Se corrigió la calificación para que refleje respuestas correctas
+  nombre: "Examen de Programación Avanzada",
   carrera: "Ingeniería en Sistemas",
   area: "Informática",
-  periodo: "2023-A"
-};
-
-const resultData = {
-  calificacion: 85,
-  respuestas: [
-    { id_opcion: "Nigga", es_correcta: true },
-    { id_opcion: "B", es_correcta: false },
-    { id_opcion: "C", es_correcta: true },
-    // ... más respuestas
-  ]
-};
+  periodo: "2025-A",
+  totalPreguntas: 50,
+  respuestasCorrectas: 45,
+  respuestasIncorrectas: 5,
+}
 
 export const ExamResult = () => {
-  // Calcula el porcentaje de respuestas correctas
-  const correctAnswers = resultData.respuestas.filter((r) => r.es_correcta).length
-  const totalQuestions = resultData.respuestas.length
-  const percentage = (correctAnswers / totalQuestions) * 100
+  const { id } = useParams();
+  const [mostrarDetalles, setMostrarDetalles] = useState(false);
+
+  const porcentajeCorrectas = (examData.respuestasCorrectas / examData.totalPreguntas) * 100;
 
   return (
-    <Box sx={{ maxWidth: 800, margin: "auto", mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Resultado del Examen
-        </Typography>
+    <Box sx={{ maxWidth: 800, margin: "0 auto", p: 3 }}>
+      <Card sx={{ mb: 4, boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
+        <CardContent>
+          <Typography variant="h4" sx={{ color: "#B91116", fontWeight: "bold", mb: 2 }}>
+            Resultado del Examen
+          </Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            {examData.nombre}
+          </Typography>
 
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6">{examData.nombre}</Typography>
-          <Typography variant="body1">Carrera: {examData.carrera}</Typography>
-          <Typography variant="body1">Área: {examData.area}</Typography>
-          <Typography variant="body1">Periodo: {examData.periodo}</Typography>
-        </Box>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body1">Carrera: {examData.carrera}</Typography>
+              <Typography variant="body1">Área: {examData.area}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body1">Periodo: {examData.periodo}</Typography>
+              <Typography variant="body1">Fecha: {examData.fecha_aplicacion}</Typography>
+            </Grid>
+          </Grid>
 
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-          <Typography variant="h5">Calificación: {resultData.calificacion}</Typography>
-          <Chip
-            label={`${percentage.toFixed(2)}% Correctas`}
-            color={percentage >= 60 ? "success" : "error"}
-            sx={{ fontSize: "1.1rem", p: 1 }}
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+            <Typography variant="h5">Calificación Final</Typography>
+            <Typography variant="h3" sx={{ color: "#B91116", fontWeight: "bold" }}>
+              {porcentajeCorrectas.toFixed(1)}%
+            </Typography>
+          </Box>
+
+          <LinearProgress
+            variant="determinate"
+            value={porcentajeCorrectas}
+            sx={{
+              height: 10,
+              borderRadius: 5,
+              backgroundColor: "#f0f0f0",
+              "& .MuiLinearProgress-bar": {
+                backgroundColor: "#B91116",
+              },
+            }}
           />
-        </Box>
 
-        <TableContainer component={Paper} sx={{ mb: 3 }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Pregunta</TableCell>
-                <TableCell align="center">Respuesta</TableCell>
-                <TableCell align="center">Correcta</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {resultData.respuestas.map((respuesta, index) => (
-                <TableRow key={index}>
-                  <TableCell>{`Pregunta ${index + 1}`}</TableCell>
-                  <TableCell align="center">{respuesta.id_opcion}</TableCell>
-                  <TableCell align="center">
-                    {respuesta.es_correcta ? <CheckCircleIcon color="success" /> : <CancelIcon color="error" />}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+          <Grid container spacing={2} sx={{ mt: 4 }}>
+            <Grid item xs={12} sm={6}>
+              <Card sx={{ backgroundColor: "#e8f5e9", height: "100%" }}>
+                <CardContent sx={{ display: "flex", alignItems: "center" }}>
+                  <CheckCircle size={32} color="#4caf50" />
+                  <Box sx={{ ml: 2 }}>
+                    <Typography variant="body2">Respuestas Correctas</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: "bold", color: "#4caf50" }}>
+                      {examData.respuestasCorrectas}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Card sx={{ backgroundColor: "#ffebee", height: "100%" }}>
+                <CardContent sx={{ display: "flex", alignItems: "center" }}>
+                  <XCircle size={32} color="#f44336" />
+                  <Box sx={{ ml: 2 }}>
+                    <Typography variant="body2">Respuestas Incorrectas</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: "bold", color: "#f44336" }}>
+                      {examData.respuestasIncorrectas}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
 
-        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Button variant="contained" color="primary">
-            Ver detalles
-          </Button>
-          <Button variant="outlined" color="secondary">
-            Volver al dashboard
-          </Button>
-        </Box>
-      </Paper>
+          <Paper elevation={0} sx={{ mt: 4, p: 2, backgroundColor: "#f5f5f5" }}>
+            <Typography variant="h6" sx={{ mb: 2, display: "flex", alignItems: "center" }}>
+              <AlertCircle size={24} style={{ marginRight: "8px", color: "#B91116" }} />
+              Resumen y Recomendaciones
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              Has obtenido un puntaje de {porcentajeCorrectas.toFixed(1)}%. ¡Felicidades por tu desempeño!
+            </Typography>
+          </Paper>
+
+          <Box sx={{ mt: 4 }}>
+            <Button component={Link} to={`/student/exams/${id}/review`} variant="contained" sx={{ backgroundColor: "#4caf50", color: "white", "&:hover": { backgroundColor: "#388e3c" } }}>
+              Ver Revisión
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Box sx={{ mt: 4, textAlign: "center" }}>
+        <Button component={Link} to="/student/dashboard" variant="outlined" startIcon={<ArrowLeft size={16} />} sx={{ borderColor: "#B91116", color: "#B91116", "&:hover": { borderColor: "#8B0000", backgroundColor: "rgba(185, 17, 22, 0.04)" } }}>
+          Volver al Dashboard
+        </Button>
+      </Box>
     </Box>
   )
 }
-

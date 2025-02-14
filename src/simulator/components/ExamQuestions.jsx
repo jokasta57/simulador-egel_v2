@@ -8,17 +8,17 @@ import { useParams } from "react-router-dom";
 import { useExamsStore } from "../../hooks/exams/useExamsStore";
 import { useDispatch, useSelector } from "react-redux";
 import { LoadingSpinner } from "./LoadingSpinner";
-import { resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setTotalQuestions } from "../../store";
+import { resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setTotalQuestions, setAnsweredQuestion, resetAnsweredQuestions } from "../../store";
 
 export const ExamQuestions = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
 
-  const { handleLoadQuestion, handleLoadExam, handleLoadQuestionsByExam, handleResetCurrentQuestion, handleNewAttempt, handleSaveAnswer } = useExamsStore();
-  const { currentExam, currentAttempt } = useSelector((state) => state.exams);
+  const { handleLoadQuestion, handleLoadExam, handleLoadQuestionsByExam, handleResetCurrentQuestion, handleLoadQuestionAndAnswer, handleNewAttempt, handleSaveAnswer, handleUpdateAnswer } = useExamsStore();
+  const { currentExam, currentAttempt, currentOrder, currentQuestion, answeredQuestions } = useSelector((state) => state.exams);
   const { user } = useSelector((state) => state.auth);
 
-  const [currentQuestion, setCurrentQuestion] = useState(1);
+  const [question, setCurrentQuestion] = useState(1);
   const [answers, setAnswers] = useState({});
   const [success, setSuccess] = useState(""); // ✅ Estado para mensajes de éxito
   const [error, setError] = useState(""); // ✅ Estado para mensajes de error
@@ -39,7 +39,7 @@ export const ExamQuestions = () => {
         await handleNewAttempt(user.numero_cuenta, id);
 
         // Intentar cargar la primera pregunta
-        const pregunta = await handleLoadQuestion(id, 1);
+        const pregunta = await handleLoadQuestionAndAnswer(id, 1, currentAttempt.id_intento);
         if (!pregunta || pregunta.ok === false) {
           setLoading(false);
           throw new Error(pregunta?.msg || "Error desconocido al cargar la pregunta");
@@ -49,7 +49,7 @@ export const ExamQuestions = () => {
       } catch (error) {
         console.error("Error al cargar el examen:", error);
         setLoading(false);
-        setError( error.response.data.msg || error.message);
+        setError(error.response.data.msg || error.message);
       }
       setLoading(false);
     };
@@ -63,6 +63,7 @@ export const ExamQuestions = () => {
       dispatch(resetCurrentOrder());
       dispatch(resetTotalQuestions());
       dispatch(resetPreguntaNueva());
+      dispatch(resetAnsweredQuestions());
     };
   }, []);
 
@@ -76,33 +77,59 @@ export const ExamQuestions = () => {
 
   const handleQuestionSelect = async (orden) => {
     try {
-      const pregunta = await handleLoadQuestion(id, orden);
+      const pregunta = await handleLoadQuestionAndAnswer(id, orden, currentAttempt.id_intento);
       if (!pregunta || pregunta.ok === false) {
         throw new Error(pregunta?.msg || "Error al cargar la pregunta");
       }
       dispatch(setCurrentOrder(orden));
     } catch (error) {
       console.error("Error al cargar la pregunta:", error);
-      setError(error.message);
+      setError(error.response.data.msg || error.message);
     }
   };
 
   const handleAnswerChange = (answer) => {
     setAnswers((prev) => ({
       ...prev,
-      [currentQuestion]: answer,
+      [question]: answer,
     }));
   };
 
   const saveAnswer = async () => {
     try {
-      setLoading(true);
-      
-      await handleSaveAnswer(currentAttempt.id_intento, answers[currentQuestion]); // ✅ Ahora sí, sin recursión
-  
-      setLoading(false);
-      console.log(`Respuesta guardada para la pregunta ${currentQuestion}: ${answers[currentQuestion]}`);
-      setSuccess("Respuesta guardada exitosamente");
+      if (!answeredQuestions.includes(currentOrder)) {
+        setLoading(true);
+        
+        await handleSaveAnswer(currentAttempt.id_intento, answers[question]);
+        
+        // Evita que se pierda la seleccion en el UI
+        const pregunta = await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento);
+        
+        dispatch(setAnsweredQuestion(currentOrder));
+        
+        setLoading(false);
+        setSuccess("Respuesta guardada exitosamente");
+      } else {
+        //Actualizacion
+        setLoading(true);
+        
+        // Obtener el ID de la respuesta
+        const pregunta = await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento);
+        
+        const answeredOption = pregunta?.opcion?.find(opt => opt.respuesta && opt.respuesta.length > 0);
+        const answeredId = answeredOption?.respuesta[0]?.id_respuesta;
+        
+        //Actualiza la respuesta
+        await handleUpdateAnswer(answeredId, answers[question])
+        
+        // Evita que se pierda la seleccion en el UI
+        await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento);
+        dispatch(setAnsweredQuestion(currentOrder));
+       
+        setLoading(false);
+        setSuccess("Respuesta guardada exitosamente");
+        
+      }
     } catch (error) {
       console.error("Error al guardar la respuesta:", error);
       setError(error.response?.data?.msg || error.message);
@@ -135,10 +162,10 @@ export const ExamQuestions = () => {
 
         <QuestionForm
           loading={loading}
-          selectedAnswer={answers[currentQuestion]}
+          selectedAnswer={answers[question]}
           onAnswerChange={handleAnswerChange}
           onSaveAnswer={saveAnswer}
-          onNextQuestion={() => handleQuestionSelect(currentQuestion + 1)}
+          onNextQuestion={() => handleQuestionSelect(question + 1)}
         />
       </Box>
 
@@ -154,7 +181,7 @@ export const ExamQuestions = () => {
           severity={error ? "error" : "success"}
           variant="filled"
         >
-          {error ? (typeof error === "string" ? error : JSON.stringify(error)) : 
+          {error ? (typeof error === "string" ? error : JSON.stringify(error)) :
             (typeof success === "string" ? success : JSON.stringify(success))}
         </Alert>
       </Snackbar>

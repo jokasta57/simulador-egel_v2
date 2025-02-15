@@ -16,9 +16,12 @@ export const useAuthStore = () => {
             const { data } = await simulatorApi.post('/admin/auth', { numero_identificacion, nip });
             localStorage.setItem('token', data.token);
             localStorage.setItem('token-init-date', new Date().getTime());
-    
+
             const { admin } = data;
-            dispatch(onLoginSuccess({ nombre: admin.nombre, id: admin.id_admin, token: admin.token, role: "admin" }));
+            
+            let role = admin?.superAdmin ? 'superAdmin' : 'admin' 
+
+            dispatch(onLoginSuccess({ nombre: admin.nombre, apellido_paterno: admin.apellido_paterno, apellido_materno: admin.apellido_materno ,id: admin.id_admin, token: data.token, role: role }));
         } catch (error) {
             if (error.response?.data?.msg) {
                 errorMessage = error.response.data.msg;
@@ -82,28 +85,42 @@ export const useAuthStore = () => {
             }, 10)
         }
     }
-    const checkAuthToken = async() => {
-        dispatch(onChecking());
+    const checkAuthToken = async () => {
         const token = localStorage.getItem('token');
-        if( !token ) return dispatch(onLogout());
-
-        //Revalida el token y lo setea
+        if (!token) {
+            dispatch(onLogout());
+            return;
+        }
+    
         try {
-            const {data} = await simulatorApi.get('users/renew');
-            localStorage.setItem('token', data.token)
+            // Solo ejecuta `onChecking()` si el usuario no está autenticado
+            if (!isAuthenticated) dispatch(onChecking());
+    
+            const { data } = await simulatorApi.get('users/renew');
+            localStorage.setItem('token', data.token);
             localStorage.setItem('token-init-date', new Date().getTime());
-            //Dependiendo el rol del usuario, es el guardado en redux
-            if(data.role === 'admin'){
-                dispatch(onLoginSuccess({nombre: data.nombre, id: data.id_admin, token: data.token, role: data.role}))
-            } else if(data.role === 'student'){
-                dispatch(onLoginSuccess({nombre: data.nombre, apellido_paterno: data.apellido_paterno, numero_cuenta: data.numero_cuenta, carrera: data.carrera, role: data.role}))
+    
+            // Si los datos no han cambiado, no actualizar Redux
+            if (user?.role === data.role && user?.id === data.id_admin) return;
+    
+            const commonData = {
+                nombre: data.nombre,
+                apellido_paterno: data.apellido_paterno,
+                apellido_materno: data.apellido_materno,
+                role: data.role,
+            };
+    
+            if (data.role === 'admin' || data.role === 'superAdmin') {
+                dispatch(onLoginSuccess({ ...commonData, id: data.id, token: data.token }));
+            } else if (data.role === 'student') {
+                dispatch(onLoginSuccess({ ...commonData, numero_cuenta: data.numero_cuenta, carrera: data.carrera }));
             }
             
         } catch (error) {
             localStorage.clear();
             dispatch(onLogout());
         }
-    }
+    };
     
     const getUserInfo = async(numero_cuenta) => {
         try {

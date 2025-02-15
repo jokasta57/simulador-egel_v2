@@ -35,7 +35,7 @@ export const AppRouter = () => {
                 path='/login'
                 element={
                     isAuthenticated ? (
-                        userRole === "admin"
+                        (userRole === "admin" || userRole === 'superAdmin')
                             ? <Navigate to="/admin/dashboard" replace />
                             : <Navigate to="/student/home" replace />
                     ) : (
@@ -46,7 +46,7 @@ export const AppRouter = () => {
 
             {/* Rutas del Administrador */}
             <Route path="/admin/*" element={
-                <PrivateRoute isAuthenticated={isAuthenticated && userRole === 'admin'} redirectTo="/login" userRole={"admin"}>
+                <PrivateRoute isAuthenticated={isAuthenticated && (userRole === 'admin' || userRole === 'superAdmin')} redirectTo="/login" userRole={"admin"}>
                     <DashboardRoutes />
                 </PrivateRoute>
             } />

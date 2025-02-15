@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+"use client"
+
+import { useState } from "react"
+import { Link, useLocation } from "react-router-dom"
 import {
   Box,
   Drawer,
@@ -17,7 +19,7 @@ import {
   MenuItem,
   useTheme,
   useMediaQuery,
-} from '@mui/material';
+} from "@mui/material"
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -26,60 +28,71 @@ import {
   BarChart as BarChartIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
-} from '@mui/icons-material';
-import { useDispatch, useSelector } from 'react-redux';
-import { useAuthStore } from '../../hooks/useAuthStore';
+  SupervisorAccount as SupervisorAccountIcon,
+} from "@mui/icons-material"
+import { useSelector } from "react-redux"
+import { useAuthStore } from "../../hooks/useAuthStore"
 
-const drawerWidth = 240;
+const drawerWidth = 240
 
 const menuItems = [
   {
-    text: 'Dashboard',
+    text: "Dashboard",
     icon: <DashboardIcon />,
-    path: '/admin/dashboard',
+    path: "/admin/dashboard",
   },
   {
-    text: 'Lista de Exámenes',
+    text: "Lista de Exámenes",
     icon: <LibraryBooksIcon />,
-    path: '/admin/examenes',
+    path: "/admin/examenes",
   },
   {
-    text: 'Crear Examen',
+    text: "Crear Examen",
     icon: <AddCircleIcon />,
-    path: '/admin/crear-examen',
+    path: "/admin/crear-examen",
   },
   {
-    text: 'Estadísticas',
+    text: "Estadísticas",
     icon: <BarChartIcon />,
-    path: '/admin/estadisticas',
+    path: "/admin/estadisticas",
   },
-];
+  {
+    text: "Perfil",
+    icon: <PersonIcon />,
+    path: "/admin/perfil",
+  },
+]
+
+const superAdminMenuItem = {
+  text: "Gestión de Administradores",
+  icon: <SupervisorAccountIcon />,
+  path: "/admin/gestion-administradores",
+}
 
 export const DashboardLayout = ({ children }) => {
-  const theme = useTheme();
-  const location = useLocation();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [open, setOpen] = useState(!isMobile);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const { startLogout } = useAuthStore();
+  const theme = useTheme()
+  const location = useLocation()
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+  const [open, setOpen] = useState(!isMobile)
+  const [anchorEl, setAnchorEl] = useState(null)
+  const { startLogout } = useAuthStore()
 
-  const { user } = useSelector(state => state.auth) //Toma el valor que esta en el store state.counter.{counter: 10}
+  const { user } = useSelector((state) => state.auth)
 
   const handleDrawerToggle = () => {
-    setOpen(!open);
-  };
+    setOpen(!open)
+  }
 
   const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-
-  };
+    setAnchorEl(event.currentTarget)
+  }
 
   const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+    setAnchorEl(null)
+  }
 
   const handleLogOut = () => {
-    startLogout();
+    startLogout()
   }
 
   const drawer = (
@@ -87,7 +100,7 @@ export const DashboardLayout = ({ children }) => {
       <Toolbar />
       <List>
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path
 
           return (
             <ListItem key={item.text} disablePadding>
@@ -98,21 +111,21 @@ export const DashboardLayout = ({ children }) => {
                 onClick={isMobile ? handleDrawerToggle : undefined}
                 sx={{
                   minHeight: 48,
-                  '&.Mui-selected': {
-                    backgroundColor: 'rgba(185, 17, 22, 0.08)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(185, 17, 22, 0.12)',
+                  "&.Mui-selected": {
+                    backgroundColor: "rgba(185, 17, 22, 0.08)",
+                    "&:hover": {
+                      backgroundColor: "rgba(185, 17, 22, 0.12)",
                     },
                   },
-                  '&:hover': {
-                    backgroundColor: 'rgba(185, 17, 22, 0.04)',
+                  "&:hover": {
+                    backgroundColor: "rgba(185, 17, 22, 0.04)",
                   },
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    color: isActive ? '#B91116' : 'rgba(0, 0, 0, 0.54)',
-                    minWidth: '40px'
+                    color: isActive ? "#B91116" : "rgba(0, 0, 0, 0.54)",
+                    minWidth: "40px",
                   }}
                 >
                   {item.icon}
@@ -120,29 +133,69 @@ export const DashboardLayout = ({ children }) => {
                 <ListItemText
                   primary={item.text}
                   sx={{
-                    '& .MuiListItemText-primary': {
-                      color: isActive ? '#B91116' : 'inherit',
+                    "& .MuiListItemText-primary": {
+                      color: isActive ? "#B91116" : "inherit",
                       fontWeight: isActive ? 500 : 400,
                     },
                   }}
                 />
               </ListItemButton>
             </ListItem>
-          );
+          )
         })}
+        {user.role === "superAdmin" && (
+          <ListItem key={superAdminMenuItem.text} disablePadding>
+            <ListItemButton
+              component={Link}
+              to={superAdminMenuItem.path}
+              selected={location.pathname === superAdminMenuItem.path}
+              onClick={isMobile ? handleDrawerToggle : undefined}
+              sx={{
+                minHeight: 48,
+                "&.Mui-selected": {
+                  backgroundColor: "rgba(185, 17, 22, 0.08)",
+                  "&:hover": {
+                    backgroundColor: "rgba(185, 17, 22, 0.12)",
+                  },
+                },
+                "&:hover": {
+                  backgroundColor: "rgba(185, 17, 22, 0.04)",
+                },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  color: location.pathname === superAdminMenuItem.path ? "#B91116" : "rgba(0, 0, 0, 0.54)",
+                  minWidth: "40px",
+                }}
+              >
+                {superAdminMenuItem.icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={superAdminMenuItem.text}
+                sx={{
+                  "& .MuiListItemText-primary": {
+                    color: location.pathname === superAdminMenuItem.path ? "#B91116" : "inherit",
+                    fontWeight: location.pathname === superAdminMenuItem.path ? 500 : 400,
+                  },
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
       </List>
     </>
-  );
+  )
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <AppBar
         position="fixed"
         sx={{
           zIndex: theme.zIndex.drawer + 1,
-          backgroundColor: '#B91116',
-          boxShadow: 'none',
-          width: '100%',
+          backgroundColor: "#B91116",
+          boxShadow: "none",
+          width: "100%",
         }}
       >
         <Toolbar>
@@ -160,35 +213,26 @@ export const DashboardLayout = ({ children }) => {
           </Typography>
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center', // Centra verticalmente el texto y el botón
+              display: "flex",
+              alignItems: "center",
             }}
           >
-            <Typography variant="body1" sx={{ color: 'white', mr: 1 }}>
+            <Typography variant="body1" sx={{ color: "white", mr: 1 }}>
               Hola, {user.nombre}!
             </Typography>
             <IconButton
               onClick={handleMenuClick}
               sx={{
                 padding: 0.5,
-                border: '2px solid white',
-                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+                border: "2px solid white",
+                "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
               }}
             >
-              <Avatar
-                sx={{ bgcolor: theme.palette.secondary.main }}
-              >
-                {user.nombre?.[0] ?? ""}
-              </Avatar>
+              <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>{user.nombre?.[0] ?? ""}</Avatar>
             </IconButton>
           </Box>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-            sx={{ mt: 1 }}
-          >
-            <MenuItem onClick={handleMenuClose}>
+          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} sx={{ mt: 1 }}>
+            <MenuItem component={Link} to="/admin/perfil" onClick={handleMenuClose}>
               <ListItemIcon>
                 <PersonIcon fontSize="small" />
               </ListItemIcon>
@@ -214,13 +258,13 @@ export const DashboardLayout = ({ children }) => {
         sx={{
           width: open ? drawerWidth : 0,
           flexShrink: 0,
-          '& .MuiDrawer-paper': {
+          "& .MuiDrawer-paper": {
             width: drawerWidth,
-            boxSizing: 'border-box',
-            borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-            transform: open ? 'none' : `translateX(-${drawerWidth}px)`,
-            visibility: open ? 'visible' : 'hidden',
-            transition: theme.transitions.create(['transform', 'visibility'], {
+            boxSizing: "border-box",
+            borderRight: "1px solid rgba(0, 0, 0, 0.12)",
+            transform: open ? "none" : `translateX(-${drawerWidth}px)`,
+            visibility: open ? "visible" : "hidden",
+            transition: theme.transitions.create(["transform", "visibility"], {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,
             }),
@@ -235,11 +279,11 @@ export const DashboardLayout = ({ children }) => {
         sx={{
           flexGrow: 1,
           minWidth: 0,
-          transition: theme.transitions.create(['margin', 'width'], {
+          transition: theme.transitions.create(["margin", "width"], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          width: open ? `calc(100% - ${drawerWidth}px)` : '100%', // Ajuste aquí
+          width: open ? `calc(100% - ${drawerWidth}px)` : "100%",
           px: 4,
           py: 3,
         }}
@@ -247,16 +291,16 @@ export const DashboardLayout = ({ children }) => {
         <Toolbar />
         <Box
           sx={{
-            width: '100%',
-            height: '100%',
-            maxWidth: '100%',
-            margin: '0 auto',
+            width: "100%",
+            height: "100%",
+            maxWidth: "100%",
+            margin: "0 auto",
           }}
         >
           {children}
         </Box>
       </Box>
     </Box>
-  );
-};
+  )
+}
 

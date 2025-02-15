@@ -39,8 +39,8 @@ import {
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
 import { useAuthStore } from "../../hooks/useAuthStore"
-import { DeleteIcon } from "lucide-react"
 import Swal from "sweetalert2"
+import DeleteIcon from '@mui/icons-material/Delete';
 import { PersonRemove } from "@mui/icons-material"
 
 // Datos de ejemplo basados en la estructura de la base de datos
@@ -533,7 +533,8 @@ export const Statistics = () => {
                               `${row.nombre} ${row.apellido_paterno} ${row.apellido_materno}`,
                             )
                           } sx={{ color: theme.palette.primary.main }}>
-                          <PersonRemove />
+                          
+                            <DeleteIcon />
                         </IconButton>
                       </TableCell>
                     </TableRow>

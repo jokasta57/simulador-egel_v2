@@ -362,6 +362,39 @@ export const useExamsStore = () => {
         dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
     }
     }, [dispatch]);
+    
+    //Obteiene el resultado del examen
+    const handleGetResultsAttempt = useCallback(async (id_intento) => {
+        dispatch(setIsLoading());
+        try {
+            const response = await simulatorApi.get(`/results/calificacion-intento/${id_intento}`);
+
+            return response.data;
+
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al cargar el resultado'));
+            throw error;
+        } finally {
+        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+    }
+    }, [dispatch]);
+    
+    const handleReviewAttempt = useCallback(async (id_intento, page, limit) => {
+        dispatch(setIsLoading());
+        try {
+            const response = await simulatorApi.get(`/results/revision/${id_intento}?page=${page}&limit=${limit}`);
+
+            return response.data;
+
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al cargar la revision'));
+            throw error;
+        } finally {
+        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+    }
+    }, [dispatch]);
 
     const handleClearError = useCallback(() => {
         dispatch(clearError());
@@ -397,6 +430,8 @@ export const useExamsStore = () => {
         handleNewAttempt,
         handleSaveAnswer, 
         handleLoadQuestionAndAnswer,
-        handleUpdateAnswer
+        handleUpdateAnswer, 
+        handleGetResultsAttempt,
+        handleReviewAttempt
     };
 };

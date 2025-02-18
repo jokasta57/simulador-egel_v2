@@ -4,26 +4,20 @@ import { useEffect, useState } from "react"
 import { Box, Typography, Card, CardContent, Button, Grid, LinearProgress, Paper } from "@mui/material"
 import { CheckCircle, XCircle, AlertCircle, ArrowLeft } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-
-const examData = {
-  id_intento: 1,
-  numero_cuenta: 399098,
-  id_examen: 7,
-  fecha_aplicacion: "2025-01-17",
-  calificacion: 90, // Se corrigió la calificación para que refleje respuestas correctas
-  nombre: "Examen de Programación Avanzada",
-  carrera: "Ingeniería en Sistemas",
-  area: "Informática",
-  periodo: "2025-A",
-  totalPreguntas: 50,
-  respuestasCorrectas: 45,
-  respuestasIncorrectas: 5,
-}
+import { useExamsStore } from "../../hooks/exams/useExamsStore"
+import { useSelector } from "react-redux"
+import { LoadingSpinner } from "./LoadingSpinner"
 
 export const ExamResult = () => {
   const { id } = useParams();
   const [mostrarDetalles, setMostrarDetalles] = useState(false);
+  const [examData, setExamData] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  const { currentAttempt } = useSelector((state) => state.exams)
+  const { handleGetResultsAttempt } = useExamsStore();
+
 
   useEffect(() => {
     // 🔹 Redirigir a /student/home si el usuario intenta regresar
@@ -39,7 +33,43 @@ export const ExamResult = () => {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    setIsLoading(true);
+    getResults(currentAttempt.id_intento);
+    setIsLoading(false)
+  }, [])
+
+  const getResults = async (currentAttempt) => {
+    try {
+      const data = await handleGetResultsAttempt(currentAttempt);
+
+      setExamData(prevData => ({
+        ...prevData,
+        id_intento: data.examen?.id_intento || 0,
+        numero_cuenta: Number(data.examen?.numero_cuenta) || 0, // Convertir a número o asignar 0 si es undefined
+        id_examen: data.examen?.id_examen || 0,
+        fecha_aplicacion: data.examen?.fecha_aplicacion || "",
+        calificacion: data.respuestas?.calificacionFinal || 0, // Convertir a número
+        nombre: data.examen?.examen?.nombre || "Desconocido",
+        carrera: data.examen?.examen?.carrera || "No especificado",
+        area: data.examen?.examen?.area || "No especificado",
+        periodo: data.examen?.examen?.periodo || "No especificado",
+        totalPreguntas: data.respuestas?.totalPreguntas || 0,
+        respuestasCorrectas: data.respuestas?.correctas || 0,
+        respuestasIncorrectas: data.respuestas?.incorrectas || 0,
+        mensaje: data.respuestas?.mensaje || ""
+      }));
+
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   const porcentajeCorrectas = (examData.respuestasCorrectas / examData.totalPreguntas) * 100;
+
+    if (isLoading || !examData) {
+      return <LoadingSpinner />
+    }
 
   return (
     <Box sx={{ maxWidth: 800, margin: "0 auto", p: 3 }}>
@@ -118,12 +148,12 @@ export const ExamResult = () => {
               Resumen y Recomendaciones
             </Typography>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              Has obtenido un puntaje de {porcentajeCorrectas.toFixed(1)}%. ¡Felicidades por tu desempeño!
+              {examData.mensaje}
             </Typography>
           </Paper>
 
           <Box sx={{ mt: 4 }}>
-            <Button component={Link} to={`/student/exams/${id}/review`} variant="contained" sx={{ backgroundColor: "#4caf50", color: "white", "&:hover": { backgroundColor: "#388e3c" } }}>
+            <Button component={Link} to={`/student/exams/${currentAttempt.id_intento}/review`} variant="contained" sx={{ backgroundColor: "#4caf50", color: "white", "&:hover": { backgroundColor: "#388e3c" } }}>
               Ver Revisión
             </Button>
           </Box>

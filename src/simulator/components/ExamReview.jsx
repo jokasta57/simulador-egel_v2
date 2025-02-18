@@ -1,9 +1,12 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Box, Typography, Card, CardContent, Button, Paper, Tooltip, IconButton, Grid } from "@mui/material"
 import { CheckCircle, Calendar, ClipboardList, GraduationCap, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import { useParams, useNavigate } from "react-router-dom"
+import { useExamsStore } from "../../hooks/exams/useExamsStore"
+import { useSelector } from "react-redux"
+import { LoadingSpinner } from "./LoadingSpinner"
 
 const examData = {
   id_intento: 1,
@@ -30,10 +33,37 @@ const examData = {
 export const ExamReview = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [currentPage, setCurrentPage] = useState(1)
-  const rowsPerPage = 5
-  const totalPages = Math.ceil(examData.preguntas.length / rowsPerPage)
-  const scrollRef = useRef(null)
+  const [examData, setExamData] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoadingState] = useState(true);
+  const rowsPerPage = 5;
+  const scrollRef = useRef(null);
+  const { handleReviewAttempt } = useExamsStore();
+  const { currentAttempt } = useSelector((state) => state.exams)
+
+  const fetchReviewData = useCallback(async () => {
+    if (!currentAttempt) return; // ✅ Espera hasta que currentAttempt esté disponible
+    setIsLoadingState(true);
+    try {
+      const data = await handleReviewAttempt(currentAttempt.id_intento, currentPage, rowsPerPage);
+      setExamData(data);
+      console.log(data);
+    } catch (error) {
+      console.error("Error al obtener revisión:", error);
+    } finally {
+      setIsLoadingState(false);
+    }
+  }, [currentAttempt, currentPage, rowsPerPage, handleReviewAttempt]);
+
+  useEffect(() => {
+    if (currentAttempt) {
+      fetchReviewData();
+    }
+  }, [currentAttempt, currentPage]);
+
+  if (isLoading || !examData) {
+    return <LoadingSpinner />;
+  }
 
   const handlePageChange = (event, value) => {
     setCurrentPage(value)
@@ -46,7 +76,7 @@ export const ExamReview = () => {
     }
   }
 
-  const preguntasFiltradas = examData.preguntas.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+
 
   return (
     <Box sx={{ maxWidth: 900, margin: "0 auto", p: 3 }}>
@@ -65,31 +95,37 @@ export const ExamReview = () => {
         sx={{ p: 3, mb: 3, borderRadius: "12px", backgroundColor: "#ffffff", boxShadow: 3, border: "1px solid #ddd" }}
       >
         <Typography variant="h5" sx={{ fontWeight: "bold", textAlign: "center", mb: 2 }}>
-          {examData.nombre}
+          {examData.intento.examen.nombre}
         </Typography>
         <Grid container spacing={2} justifyContent="center">
           <Grid item xs={6} display="flex" alignItems="center">
             <ClipboardList size={20} style={{ marginRight: 8 }} />
             <Typography variant="body1">
-              <strong>Número de Intento:</strong> {examData.id_intento}
+              <strong>Número de Intento:</strong> {examData.intento.id_intento}
             </Typography>
           </Grid>
           <Grid item xs={6} display="flex" alignItems="center">
             <CheckCircle size={20} color="#4caf50" style={{ marginRight: 8 }} />
             <Typography variant="body1">
-              <strong>Calificación:</strong> {examData.respuestasCorrectas}/{examData.totalPreguntas}
+              {/* <strong>Calificación:</strong> {examData.respuestasCorrectas}/{examData.totalPreguntas} */}
             </Typography>
           </Grid>
           <Grid item xs={6} display="flex" alignItems="center">
             <Calendar size={20} style={{ marginRight: 8 }} />
             <Typography variant="body1">
-              <strong>Fecha de Aplicación:</strong> {examData.fecha_aplicacion}
+              <strong>Fecha de Aplicación:</strong> {examData.intento.fecha_aplicacion}
             </Typography>
           </Grid>
           <Grid item xs={6} display="flex" alignItems="center">
             <GraduationCap size={20} style={{ marginRight: 8 }} />
             <Typography variant="body1">
-              <strong>Área:</strong> {examData.area}
+              <strong>Área:</strong> {examData.intento.examen.area}
+            </Typography>
+          </Grid>
+          <Grid item xs={6} display="flex" alignItems="center">
+            <GraduationCap size={20} style={{ marginRight: 8 }} />
+            <Typography variant="body1">
+              <strong>Periodo:</strong> {examData.intento.examen.periodo}
             </Typography>
           </Grid>
         </Grid>
@@ -116,12 +152,12 @@ export const ExamReview = () => {
             "&::-webkit-scrollbar": { display: "none" },
           }}
         >
-          {examData.preguntas.map((p, index) => (
-            <Tooltip key={index} title={`Pregunta ${p.numero}`} arrow>
+          {Array.from({ length: examData.totalPreguntas }).map((_, index) => (
+            <Tooltip key={index} title={`Pregunta ${index + 1}`} arrow>
               <Button
                 variant="contained"
                 sx={{
-                  backgroundColor: p.esCorrecta ? "#4caf50" : "#f44336",
+                  backgroundColor: examData.preguntas.some((p) => p.id_pregunta === index + 1) ? "#4caf50" : "#f44336",
                   color: "white",
                   fontSize: "0.8rem",
                   minWidth: "30px",
@@ -132,7 +168,7 @@ export const ExamReview = () => {
                 }}
                 onClick={() => setCurrentPage(Math.floor(index / rowsPerPage) + 1)}
               >
-                {p.numero}
+                {index + 1}
               </Button>
             </Tooltip>
           ))}
@@ -143,20 +179,17 @@ export const ExamReview = () => {
         </IconButton>
       </Box>
 
-      {preguntasFiltradas.map((p) => (
-        <Card
-          key={p.numero}
-          sx={{ mb: 3, p: 3, boxShadow: 2, backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #ddd" }}
-        >
+      {examData.preguntas.map((p) => (
+        <Card key={p.id_pregunta} sx={{ mb: 3, p: 3, boxShadow: 2, backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #ddd" }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#333" }}>
-              {p.pregunta}
+              {p.contenido}
             </Typography>
             {p.imagen_url && (
               <Box sx={{ textAlign: "center", mb: 2 }}>
                 <img
                   src={p.imagen_url || "/placeholder.svg"}
-                  alt={`Imagen de la pregunta ${p.numero}`}
+                  alt={`Imagen de la pregunta ${p.id_pregunta}`}
                   style={{
                     width: "100%",
                     maxWidth: "350px",
@@ -168,42 +201,35 @@ export const ExamReview = () => {
                 />
               </Box>
             )}
-            <Paper
-              sx={{
-                p: 2,
-                textAlign: "center",
-                backgroundColor: p.esCorrecta ? "#e8f5e9" : "#ffebee",
-                border: p.esCorrecta ? "2px solid #4caf50" : "2px solid #f44336",
-                borderRadius: "8px",
-                mb: 2,
-              }}
-            >
+            <Paper sx={{ p: 2, textAlign: "center", backgroundColor: p.opcion_escogida_correcta === false ? "#ffebee" : "#e8f5e9", borderRadius: "8px", mb: 2 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: "bold", color: "#333" }}>
                 Opción Escogida
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: "bold", color: "#555" }}>
-                {p.respuestaUsuario}
+                {p.opcion_escogida ? p.opcion_escogida : "No se ha seleccionado una respuesta"} 
               </Typography>
             </Paper>
-            <Paper
-              sx={{
-                p: 2,
-                textAlign: "center",
-                backgroundColor: "#e3f2fd",
-                border: "2px solid #1E88E5",
-                borderRadius: "8px",
-              }}
-            >
+            <Paper sx={{ p: 2, textAlign: "center", backgroundColor: "#e3f2fd", borderRadius: "8px" }}>
               <Typography variant="subtitle2" sx={{ fontWeight: "bold", color: "#333" }}>
                 Opción Correcta
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: "bold", color: "#555" }}>
-                {p.respuestaCorrecta}
+                {p.opcion_correcta}
               </Typography>
             </Paper>
           </CardContent>
         </Card>
       ))}
+      {/* Controles de paginación */}
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+        <Button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} variant="outlined" startIcon={<ChevronLeft />}>
+          Anterior
+        </Button>
+        <Typography sx={{ mx: 2 }}>Página {currentPage} de {examData.totalPages}</Typography>
+        <Button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, examData.totalPages))} disabled={currentPage === examData.totalPages} variant="outlined" endIcon={<ChevronRight />}>
+          Siguiente
+        </Button>
+      </Box>
     </Box>
   )
 }

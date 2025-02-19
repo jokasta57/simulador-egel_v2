@@ -17,16 +17,17 @@ import {
 } from "recharts"
 import { Assignment, People, Edit, Event } from "@mui/icons-material"
 import { Link as RouterLink } from "react-router-dom"
+import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
 
 // Mock data for the line chart
-const dataLineas = [
-  { fecha: "2025-01-15", nombre: "Matemáticas I", porcentajeAprobados: 75 },
-  { fecha: "2025-02-01", nombre: "Física Básica", porcentajeAprobados: 68 },
-  { fecha: "2025-02-15", nombre: "Química General", porcentajeAprobados: 82 },
-  { fecha: "2025-03-01", nombre: "Cálculo Diferencial", porcentajeAprobados: 71 },
-  { fecha: "2025-03-15", nombre: "Programación I", porcentajeAprobados: 88 },
-  { fecha: "2025-04-01", nombre: "Álgebra Lineal", porcentajeAprobados: 79 },
-]
+// const dataLineas = [
+//   { fecha: "2025-01-15", nombre: "Matemáticas I", porcentajeAprobados: 75 },
+//   { fecha: "2025-02-01", nombre: "Física Básica", porcentajeAprobados: 68 },
+//   { fecha: "2025-02-15", nombre: "Química General", porcentajeAprobados: 82 },
+//   { fecha: "2025-03-01", nombre: "Cálculo Diferencial", porcentajeAprobados: 71 },
+//   { fecha: "2025-03-15", nombre: "Programación I", porcentajeAprobados: 88 },
+//   { fecha: "2025-04-01", nombre: "Álgebra Lineal", porcentajeAprobados: 79 },
+// ]
 
 // Mock data based on the SQL structure
 const examenesBorrador = [
@@ -37,40 +38,80 @@ const examenesBorrador = [
   { id: 5, nombre: "Examen de Geografía", fecha_modificacion: "16 Feb 2025" },
 ]
 
-const dataPie = [
-  { name: "Aprobados", value: 750 },
-  { name: "Reprobados", value: 250 },
-]
+// const dataPie = [
+//   { name: "Aprobados", value: 750 },
+//   { name: "Reprobados", value: 250 },
+// ]
 
 const COLORS = ["#0088FE", "#FF8042"]
 
 export const Dashboard = () => {
   const theme = useTheme()
   const [resumenData, setResumenData] = useState([])
+  const [dataLineas, setDataLineas] = useState([])
+  const [dataPie, setDataPie] = useState([])
+
+  const { handlePercentageByDate, handlePercentage } = useAdminStatsStore();
 
   useEffect(() => {
-    setResumenData([
-      {
-        title: "Total de Exámenes",
-        value: "28",
-        icon: <Assignment sx={{ fontSize: 28 }} />,
-        valueColor: "#B91116",
-      },
-      {
-        title: "Estudiantes Registrados",
-        value: "1250",
-        icon: <People sx={{ fontSize: 28 }} />,
-        valueColor: "#B91116",
-      },
-      {
-        title: "Último Examen Aplicado",
-        value: "Álgebra Lineal",
-        subvalue: "01 Abr 2025",
-        icon: <Event sx={{ fontSize: 28 }} />,
-        valueColor: "#B91116",
-      },
-    ])
+    getPercentages();
+    getPercentagesByDate()
   }, [])
+
+  const getPercentagesByDate = async () => {
+    try {
+      const data = await handlePercentageByDate();
+      setDataLineas(data.porcentajesPorFecha)
+      console.log(data);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const getPercentages = async () => {
+    try {
+      const data = await handlePercentage();
+  
+      // Transformar datos para el gráfico de pastel
+      const transformedData = [
+        { name: "Aprobados", value: parseFloat(data.porcentajes.aprobados) },
+        { name: "Reprobados", value: parseFloat(data.porcentajes.reprobados) }
+      ];
+      setDataPie(transformedData);
+  
+      // Transformar datos para la sección de resumen
+      const transformedResumen = [
+        {
+          title: "Total de Exámenes",
+          value: data.datosInicio.totalExamenes.toString(),
+          icon: <Assignment sx={{ fontSize: 28 }} />,
+          valueColor: "#B91116",
+        },
+        {
+          title: "Estudiantes Registrados",
+          value: data.datosInicio.estudiantesRegistrados.toString(),
+          icon: <People sx={{ fontSize: 28 }} />,
+          valueColor: "#B91116",
+        },
+        {
+          title: "Último Examen Aplicado",
+          value: `${data.datosInicio.ultimoExamen.examen.nombre}`,
+          subvalue: new Date(data.datosInicio.ultimoExamen.fecha_aplicacion).toLocaleDateString("es-ES", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }),
+          icon: <Event sx={{ fontSize: 28 }} />,
+          valueColor: "#B91116",
+        },
+      ];
+      setResumenData(transformedResumen);
+  
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  
 
   return (
     <Box sx={{ maxWidth: "100%", overflow: "hidden" }}>
@@ -180,7 +221,7 @@ export const Dashboard = () => {
                 <LineChart data={dataLineas}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="fecha" tickFormatter={(value) => new Date(value).toLocaleDateString()} />
-                  <YAxis />
+                  <YAxis domain={[0, 100]}/>
                   <Tooltip
                     labelFormatter={(value) => new Date(value).toLocaleDateString()}
                     formatter={(value, name, props) => [`${value}%`, `${props.payload.nombre}`]}

@@ -91,7 +91,7 @@ export const Results = () => {
   const totalIntentos = resultados?.totalIntentos || "N/A"
   // Formatear calificaciones a dos decimales
   const formatCalificacion = (calificacion) => {
-    return calificacion ? Number.parseFloat(calificacion).toFixed(2) : "No hay datos"
+    return calificacion ? Number.parseFloat(calificacion).toFixed(2) : 0
   }
 
   // Calcular estadísticas con formato correcto
@@ -313,7 +313,7 @@ export const Results = () => {
                   <TableCell>{examen.fecha_aplicacion}</TableCell>
                   <TableCell>{examen.intento}°</TableCell>
                   <TableCell>
-                    {examen.calificacion ? formatCalificacion(examen.calificacion) : "No hay datos"}
+                    {examen.calificacion ? formatCalificacion(examen.calificacion) : 0}
                   </TableCell>
                   <TableCell>{examen.calificacion >= calificacionMinima ? "Aprobado" : "Reprobado"}</TableCell>
                   <TableCell>

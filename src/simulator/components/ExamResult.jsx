@@ -5,8 +5,9 @@ import { Box, Typography, Card, CardContent, Button, Grid, LinearProgress, Paper
 import { CheckCircle, XCircle, AlertCircle, ArrowLeft } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
-import { useSelector } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { LoadingSpinner } from "./LoadingSpinner"
+import { resetCurrentAttempt } from "../../store"
 
 export const ExamResult = () => {
   const { id } = useParams();
@@ -14,6 +15,7 @@ export const ExamResult = () => {
   const [examData, setExamData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const { currentAttempt } = useSelector((state) => state.exams)
   const { handleGetResultsAttempt } = useExamsStore();
@@ -37,6 +39,9 @@ export const ExamResult = () => {
     setIsLoading(true);
     getResults(currentAttempt.id_intento);
     setIsLoading(false)
+    return () => {
+      dispatch(resetCurrentAttempt())
+    }
   }, [])
 
   const getResults = async (currentAttempt) => {
@@ -67,9 +72,9 @@ export const ExamResult = () => {
 
   const porcentajeCorrectas = (examData.respuestasCorrectas / examData.totalPreguntas) * 100;
 
-    if (isLoading || !examData) {
-      return <LoadingSpinner />
-    }
+  if (isLoading || !examData) {
+    return <LoadingSpinner />
+  }
 
   return (
     <Box sx={{ maxWidth: 800, margin: "0 auto", p: 3 }}>

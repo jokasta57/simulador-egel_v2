@@ -81,7 +81,7 @@ export const ExamQuestions = () => {
     }
 
     fetchExamInfo()
-  }, [id])
+  }, [])
 
   useEffect(() => {
     return () => {

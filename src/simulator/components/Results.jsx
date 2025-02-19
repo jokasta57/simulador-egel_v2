@@ -24,6 +24,8 @@ import {
   MenuItem,
   Button,
   IconButton,
+  Snackbar,
+  Alert,
 } from "@mui/material"
 import {
   TrendingUp as TrendingUpIcon,
@@ -66,12 +68,14 @@ export const Results = () => {
           throw new Error(data.msg || "Error al obtener los resultados")
         }
 
+        
         // Guardar los datos en el estado
         setResultados(data.resultados)
         setExamenes(data.historialExamenes)
+        console.log(examenes);
         setLoading(false)
-      } catch (err) {
-        setError(err.message)
+      } catch (error) {
+        setError(error.response?.data?.msg || error.message || 'Error al cargar la pagina')
       } finally {
         setLoading(false)
       }
@@ -110,6 +114,10 @@ export const Results = () => {
     "&:hover": {
       boxShadow: "0 6px 12px rgba(0,0,0,0.15)",
     },
+  }
+
+  const handleCloseSnackbar = () => {
+    setError("")
   }
 
   // Get unique areas from examenes
@@ -311,11 +319,11 @@ export const Results = () => {
                   <TableCell>
                     <Button
                       component={Link}
-                      to={`/student/exams/${examen.id_examen}/review`}
+                      to={`/student/exams/${examen.id_intento}/review`}
                       startIcon={<VisibilityIcon />}
                       variant="outlined"
                       size="small"
-                      onClick={() => console.log(`Redirigiendo a: /student/exams/${examen.id_examen}/review`)}
+                      onClick={() => console.log(`Redirigiendo a: /student/results/revision/${examen.id_intento}`)}
                     >
                       Ver Revisión
                     </Button>
@@ -325,6 +333,19 @@ export const Results = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" variant="filled">
+          {typeof error === "string"
+              ? error
+              : JSON.stringify(error)
+          }
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

@@ -1,59 +1,59 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Box, Typography, Card, CardContent, Button, Paper, Tooltip, IconButton, Grid } from "@mui/material"
+import { Box, Typography, Card, CardContent, Button, Paper, Tooltip, IconButton, Grid, Snackbar, Alert } from "@mui/material"
 import { CheckCircle, Calendar, ClipboardList, GraduationCap, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
-import { useSelector } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { LoadingSpinner } from "./LoadingSpinner"
-
-const examData = {
-  id_intento: 1,
-  numero_cuenta: 399098,
-  id_examen: 7,
-  fecha_aplicacion: "2025-01-17",
-  nombre: "Examen de Programación Avanzada",
-  carrera: "Ingeniería en Sistemas",
-  area: "Informática",
-  periodo: "2025-A",
-  totalPreguntas: 50,
-  respuestasCorrectas: 45,
-  respuestasIncorrectas: 5,
-  preguntas: Array.from({ length: 50 }, (_, i) => ({
-    numero: i + 1,
-    pregunta: `Pregunta de ejemplo ${i + 1}?`,
-    respuestaUsuario: i < 45 ? "Opción A: Respuesta Correcta" : "Opción B: Respuesta Incorrecta",
-    respuestaCorrecta: "Opción A: Respuesta Correcta",
-    imagen_url: i % 5 === 0 ? "/example-image.jpg" : null,
-    esCorrecta: i < 45,
-  })),
-}
+import { resetCurrentAttempt } from "../../store"
 
 export const ExamReview = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const [examData, setExamData] = useState(null);
+  const [panelQuestions, setPanelQuestions] = useState(null);
+  const [error, setError] = useState('')
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoadingState] = useState(true);
   const rowsPerPage = 5;
   const scrollRef = useRef(null);
-  const { handleReviewAttempt } = useExamsStore();
+  const { handleReviewAttempt, handlePanelQuestions } = useExamsStore();
   const { currentAttempt } = useSelector((state) => state.exams)
+  const dispatch = useDispatch();
 
   const fetchReviewData = useCallback(async () => {
-    if (!currentAttempt) return; // ✅ Espera hasta que currentAttempt esté disponible
+    if (!currentAttempt || !id) return; // ✅ Espera hasta que currentAttempt esté disponible
     setIsLoadingState(true);
     try {
-      const data = await handleReviewAttempt(currentAttempt.id_intento, currentPage, rowsPerPage);
+      const data = await handleReviewAttempt(currentAttempt.id_intento || id, currentPage, rowsPerPage);
       setExamData(data);
-      console.log(data);
+
     } catch (error) {
-      console.error("Error al obtener revisión:", error);
+      // console.error("Error al obtener revisión:", error);
+      setError(error.response?.data?.msg || error.message || 'Error al obtener revisión')
     } finally {
       setIsLoadingState(false);
     }
-  }, [currentAttempt, currentPage, rowsPerPage, handleReviewAttempt]);
+  }, [currentAttempt, currentPage, rowsPerPage]);
+
+  const getPanelQuestions = useCallback(async () => {
+    if (!currentAttempt || !id) return; // ✅ Espera hasta que currentAttempt esté disponible
+    setIsLoadingState(true);
+    try {
+      const data = await handlePanelQuestions(currentAttempt.id_intento || id);
+      setPanelQuestions(data);
+
+    } catch (error) {
+      // console.error("Error al obtener revisión:", error);
+      setError(error.response?.data?.msg || error.message || 'Error al obtener revisión')
+    } finally {
+      setIsLoadingState(false);
+    }
+  }, [currentAttempt]);
+
+
 
   useEffect(() => {
     if (currentAttempt) {
@@ -61,22 +61,54 @@ export const ExamReview = () => {
     }
   }, [currentAttempt, currentPage]);
 
-  if (isLoading || !examData) {
-    return <LoadingSpinner />;
-  }
+  useEffect(() => {
+    if (currentAttempt) {
+      getPanelQuestions();
+    }
+    return () => {
+      dispatch(resetCurrentAttempt())
+    }
+  }, [])
 
+  
+  
   const handlePageChange = (event, value) => {
+    setIsLoadingState(true);
     setCurrentPage(value)
+    setIsLoadingState(false);
   }
-
+  
   const handleScroll = (direction) => {
     if (scrollRef.current) {
       const scrollAmount = 150
       scrollRef.current.scrollBy({ left: direction === "left" ? -scrollAmount : scrollAmount, behavior: "smooth" })
     }
   }
-
-
+  
+  const handleCloseSnackbar = () => {
+    setError("")
+  }
+  
+  if (isLoading || !examData) {
+    return (
+      <>
+        <LoadingSpinner />
+        <Snackbar
+          open={Boolean(error)}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity="error" variant="filled">
+            {typeof error === "string"
+              ? error
+              : JSON.stringify(error)
+            }
+          </Alert>
+        </Snackbar>
+      </>
+    );
+  }
 
   return (
     <Box sx={{ maxWidth: 900, margin: "0 auto", p: 3 }}>
@@ -101,13 +133,13 @@ export const ExamReview = () => {
           <Grid item xs={6} display="flex" alignItems="center">
             <ClipboardList size={20} style={{ marginRight: 8 }} />
             <Typography variant="body1">
-              <strong>Número de Intento:</strong> {examData.intento.id_intento}
+              <strong>Número de Intento:</strong> {examData.numeroIntento}
             </Typography>
           </Grid>
           <Grid item xs={6} display="flex" alignItems="center">
             <CheckCircle size={20} color="#4caf50" style={{ marginRight: 8 }} />
             <Typography variant="body1">
-              {/* <strong>Calificación:</strong> {examData.respuestasCorrectas}/{examData.totalPreguntas} */}
+              <strong>Calificación:</strong> {examData.intento.calificacion} %
             </Typography>
           </Grid>
           <Grid item xs={6} display="flex" alignItems="center">
@@ -152,26 +184,45 @@ export const ExamReview = () => {
             "&::-webkit-scrollbar": { display: "none" },
           }}
         >
-          {Array.from({ length: examData.totalPreguntas }).map((_, index) => (
-            <Tooltip key={index} title={`Pregunta ${index + 1}`} arrow>
-              <Button
-                variant="contained"
-                sx={{
-                  backgroundColor: examData.preguntas.some((p) => p.id_pregunta === index + 1) ? "#4caf50" : "#f44336",
-                  color: "white",
-                  fontSize: "0.8rem",
-                  minWidth: "30px",
-                  height: "30px",
-                  borderRadius: "6px",
-                  boxShadow: "none",
-                  "&:hover": { opacity: 0.8 },
-                }}
-                onClick={() => setCurrentPage(Math.floor(index / rowsPerPage) + 1)}
-              >
-                {index + 1}
-              </Button>
-            </Tooltip>
-          ))}
+          {Array.from({ length: examData.totalPreguntas }).map((_, index) => {
+            // Busca la pregunta actual según el índice
+            const pregunta = panelQuestions.preguntasPanel.find((p) => p.orden === index + 1);
+
+            return (
+              <Tooltip key={index} title={`Pregunta ${index + 1}`} arrow>
+                <Button
+                  variant="contained"
+                  sx={{
+                    backgroundColor: pregunta?.es_correcta ? "#4caf50" : "#f44336",
+                    color: "white",
+                    fontSize: "0.8rem",
+                    minWidth: "30px",
+                    height: "30px",
+                    borderRadius: "6px",
+                    boxShadow: "none",
+                    "&:hover": { opacity: 0.8 },
+                  }}
+                  onClick={() => {
+                    // Calcula la página correcta en función de `rowsPerPage`
+                    const pageToGo = Math.floor(index / rowsPerPage) + 1;
+                    setCurrentPage(pageToGo);
+
+                    // Pequeño retraso para que el cambio de página ocurra antes del scroll
+                    setTimeout(() => {
+                      const preguntaElement = document.getElementById(`pregunta-${index + 1}`);
+                      if (preguntaElement) {
+                        const offset = 80; // Ajusta este valor según la altura de tu navbar o padding superior
+                        const rect = preguntaElement.getBoundingClientRect();
+                        window.scrollBy({ top: rect.top - offset, behavior: "smooth" });
+                      }
+                    }, 100);
+                  }}
+                >
+                  {index + 1}
+                </Button>
+              </Tooltip>
+            );
+          })}
         </Box>
         <IconButton onClick={() => handleScroll("right")}>
           {" "}
@@ -180,8 +231,11 @@ export const ExamReview = () => {
       </Box>
 
       {examData.preguntas.map((p) => (
-        <Card key={p.id_pregunta} sx={{ mb: 3, p: 3, boxShadow: 2, backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #ddd" }}>
+        <Card key={p.id_pregunta} id={`pregunta-${p.orden}`} sx={{ mb: 3, p: 3, boxShadow: 2, backgroundColor: "#ffffff", borderRadius: "12px", border: "1px solid #ddd" }}>
           <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#333" }}>
+              {`Pregunta ${p.orden}`}
+            </Typography>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#333" }}>
               {p.contenido}
             </Typography>
@@ -206,7 +260,7 @@ export const ExamReview = () => {
                 Opción Escogida
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: "bold", color: "#555" }}>
-                {p.opcion_escogida ? p.opcion_escogida : "No se ha seleccionado una respuesta"} 
+                {p.opcion_escogida ? p.opcion_escogida : "No se ha seleccionado una respuesta"}
               </Typography>
             </Paper>
             <Paper sx={{ p: 2, textAlign: "center", backgroundColor: "#e3f2fd", borderRadius: "8px" }}>
@@ -230,6 +284,19 @@ export const ExamReview = () => {
           Siguiente
         </Button>
       </Box>
+      <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" variant="filled">
+          {typeof error === "string"
+            ? error
+            : JSON.stringify(error)
+          }
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

@@ -160,6 +160,9 @@ export const examsSlice = createSlice({
         resetTotalQuestions: (state) => {
             state.totalQuestions = null;
         },
+        resetCurrentAttempt: (state) => {
+            state.currentAttempt = {};
+        },
         // Añadimos el reducer para setRemainingTime
         setRemainingTime: (state, action) => {
             state.remainingTime = action.payload
@@ -202,5 +205,6 @@ export const {
     setAnsweredQuestion,
     resetAnsweredQuestions,
     resetRemainingTime,
-    setRemainingTime
+    setRemainingTime,
+    resetCurrentAttempt
 } = examsSlice.actions;  

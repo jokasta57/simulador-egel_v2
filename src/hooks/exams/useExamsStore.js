@@ -45,8 +45,7 @@ export const useExamsStore = () => {
     const handleNewAttempt = useCallback(async (numero_cuenta, id_examen) => {
         dispatch(setIsLoading());
         try {
-            const response = await simulatorApi.post('/attempt', {numero_cuenta, id_examen}
-            );
+            const response = await simulatorApi.post('/attempt', {numero_cuenta, id_examen});
             dispatch(setCurrentAttempt(response.data.intento));
             return response.data.intento;
         } catch (error) {
@@ -395,6 +394,22 @@ export const useExamsStore = () => {
         dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
     }
     }, [dispatch]);
+    
+    const handlePanelQuestions = useCallback(async (id_intento) => {
+        dispatch(setIsLoading());
+        try {
+            const response = await simulatorApi.get(`/results/preguntas-panel/${id_intento}`);
+
+            return response.data;
+
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al cargar la revision'));
+            throw error;
+        } finally {
+        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+    }
+    }, [dispatch]);
 
     const handleClearError = useCallback(() => {
         dispatch(clearError());
@@ -432,6 +447,7 @@ export const useExamsStore = () => {
         handleLoadQuestionAndAnswer,
         handleUpdateAnswer, 
         handleGetResultsAttempt,
-        handleReviewAttempt
+        handleReviewAttempt,
+        handlePanelQuestions
     };
 };

@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { SimulatorApp } from './SimulatorApp.jsx'
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
+  // <StrictMode>
     <SimulatorApp />
-  </StrictMode>,
+  // </StrictMode>,
 )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import {
   Button,
   TextField,
@@ -22,27 +22,29 @@ import {
   Home as HomeIcon,
 } from "@mui/icons-material"
 import { useAuthStore } from "../../hooks/useAuthStore"
-import { useSelector } from "react-redux"
-import { clearErrorMessage } from "../../store/auth/authSlice"; // Importamos la acción para limpiar el error
+import { useDispatch, useSelector } from "react-redux"
+import { clearErrorMessage, setError } from "../../store/auth/authSlice"; // Importamos la acción para limpiar el error
 import { Link, Link as RouterLink, useLocation, useNavigate } from "react-router-dom"
 
 export const LoginPage = () => {
   const { startLoginAdmin, startLoginStudent } = useAuthStore()
-  const { error: authError } = useSelector((state) => state.auth)
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const { error } = useSelector((state) => state.auth)
 
+  
   const location = useLocation()
   const role = location.state?.role || "student"
-
+  
   const [formData, setFormData] = useState({
     numeroIdentificacion: "",
     nip: "",
   })
   const [showPassword, setShowPassword] = useState(false)
-
+  
   // ✅ Estado para mensajes de éxito y error
-  const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  // const [error, setError] = useState("")
 
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
@@ -61,32 +63,34 @@ export const LoginPage = () => {
       const { numeroIdentificacion, nip } = formData
 
       if (!numeroIdentificacion || !nip) {
-        setError(
+        dispatch(setError(
           !numeroIdentificacion && !nip
             ? "Por favor, ingrese número de identificación y NIP"
             : !numeroIdentificacion
             ? "Por favor, ingrese número de identificación"
             : "Por favor, ingrese NIP"
-        )
+        ))
+        setTimeout(() => dispatch(clearErrorMessage()), 3000);
         return
       }
 
       try {
         if (role === "admin") {
           await startLoginAdmin(numeroIdentificacion, nip)
-          setSuccess("Inicio de sesión exitoso")
-          navigate("/admin/dashboard")
-        } else if (role === "student") {
+        } else {
           await startLoginStudent(numeroIdentificacion, nip)
-          setSuccess("Inicio de sesión exitoso")
-          navigate("/student/home")
         }
-      } catch (err) {
-        console.error("Error al iniciar sesión:", err)
-        setError(authError || "Error al iniciar sesión. Verifica tus credenciales.")
+
+        setSuccess("Inicio de sesión exitoso")
+
+        // Wait for the success message to be shown before navigating
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        navigate(role === "admin" ? "/admin/dashboard" : "/student/home")
+      } catch (error) {
+        setError(error || "Error al iniciar sesión. Verifica tus credenciales.")
       }
     },
-    [formData, startLoginAdmin, startLoginStudent, navigate, role, authError]
+    [formData, role],
   )
 
   const handleTogglePasswordVisibility = useCallback(() => {
@@ -243,7 +247,7 @@ export const LoginPage = () => {
 
       {/* ✅ Snackbar para errores y éxito en el mismo formato */}
       <Snackbar
-        open={Boolean(error || success)}
+        open={Boolean(error || success )}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}

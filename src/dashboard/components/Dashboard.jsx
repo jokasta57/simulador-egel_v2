@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Grid, Typography, Box, useTheme, Card, CardContent, Button } from "@mui/material"
+import { Grid, Typography, Box, useTheme, Card, CardContent, Button, Select, MenuItem, TextField } from "@mui/material"
 import {
   LineChart,
   Line,
@@ -30,13 +30,13 @@ import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
 // ]
 
 // Mock data based on the SQL structure
-const examenesBorrador = [
-  { id: 1, nombre: "Examen de Química", fecha_modificacion: "12 Feb 2025" },
-  { id: 2, nombre: "Examen de Biología", fecha_modificacion: "13 Feb 2025" },
-  { id: 3, nombre: "Examen de Historia", fecha_modificacion: "14 Feb 2025" },
-  { id: 4, nombre: "Examen de Literatura", fecha_modificacion: "15 Feb 2025" },
-  { id: 5, nombre: "Examen de Geografía", fecha_modificacion: "16 Feb 2025" },
-]
+// const examenesBorrador = [
+//   { id: 1, nombre: "Examen de Química", fecha_modificacion: "12 Feb 2025" },
+//   { id: 2, nombre: "Examen de Biología", fecha_modificacion: "13 Feb 2025" },
+//   { id: 3, nombre: "Examen de Historia", fecha_modificacion: "14 Feb 2025" },
+//   { id: 4, nombre: "Examen de Literatura", fecha_modificacion: "15 Feb 2025" },
+//   { id: 5, nombre: "Examen de Geografía", fecha_modificacion: "16 Feb 2025" },
+// ]
 
 // const dataPie = [
 //   { name: "Aprobados", value: 750 },
@@ -50,35 +50,87 @@ export const Dashboard = () => {
   const [resumenData, setResumenData] = useState([])
   const [dataLineas, setDataLineas] = useState([])
   const [dataPie, setDataPie] = useState([])
+  const [examenesBorrador, setExamenesBorrador] = useState([])
 
-  const { handlePercentageByDate, handlePercentage } = useAdminStatsStore();
+  //Filtros
+  const [selectedExam, setSelectedExam] = useState(""); // Examen seleccionado
+  const [startDate, setStartDate] = useState(""); // Fecha inicial
+  const [endDate, setEndDate] = useState(""); // Fecha final
+
+  // Obtener todos los exámenes únicos
+  const uniqueExams = Array.from(new Set(dataLineas.map((item) => item.nombre)));
+
+  // Filtrar datos por examen y rango de fechas
+  const filteredData = dataLineas.filter((item) => {
+    const examFilter = selectedExam ? item.nombre === selectedExam : true;
+    const dateFilter =
+      (!startDate || new Date(item.fecha) >= new Date(startDate)) &&
+      (!endDate || new Date(item.fecha) <= new Date(endDate));
+    return examFilter && dateFilter;
+  });
+
+  //************** */
+  const { handlePercentageByDate, handlePercentage, handleDrafts } = useAdminStatsStore();
 
   useEffect(() => {
     getPercentages();
     getPercentagesByDate()
+    getDrafts();
   }, [])
 
   const getPercentagesByDate = async () => {
     try {
       const data = await handlePercentageByDate();
-      setDataLineas(data.porcentajesPorFecha)
-      console.log(data);
+      // Transformamos los datos antes de usarlos en el gráfico
+      const lineas = procesarDatos(data.porcentajesPorFecha);
+      setDataLineas(lineas);
+      console.log(dataLineas);
+      console.log(lineas, 'LINEASSS');
     } catch (error) {
       console.log(error);
     }
   }
 
+  const getDrafts = async () => {
+    try {
+      const data = await handleDrafts();
+      // Formatear fechas antes de actualizar el estado
+      const borradoresFormateados = data.borradores.map((borrador) => ({
+        ...borrador,
+        fecha_modificacion: new Date(borrador.fecha_modificacion).toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+      }));
+      setExamenesBorrador(borradoresFormateados);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const procesarDatos = (data) => {
+    return data.flatMap((item) => {
+      return item.nombre.split(", ").map((examen) => ({
+        fecha: item.fecha,
+        nombre: examen,
+        porcentajeAprobados: parseFloat(item.porcentajeAprobados), // Convertir a número,
+        totalIntentos: item.totalIntentos
+      }));
+    });
+  };
+
   const getPercentages = async () => {
     try {
       const data = await handlePercentage();
-  
+
       // Transformar datos para el gráfico de pastel
       const transformedData = [
         { name: "Aprobados", value: parseFloat(data.porcentajes.aprobados) },
         { name: "Reprobados", value: parseFloat(data.porcentajes.reprobados) }
       ];
       setDataPie(transformedData);
-  
+
       // Transformar datos para la sección de resumen
       const transformedResumen = [
         {
@@ -106,12 +158,20 @@ export const Dashboard = () => {
         },
       ];
       setResumenData(transformedResumen);
-  
+
     } catch (error) {
       console.log(error);
     }
   };
-  
+
+  //colores para las lineas
+  const lineColors = [
+    '#B91116', // Rojo principal
+    '#511013', // Marrón oscuro
+    '#E24622', // Naranja
+    '#F53020', // Naranja/Amarillo
+    '#E8641C', // Naranja oscuro
+  ];
 
   return (
     <Box sx={{ maxWidth: "100%", overflow: "hidden" }}>
@@ -217,19 +277,81 @@ export const Dashboard = () => {
               <Typography variant="h6" gutterBottom sx={{ color: "#B91116" }}>
                 Porcentaje de Aprobados por Examen
               </Typography>
+              {/* Controles de filtros */}
+              <div style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "center" }}>
+
+                {/* Selección de examen */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <Typography variant="caption">Filtrar por examen</Typography>
+                  <Select
+                    value={selectedExam}
+                    onChange={(e) => setSelectedExam(e.target.value)}
+                    displayEmpty
+                    size="small"
+                  >
+                    <MenuItem value="">Todos los exámenes</MenuItem>
+                    {uniqueExams.map((exam) => (
+                      <MenuItem key={exam} value={exam}>{exam}</MenuItem>
+                    ))}
+                  </Select>
+                </div>
+
+                {/* Fecha de inicio */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <Typography variant="caption">Fecha de inicio</Typography>
+                  <TextField
+                    type="date"
+                    size="small"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+
+                {/* Fecha límite */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <Typography variant="caption">Fecha límite</Typography>
+                  <TextField
+                    type="date"
+                    size="small"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={dataLineas}>
+                <LineChart data={filteredData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="fecha" tickFormatter={(value) => new Date(value).toLocaleDateString()} />
-                  <YAxis domain={[0, 100]}/>
+                  <XAxis dataKey="fecha" tickFormatter={(value) => new Date(value).toLocaleDateString("es-ES", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })} />
+                  <YAxis domain={[0, 100]} />
                   <Tooltip
-                    labelFormatter={(value) => new Date(value).toLocaleDateString()}
-                    formatter={(value, name, props) => [`${value}%`, `${props.payload.nombre}`]}
+                    labelFormatter={(value) => new Date(value).toLocaleDateString("es-ES", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                    formatter={(value, name, props) => [
+                      `${value}% (Intentos: ${props.payload.totalIntentos})`,
+                      props.payload.nombre,
+                    ]}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="porcentajeAprobados" stroke="#B91116" name="Porcentaje de Aprobados" />
+                  {Array.from(new Set(filteredData.map((item) => item.nombre))).map((examen, index) => (
+                    <Line
+                      key={examen}
+                      type="monotone"
+                      dataKey={(entry) => (entry.nombre === examen ? entry.porcentajeAprobados : null)}
+                      stroke={lineColors[index] || `hsl(${(index * 60) % 360}, 70%, 50%)`} // Usa los colores fijos y si faltan, genera dinámicamente
+                      name={examen}
+                      connectNulls
+                    />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
+
             </CardContent>
           </Card>
         </Grid>
@@ -297,7 +419,7 @@ export const Dashboard = () => {
               <Box sx={{ maxHeight: 300, overflowY: "auto" }}>
                 {examenesBorrador.map((examen, index) => (
                   <Box
-                    key={index}
+                    key={examen.id_examen}
                     sx={{
                       p: 2,
                       mb: 1,
@@ -325,7 +447,7 @@ export const Dashboard = () => {
                     </Box>
                     <Button
                       component={RouterLink}
-                      to={`/exams/${examen.id}/edit`}
+                      to={`/admin/exams/${examen.id_examen}/edit`}
                       variant="outlined"
                       size="small"
                       sx={{

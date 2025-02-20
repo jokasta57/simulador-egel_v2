@@ -10,7 +10,6 @@ export const useAuthStore = () => {
 
     const startLoginAdmin = async (numero_identificacion, nip) => {
         dispatch(onChecking());
-        let errorMessage = "Credenciales incorrectas"; // Evita errores si no se recibe mensaje
     
         try {
             const { data } = await simulatorApi.post('/admin/auth', { numero_identificacion, nip });
@@ -23,12 +22,10 @@ export const useAuthStore = () => {
 
             dispatch(onLoginSuccess({ nombre: admin.nombre, apellido_paterno: admin.apellido_paterno, apellido_materno: admin.apellido_materno ,id: admin.id_admin, token: data.token, role: role }));
         } catch (error) {
-            if (error.response?.data?.msg) {
-                errorMessage = error.response.data.msg;
-            }
-            dispatch(onLoginFailure(errorMessage));
-            dispatch(onLogout());
+            let errorMessage = error.response.data.msg;
+            dispatch(onLoginFailure(errorMessage || 'Error al iniciar sesión'));
             setTimeout(() => dispatch(clearErrorMessage()), 5000); // Ahora espera 5 segundos antes de limpiar
+            throw errorMessage
         }
     };
     
@@ -51,12 +48,10 @@ export const useAuthStore = () => {
                 role: "student"
             }));
         } catch (error) {
-            if (error.response?.data?.msg) {
-                errorMessage = error.response.data.msg;
-            }
-            dispatch(onLoginFailure(errorMessage));
-            dispatch(onLogout());
-            setTimeout(() => dispatch(clearErrorMessage()), 5000);
+            let errorMessage = error.response.data.msg;
+            dispatch(onLoginFailure(errorMessage || 'Error al iniciar sesión'));
+            setTimeout(() => dispatch(clearErrorMessage()), 5000); // Ahora espera 5 segundos antes de limpiar
+            throw errorMessage
         }
     };
     

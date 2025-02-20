@@ -255,7 +255,11 @@ export const ExamList = () => {
                     mb: 1,
                   }}
                 >
-                  Última actualización: {new Date(examen.fecha_modificacion).toLocaleDateString()}
+                  Última actualización: {new Date(examen.fecha_modificacion).toLocaleDateString("es-ES", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
                 </Typography>
                 <Box
                   sx={{

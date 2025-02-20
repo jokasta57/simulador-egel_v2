@@ -25,6 +25,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { addNewQuestionTemp, resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setIsLoadingFalse, setPreguntaNueva, setTotalQuestions } from "../../store/exams/examsSlice"
 import Swal from "sweetalert2"
 import QuestionPanel from "./QuestionPanel"
+import { ArrowLeft } from "lucide-react"
 
 const generatePeriodOptions = () => {
   const currentYear = new Date().getFullYear()
@@ -319,6 +320,15 @@ export const ExamEdit = () => {
         pb: { xs: 16, sm: 10 },
       }}
     >
+      {/* Back Button */}
+      <Button
+        variant="outlined"
+        startIcon={<ArrowLeft />}
+        onClick={() => navigate(-1)}
+        sx={{ mb: 3, borderRadius: "8px" }}
+      >
+        Regresar
+      </Button>
       <Typography
         variant="h4"
         component="h1"
@@ -437,10 +447,20 @@ export const ExamEdit = () => {
             sx={{
               display: "flex",
               justifyContent: "flex-end",
+              gap: 2,
               mt: { xs: 1, sm: 2 },
               mb: { xs: 2, sm: 4 },
             }}
           >
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => setIsExamInfoEditable(false)} // Función para manejar la cancelación
+              disabled={isLoading || !isExamInfoComplete || !isExamInfoEditable}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              Cancelar
+            </Button>
             <Button
               type="submit"
               variant="contained"

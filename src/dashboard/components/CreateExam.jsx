@@ -37,6 +37,7 @@ import {
 import Swal from "sweetalert2"
 import QuestionPanel from "./QuestionPanel"
 import { resetNewExamInfo } from "../../store"
+import { ArrowLeft } from "lucide-react"
 
 const generatePeriodOptions = () => {
   const currentYear = new Date().getFullYear()
@@ -333,6 +334,15 @@ export const CreateExam = () => {
         pb: { xs: 16, sm: 10 },
       }}
     >
+      {/* Back Button */}
+      <Button
+        variant="outlined"
+        startIcon={<ArrowLeft />}
+        onClick={() => navigate(-1)}
+        sx={{ mb: 3, borderRadius: "8px" }}
+      >
+        Regresar
+      </Button>
       <Typography
         variant="h4"
         component="h1"
@@ -415,10 +425,20 @@ export const CreateExam = () => {
             sx={{
               display: "flex",
               justifyContent: "flex-end",
+              gap: 2,
               mt: { xs: 1, sm: 2 },
               mb: { xs: 2, sm: 4 },
             }}
           >
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => setIsExamInfoEditable(false)} // Función para manejar la cancelación
+              disabled={isLoading || !isExamInfoComplete || !isExamInfoEditable}
+              sx={{ width: { xs: "100%", sm: "auto" } }}
+            >
+              Cancelar
+            </Button>
             <Button
               type="submit"
               variant="contained"
@@ -427,7 +447,7 @@ export const CreateExam = () => {
                 width: { xs: "100%", sm: "auto" },
               }}
             >
-              {isExamInfoEditable ? (
+              {isExamInfoComplete ? (isExamInfoEditable ? (
                 isLoading ? (
                   <CircularProgress size={24} color="inherit" />
                 ) : (
@@ -435,7 +455,7 @@ export const CreateExam = () => {
                 )
               ) : (
                 "Edite con el ícono de arriba"
-              )}
+              )) : "Complete todos los campos"}
             </Button>
           </Box>
         </form>

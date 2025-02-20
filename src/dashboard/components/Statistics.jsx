@@ -20,7 +20,6 @@ import {
   TextField,
   Chip,
   IconButton,
-  Button,
 } from "@mui/material"
 import {
   LineChart,
@@ -38,10 +37,8 @@ import {
 } from "recharts"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
-import { useAuthStore } from "../../hooks/useAuthStore"
 import Swal from "sweetalert2"
-import DeleteIcon from '@mui/icons-material/Delete';
-import { PersonRemove } from "@mui/icons-material"
+import DeleteIcon from "@mui/icons-material/Delete"
 
 // Datos de ejemplo basados en la estructura de la base de datos
 const examenesFake = [
@@ -202,6 +199,12 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null
 }
 
+const emptyChartData = []
+const emptyPieData = [
+  { name: "Aprobados", value: 0 },
+  { name: "Reprobados", value: 0 },
+]
+
 export const Statistics = () => {
   const theme = useTheme()
   const [selectedExam, setSelectedExam] = useState("")
@@ -211,8 +214,26 @@ export const Statistics = () => {
   const [selectedOption, setSelectedOption] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
 
+  const [rendimientoPreguntas, setRendimientoPreguntas] = useState(emptyChartData)
+  const [distribucionCalificaciones, setDistribucionCalificaciones] = useState(emptyChartData)
+  const [aprobacion, setAprobacion] = useState(emptyPieData)
+  const [calificaciones, setCalificaciones] = useState([])
+
   const handleExamChange = (event) => {
     setSelectedExam(event.target.value)
+    if (event.target.value) {
+      // Aquí cargarías los datos reales del examen seleccionado
+      setRendimientoPreguntas(rendimientoPreguntasFake)
+      setDistribucionCalificaciones(distribucionCalificacionesFake)
+      setAprobacion(aprobacionFake)
+      setCalificaciones(calificacionesFake)
+    } else {
+      // Resetear datos cuando no hay examen seleccionado
+      setRendimientoPreguntas(emptyChartData)
+      setDistribucionCalificaciones(emptyChartData)
+      setAprobacion(emptyPieData)
+      setCalificaciones([])
+    }
   }
 
   const handleQuestionChange = (event) => {
@@ -233,43 +254,36 @@ export const Statistics = () => {
 
   const { handleLoadExams, handleClearError, handleClearSuccess, handleSwitchState } = useExamsStore()
 
-
   useEffect(() => {
-    handleLoadExams();
-  }, []);
+    handleLoadExams()
+  }, [])
 
-  const { exams } = useSelector((state) => state.exams);
+  const { exams } = useSelector((state) => state.exams)
 
-
-  const selectedQuestionData = rendimientoPreguntasFake.find((q) => q.pregunta === selectedQuestion)
-
+  const selectedQuestionData = rendimientoPreguntas.find((q) => q.pregunta === selectedQuestion)
 
   const handleDeleteStudent = (numeroCuenta, nombreCompleto) => {
     Swal.fire({
-      title: '¿Estás seguro?',
+      title: "¿Estás seguro?",
       text: `¿Deseas eliminar al alumno ${nombreCompleto}?`,
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
         // Aquí iría la lógica para eliminar al estudiante
         console.log(`Eliminando al estudiante con número de cuenta: ${numeroCuenta}`)
         // Actualizar el estado o hacer una llamada a la API para eliminar al estudiante
-        Swal.fire(
-          '¡Eliminado!',
-          'El alumno ha sido eliminado.',
-          'success'
-        )
+        Swal.fire("¡Eliminado!", "El alumno ha sido eliminado.", "success")
       }
     })
   }
 
   const filteredStudents = useMemo(() => {
-    return calificacionesFake.filter((student) => {
+    return calificaciones.filter((student) => {
       const matchesSearch = Object.values(student).some((value) =>
         value.toString().toLowerCase().includes(searchTerm.toLowerCase()),
       )
@@ -279,27 +293,27 @@ export const Statistics = () => {
         (statusFilter === "failed" && student.calificacion < 70)
       return matchesSearch && matchesStatus
     })
-  }, [searchTerm, statusFilter])
+  }, [searchTerm, statusFilter, calificaciones])
 
-  if (!selectedExam) {
-    return (
-      <Box sx={{ flexGrow: 1, p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Por favor, seleccione un examen para ver las estadísticas.
-        </Typography>
-        <FormControl fullWidth>
-          <InputLabel>Seleccionar Examen</InputLabel>
-          <Select value={selectedExam} label="Seleccionar Examen" onChange={handleExamChange}>
-            {exams.map((exam) => (
-              <MenuItem key={exam.id_examen} value={exam.id_examen}>
-                {exam.nombre} - {exam.periodo}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-    )
-  }
+  // if (!selectedExam) {
+  //   return (
+  //     <Box sx={{ flexGrow: 1, p: 3 }}>
+  //       <Typography variant="h6" gutterBottom>
+  //         Por favor, seleccione un examen para ver las estadísticas.
+  //       </Typography>
+  //       <FormControl fullWidth>
+  //         <InputLabel>Seleccionar Examen</InputLabel>
+  //         <Select value={selectedExam} label="Seleccionar Examen" onChange={handleExamChange}>
+  //           {exams.map((exam) => (
+  //             <MenuItem key={exam.id_examen} value={exam.id_examen}>
+  //               {exam.nombre} - {exam.periodo}
+  //             </MenuItem>
+  //           ))}
+  //         </Select>
+  //       </FormControl>
+  //     </Box>
+  //   )
+  // }
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -357,7 +371,7 @@ export const Statistics = () => {
               Rendimiento por pregunta
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={rendimientoPreguntasFake}>
+              <LineChart data={rendimientoPreguntas}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="pregunta" />
                 <YAxis domain={[0, 1]} tickFormatter={(value) => `${value * 100}%`} />
@@ -375,7 +389,7 @@ export const Statistics = () => {
               Distribución de Calificaciones
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={distribucionCalificacionesFake}>
+              <BarChart data={distribucionCalificaciones}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="rango" />
                 <YAxis />
@@ -395,7 +409,7 @@ export const Statistics = () => {
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Seleccionar Pregunta</InputLabel>
               <Select value={selectedQuestion} label="Seleccionar Pregunta" onChange={handleQuestionChange}>
-                {rendimientoPreguntasFake.map((pregunta) => (
+                {rendimientoPreguntas.map((pregunta) => (
                   <MenuItem key={pregunta.pregunta} value={pregunta.pregunta}>
                     Pregunta {pregunta.pregunta}: {pregunta.texto_pregunta}
                   </MenuItem>
@@ -430,7 +444,7 @@ export const Statistics = () => {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={aprobacionFake}
+                  data={aprobacion}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -438,7 +452,7 @@ export const Statistics = () => {
                   dataKey="value"
                   label={({ name, value }) => `${name}: ${value}%`}
                 >
-                  {aprobacionFake.map((entry, index) => (
+                  {aprobacion.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -448,8 +462,8 @@ export const Statistics = () => {
           </Paper>
         </Grid>
 
-                {/* Tabla de Calificaciones por Estudiante */}
-                <Grid item xs={12}>
+        {/* Tabla de Calificaciones por Estudiante */}
+        <Grid item xs={12}>
           <Paper elevation={3} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Calificaciones por Estudiante
@@ -526,15 +540,17 @@ export const Statistics = () => {
                         />
                       </TableCell>
                       <TableCell align="center">
-                        <IconButton aria-label="delete"
+                        <IconButton
+                          aria-label="delete"
                           onClick={() =>
                             handleDeleteStudent(
                               row.numero_cuenta,
                               `${row.nombre} ${row.apellido_paterno} ${row.apellido_materno}`,
                             )
-                          } sx={{ color: theme.palette.primary.main }}>
-                          
-                            <DeleteIcon />
+                          }
+                          sx={{ color: theme.palette.primary.main }}
+                        >
+                          <DeleteIcon />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -548,5 +564,4 @@ export const Statistics = () => {
     </Box>
   )
 }
-
 

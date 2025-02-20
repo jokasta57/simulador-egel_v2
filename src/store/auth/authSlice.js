@@ -6,7 +6,7 @@ export const authSlice = createSlice({
         user: {},
         isAuthenticated: false,
         isLoading: false,
-        error: undefined
+        error: ''
     },
     reducers: {
         onChecking: (state) => {
@@ -27,10 +27,10 @@ export const authSlice = createSlice({
             state.user = {};
             state.isAuthenticated = false;
             state.isLoading = false;
-            state.error = undefined;
+            state.error = '';
         },
         clearErrorMessage: (state) => {
-            state.error = undefined
+            state.error = ''
             state.isLoading = false;
         },
         setError: (state, {payload}) => {

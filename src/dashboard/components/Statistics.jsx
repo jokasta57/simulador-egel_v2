@@ -20,6 +20,9 @@ import {
   TextField,
   Chip,
   IconButton,
+  FormHelperText,
+  Alert,
+  Button,
 } from "@mui/material"
 import {
   LineChart,
@@ -34,66 +37,126 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from "recharts"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
 import Swal from "sweetalert2"
 import DeleteIcon from "@mui/icons-material/Delete"
 
-// Datos de ejemplo basados en la estructura de la base de datos
-const examenesFake = [
-  {
-    id_examen: 1,
-    nombre: "Examen EGEL Matemáticas",
-    periodo: "2024-1",
-    carrera: "Ingeniería en Software",
-    area: "Matemáticas",
-  },
-  {
-    id_examen: 2,
-    nombre: "Examen EGEL Programación",
-    periodo: "2024-1",
-    carrera: "Ingeniería en Software",
-    area: "Programación",
-  },
-]
-
 // Datos de rendimiento por pregunta
 const rendimientoPreguntasFake = [
   {
     pregunta: 1,
-    porcentaje_aciertos: 0.85,
-    texto_pregunta: "¿Cuánto es 2 + 2?",
+    porcentaje_aciertos: 0.72,
+    texto_pregunta: "¿Cuál es la capital de Francia?",
     opciones: [
-      { opcion: "A", texto: "3", frecuencia: 5 },
-      { opcion: "B", texto: "4", frecuencia: 85 },
-      { opcion: "C", texto: "5", frecuencia: 8 },
-      { opcion: "D", texto: "6", frecuencia: 2 },
+      { opcion: "A", texto: "Berlín", frecuencia: 15 },
+      { opcion: "B", texto: "Madrid", frecuencia: 10 },
+      { opcion: "C", texto: "París", frecuencia: 70 },
+      { opcion: "D", texto: "Londres", frecuencia: 5 },
     ],
   },
   {
     pregunta: 2,
-    porcentaje_aciertos: 0.75,
-    texto_pregunta: "¿Qué es un algoritmo?",
+    porcentaje_aciertos: 0.55,
+    texto_pregunta: "¿Quién escribió 'Cien años de soledad'?",
     opciones: [
-      { opcion: "A", texto: "Un tipo de dato", frecuencia: 10 },
-      { opcion: "B", texto: "Una secuencia de pasos para resolver un problema", frecuencia: 75 },
-      { opcion: "C", texto: "Un lenguaje de programación", frecuencia: 10 },
-      { opcion: "D", texto: "Un dispositivo de entrada", frecuencia: 5 },
+      { opcion: "A", texto: "Mario Vargas Llosa", frecuencia: 25 },
+      { opcion: "B", texto: "Gabriel García Márquez", frecuencia: 55 },
+      { opcion: "C", texto: "Julio Cortázar", frecuencia: 15 },
+      { opcion: "D", texto: "Pablo Neruda", frecuencia: 5 },
     ],
   },
   {
     pregunta: 3,
-    porcentaje_aciertos: 0.9,
-    texto_pregunta: "¿Cuál es la complejidad de tiempo de la búsqueda binaria?",
+    porcentaje_aciertos: 0.68,
+    texto_pregunta: "¿Cuál es el resultado de 5 × 6?",
     opciones: [
-      { opcion: "A", texto: "O(n)", frecuencia: 5 },
-      { opcion: "B", texto: "O(log n)", frecuencia: 90 },
-      { opcion: "C", texto: "O(n^2)", frecuencia: 3 },
-      { opcion: "D", texto: "O(1)", frecuencia: 2 },
+      { opcion: "A", texto: "25", frecuencia: 20 },
+      { opcion: "B", texto: "30", frecuencia: 60 },
+      { opcion: "C", texto: "35", frecuencia: 15 },
+      { opcion: "D", texto: "40", frecuencia: 5 },
     ],
   },
-]
+  {
+    pregunta: 4,
+    porcentaje_aciertos: 0.81,
+    texto_pregunta: "¿Qué gas es esencial para la respiración humana?",
+    opciones: [
+      { opcion: "A", texto: "Oxígeno", frecuencia: 85 },
+      { opcion: "B", texto: "Dióxido de carbono", frecuencia: 5 },
+      { opcion: "C", texto: "Nitrógeno", frecuencia: 8 },
+      { opcion: "D", texto: "Helio", frecuencia: 2 },
+    ],
+  },
+  {
+    pregunta: 5,
+    porcentaje_aciertos: 0.47,
+    texto_pregunta: "¿Cuál es el metal más abundante en la corteza terrestre?",
+    opciones: [
+      { opcion: "A", texto: "Hierro", frecuencia: 30 },
+      { opcion: "B", texto: "Aluminio", frecuencia: 50 },
+      { opcion: "C", texto: "Cobre", frecuencia: 15 },
+      { opcion: "D", texto: "Oro", frecuencia: 5 },
+    ],
+  },
+  {
+    pregunta: 6,
+    porcentaje_aciertos: 0.64,
+    texto_pregunta: "¿Quién desarrolló la teoría de la relatividad?",
+    opciones: [
+      { opcion: "A", texto: "Isaac Newton", frecuencia: 20 },
+      { opcion: "B", texto: "Albert Einstein", frecuencia: 65 },
+      { opcion: "C", texto: "Galileo Galilei", frecuencia: 10 },
+      { opcion: "D", texto: "Stephen Hawking", frecuencia: 5 },
+    ],
+  },
+  {
+    pregunta: 7,
+    porcentaje_aciertos: 0.53,
+    texto_pregunta: "¿Cuál es el río más largo del mundo?",
+    opciones: [
+      { opcion: "A", texto: "Nilo", frecuencia: 40 },
+      { opcion: "B", texto: "Amazonas", frecuencia: 45 },
+      { opcion: "C", texto: "Yangtsé", frecuencia: 10 },
+      { opcion: "D", texto: "Misisipi", frecuencia: 5 },
+    ],
+  },
+  {
+    pregunta: 8,
+    porcentaje_aciertos: 0.78,
+    texto_pregunta: "¿Qué planeta es conocido como el planeta rojo?",
+    opciones: [
+      { opcion: "A", texto: "Venus", frecuencia: 5 },
+      { opcion: "B", texto: "Marte", frecuencia: 85 },
+      { opcion: "C", texto: "Júpiter", frecuencia: 7 },
+      { opcion: "D", texto: "Saturno", frecuencia: 3 },
+    ],
+  },
+  {
+    pregunta: 9,
+    porcentaje_aciertos: 0.69,
+    texto_pregunta: "¿Cuál es el idioma más hablado del mundo?",
+    opciones: [
+      { opcion: "A", texto: "Español", frecuencia: 30 },
+      { opcion: "B", texto: "Inglés", frecuencia: 50 },
+      { opcion: "C", texto: "Chino mandarín", frecuencia: 15 },
+      { opcion: "D", texto: "Árabe", frecuencia: 5 },
+    ],
+  },
+  {
+    pregunta: 10,
+    porcentaje_aciertos: 0.92,
+    texto_pregunta: "¿Qué animal es conocido por su larga memoria?",
+    opciones: [
+      { opcion: "A", texto: "Perro", frecuencia: 10 },
+      { opcion: "B", texto: "Elefante", frecuencia: 85 },
+      { opcion: "C", texto: "Gato", frecuencia: 3 },
+      { opcion: "D", texto: "Delfín", frecuencia: 2 },
+    ],
+  },
+];
 
 // Distribución de calificaciones
 const distribucionCalificacionesFake = [
@@ -184,22 +247,9 @@ const calificacionesFake = [
   },
 ]
 
+
 const COLORS = ["#2196f3", "#f44336"] // Azul para aprobados, Rojo para reprobados
 
-// Componente de tooltip personalizado para la gráfica de moda
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{ backgroundColor: "white", padding: "5px", border: "1px solid #ccc" }}>
-        <p>{`Opción ${label}: ${payload[0].value}`}</p>
-        <p>{payload[0].payload.texto}</p>
-      </div>
-    )
-  }
-  return null
-}
-
-const emptyChartData = []
 const emptyPieData = [
   { name: "Aprobados", value: 0 },
   { name: "Reprobados", value: 0 },
@@ -207,49 +257,77 @@ const emptyPieData = [
 
 export const Statistics = () => {
   const theme = useTheme()
+
+  //Examen seleccionado
   const [selectedExam, setSelectedExam] = useState("")
-  const [selectedQuestion, setSelectedQuestion] = useState(1)
-  const [selectedDate, setSelectedDate] = useState("")
+
+  //Filtro de fechas inicio y fin
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+
+  //Filtro de estado en la tabla de estudiantes y barra de busqueda
   const [statusFilter, setStatusFilter] = useState("all")
-  const [selectedOption, setSelectedOption] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
 
-  const [rendimientoPreguntas, setRendimientoPreguntas] = useState(emptyChartData)
-  const [distribucionCalificaciones, setDistribucionCalificaciones] = useState(emptyChartData)
+  //Info de las preguntas para las graficas de 
+  const [preguntasData, setPreguntasData] = useState([])
+
+  //para la grafica de distribucion de calificaciones
+  const [distribucionCalificaciones, setDistribucionCalificaciones] = useState([])
+  //Grafica de pastel
   const [aprobacion, setAprobacion] = useState(emptyPieData)
+  //Tabla de estudiantes
   const [calificaciones, setCalificaciones] = useState([])
+
+  //Preguntas por pagina para la grafica de moda
+  const preguntasPorPagina = 5; // Mínimo 5 preguntas por página
+  const [paginaActual, setPaginaActual] = useState(0);
+
 
   const handleExamChange = (event) => {
     setSelectedExam(event.target.value)
     if (event.target.value) {
       // Aquí cargarías los datos reales del examen seleccionado
-      setRendimientoPreguntas(rendimientoPreguntasFake)
       setDistribucionCalificaciones(distribucionCalificacionesFake)
       setAprobacion(aprobacionFake)
       setCalificaciones(calificacionesFake)
+      setPreguntasData(rendimientoPreguntasFake)
+
     } else {
       // Resetear datos cuando no hay examen seleccionado
-      setRendimientoPreguntas(emptyChartData)
-      setDistribucionCalificaciones(emptyChartData)
+      setDistribucionCalificaciones([])
       setAprobacion(emptyPieData)
       setCalificaciones([])
     }
   }
+  // Calcular el rango de preguntas a mostrar
+  const inicio = paginaActual * preguntasPorPagina;
+  const fin = Math.min(inicio + preguntasPorPagina, preguntasData.length);
+  const preguntasPagina = Array.isArray(preguntasData) ? preguntasData.slice(inicio, fin) : [];
 
-  const handleQuestionChange = (event) => {
-    setSelectedQuestion(event.target.value)
-  }
 
-  const handleDateChange = (event) => {
-    setSelectedDate(event.target.value)
-  }
+  // Obtener todas las opciones posibles en la página actual
+  const todasLasOpciones = [...new Set(preguntasPagina.flatMap((p) => p.opciones.map((o) => o.opcion)))];
+
+  // Transformar los datos para que cada pregunta tenga todas las opciones, incluso con frecuencia 0 si no existe
+  const datosTransformados = preguntasPagina.map((pregunta) => {
+    let data = { pregunta: `P${pregunta.pregunta}` }; // Se mantiene única en el eje X
+    pregunta.opciones.forEach((opcion) => {
+      data[opcion.opcion] = opcion.frecuencia; // Se asigna cada opción como clave con su frecuencia
+    });
+
+    // Asegurar que todas las opciones están presentes (incluso si faltan en la pregunta)
+    todasLasOpciones.forEach((opcion) => {
+      if (!(opcion in data)) {
+        data[opcion] = 0; // Si no hay datos para esa opción, poner 0
+      }
+    });
+
+    return data;
+  });
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value)
-  }
-
-  const handleOptionChange = (event) => {
-    setSelectedOption(event.target.value)
   }
 
   const { handleLoadExams, handleClearError, handleClearSuccess, handleSwitchState } = useExamsStore()
@@ -259,8 +337,6 @@ export const Statistics = () => {
   }, [])
 
   const { exams } = useSelector((state) => state.exams)
-
-  const selectedQuestionData = rendimientoPreguntas.find((q) => q.pregunta === selectedQuestion)
 
   const handleDeleteStudent = (numeroCuenta, nombreCompleto) => {
     Swal.fire({
@@ -295,54 +371,74 @@ export const Statistics = () => {
     })
   }, [searchTerm, statusFilter, calificaciones])
 
-  // if (!selectedExam) {
-  //   return (
-  //     <Box sx={{ flexGrow: 1, p: 3 }}>
-  //       <Typography variant="h6" gutterBottom>
-  //         Por favor, seleccione un examen para ver las estadísticas.
-  //       </Typography>
-  //       <FormControl fullWidth>
-  //         <InputLabel>Seleccionar Examen</InputLabel>
-  //         <Select value={selectedExam} label="Seleccionar Examen" onChange={handleExamChange}>
-  //           {exams.map((exam) => (
-  //             <MenuItem key={exam.id_examen} value={exam.id_examen}>
-  //               {exam.nombre} - {exam.periodo}
-  //             </MenuItem>
-  //           ))}
-  //         </Select>
-  //       </FormControl>
-  //     </Box>
-  //   )
-  // }
-
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Typography
+        variant="h4"
+        component="h1"
+        sx={{
+          color: theme.palette.text.primary,
+          fontWeight: "bold",
+        }}
+      >
+        Estadísticas por examen
+      </Typography>
+      <br />
+      {!selectedExam && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Por favor, selecciona un examen para ver las estadísticas.
+        </Alert>
+      )}
+      <br />
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <FormControl fullWidth>
-            <InputLabel>Seleccionar Examen</InputLabel>
-            <Select value={selectedExam} label="Seleccionar Examen" onChange={handleExamChange}>
-              {exams.map((exam) => (
-                <MenuItem key={exam.id_examen} value={exam.id_examen}>
-                  {exam.nombre} - {exam.periodo}
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <FormControl fullWidth error={!selectedExam}>
+              <InputLabel>Seleccionar Examen</InputLabel>
+              <Select
+                value={selectedExam || ""}
+                label="Seleccionar Examen"
+                onChange={handleExamChange}
+              >
+                <MenuItem value="" disabled>
+                  -- Selecciona un examen --
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {exams.map((exam) => (
+                  <MenuItem key={exam.id_examen} value={exam.id_examen}>
+                    {exam.nombre} - {exam.periodo}
+                  </MenuItem>
+                ))}
+              </Select>
+              {!selectedExam && <FormHelperText>Debe seleccionar un examen</FormHelperText>}
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={6} md={3}>
+            <TextField
+              fullWidth
+              id="start-date"
+              label="Fecha de Inicio (Opcional)"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+
+          <Grid item xs={6} md={3}>
+            <TextField
+              fullWidth
+              id="end-date"
+              label="Fecha de Fin (Opcional)"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ min: startDate }}
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            id="date"
-            label="Fecha de Aplicación (Opcional)"
-            type="date"
-            value={selectedDate}
-            onChange={handleDateChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-        </Grid>
+
 
         {/* Resumen General */}
         <Grid item xs={12}>
@@ -350,17 +446,21 @@ export const Statistics = () => {
             <Typography variant="h6" gutterBottom>
               Resumen General
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <Typography variant="body1">Promedio General: 82.5</Typography>
+            {!selectedExam ? (
+              <Typography color="error">Selecciona un examen para ver las estadísticas</Typography>
+            ) : (
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="body1">Promedio General: 82.5</Typography>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="body1">Total de Estudiantes: 100</Typography>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="body1">Tasa de Aprobación: 75%</Typography>
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={4}>
-                <Typography variant="body1">Total de Estudiantes: 100</Typography>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Typography variant="body1">Tasa de Aprobación: 75%</Typography>
-              </Grid>
-            </Grid>
+            )}
           </Paper>
         </Grid>
 
@@ -371,10 +471,10 @@ export const Statistics = () => {
               Rendimiento por pregunta
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={rendimientoPreguntas}>
+              <LineChart data={preguntasData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="pregunta" />
-                <YAxis domain={[0, 1]} tickFormatter={(value) => `${value * 100}%`} />
+                <XAxis dataKey="pregunta" label={{ value: "Pregunta", position: "insideBottom", offset: -5}}/>
+                <YAxis domain={[0, 1]} tickFormatter={(value) => `${value * 100}%`} label={{value: "Acertividad (%)", angle: -90, position: "insideLeft", dy: 60}} />
                 <Tooltip formatter={(value) => `${(value * 100).toFixed(0)}%`} />
                 <Line type="monotone" dataKey="porcentaje_aciertos" stroke={theme.palette.primary.main} />
               </LineChart>
@@ -391,8 +491,10 @@ export const Statistics = () => {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={distribucionCalificaciones}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="rango" />
-                <YAxis />
+                <XAxis dataKey="rango" label={{ value: "Rango de calificaciones", position: "insideBottom", offset: -5}}/>
+                <YAxis label={{value: "Número de estudiantes", angle: -90, position: "insideLeft", dy: 80}}/>
+
+
                 <Tooltip />
                 <Bar dataKey="cantidad" fill={theme.palette.primary.main} />
               </BarChart>
@@ -406,32 +508,54 @@ export const Statistics = () => {
             <Typography variant="h6" gutterBottom>
               Moda de Respuesta por Pregunta
             </Typography>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Seleccionar Pregunta</InputLabel>
-              <Select value={selectedQuestion} label="Seleccionar Pregunta" onChange={handleQuestionChange}>
-                {rendimientoPreguntas.map((pregunta) => (
-                  <MenuItem key={pregunta.pregunta} value={pregunta.pregunta}>
-                    Pregunta {pregunta.pregunta}: {pregunta.texto_pregunta}
-                  </MenuItem>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={datosTransformados}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="pregunta"
+                  label={{ value: "Número de Pregunta", position: "insideBottom", offset: -5 }}
+                />
+                <YAxis label={{ value: "Frecuencia", angle: -90, position: "insideLeft" }} />
+                <Tooltip />
+                <Legend />
+
+                {/* Generar líneas dinámicamente según las opciones disponibles */}
+                {todasLasOpciones.map((opcion, index) => (
+                  <Line
+                    key={opcion}
+                    type="linear"
+                    dataKey={opcion}
+                    name={`Opción ${opcion}`}
+                    stroke={["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#ff1493", "#32cd32"][index % 6]} // Colores dinámicos
+                    dot={{ r: 5 }} // Tamaño de los puntos
+                    connectNulls={true} // Evita cortes en la línea si una opción no está presente en una pregunta
+                  />
                 ))}
-              </Select>
-            </FormControl>
-            {selectedQuestionData && (
-              <>
-                <Typography variant="body2" gutterBottom>
-                  {selectedQuestionData.texto_pregunta}
-                </Typography>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={selectedQuestionData.opciones}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="opcion" />
-                    <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="frecuencia" fill={theme.palette.secondary.main} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </>
-            )}
+              </LineChart>
+            </ResponsiveContainer>
+            {/* Controles de paginación */}
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
+              <Button
+                variant="contained"
+                onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 0))}
+                disabled={paginaActual === 0}
+              >
+                Anterior
+              </Button>
+              <span style={{ margin: "0 10px" }}>
+                Página {paginaActual + 1} de {Math.ceil(preguntasData.length / preguntasPorPagina)}
+              </span>
+              <Button
+                variant="contained"
+                onClick={() => setPaginaActual((prev) => (prev + 1 < Math.ceil(preguntasData.length / preguntasPorPagina) ? prev + 1 : prev))}
+                disabled={fin >= preguntasData.length}
+              >
+                Siguiente
+              </Button>
+            </div>
+
+
+
           </Paper>
         </Grid>
 
@@ -561,7 +685,8 @@ export const Statistics = () => {
           </Paper>
         </Grid>
       </Grid>
-    </Box>
+
+    </Box >
   )
 }
 

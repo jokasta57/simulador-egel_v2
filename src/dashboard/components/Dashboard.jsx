@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Grid, Typography, Box, useTheme, Card, CardContent, Button, Select, MenuItem, TextField } from "@mui/material"
+import { Grid, Typography, Box, useTheme, Card, CardContent, Button, Select, MenuItem, TextField, CircularProgress } from "@mui/material"
 import {
   LineChart,
   Line,
@@ -19,30 +19,6 @@ import { Assignment, People, Edit, Event } from "@mui/icons-material"
 import { Link as RouterLink } from "react-router-dom"
 import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
 
-// Mock data for the line chart
-// const dataLineas = [
-//   { fecha: "2025-01-15", nombre: "Matemáticas I", porcentajeAprobados: 75 },
-//   { fecha: "2025-02-01", nombre: "Física Básica", porcentajeAprobados: 68 },
-//   { fecha: "2025-02-15", nombre: "Química General", porcentajeAprobados: 82 },
-//   { fecha: "2025-03-01", nombre: "Cálculo Diferencial", porcentajeAprobados: 71 },
-//   { fecha: "2025-03-15", nombre: "Programación I", porcentajeAprobados: 88 },
-//   { fecha: "2025-04-01", nombre: "Álgebra Lineal", porcentajeAprobados: 79 },
-// ]
-
-// Mock data based on the SQL structure
-// const examenesBorrador = [
-//   { id: 1, nombre: "Examen de Química", fecha_modificacion: "12 Feb 2025" },
-//   { id: 2, nombre: "Examen de Biología", fecha_modificacion: "13 Feb 2025" },
-//   { id: 3, nombre: "Examen de Historia", fecha_modificacion: "14 Feb 2025" },
-//   { id: 4, nombre: "Examen de Literatura", fecha_modificacion: "15 Feb 2025" },
-//   { id: 5, nombre: "Examen de Geografía", fecha_modificacion: "16 Feb 2025" },
-// ]
-
-// const dataPie = [
-//   { name: "Aprobados", value: 750 },
-//   { name: "Reprobados", value: 250 },
-// ]
-
 const COLORS = ["#0088FE", "#FF8042"]
 
 export const Dashboard = () => {
@@ -51,6 +27,8 @@ export const Dashboard = () => {
   const [dataLineas, setDataLineas] = useState([])
   const [dataPie, setDataPie] = useState([])
   const [examenesBorrador, setExamenesBorrador] = useState([])
+  const [loading, setLoading] = useState(true)
+
 
   //Filtros
   const [selectedExam, setSelectedExam] = useState(""); // Examen seleccionado
@@ -73,9 +51,11 @@ export const Dashboard = () => {
   const { handlePercentageByDate, handlePercentage, handleDrafts } = useAdminStatsStore();
 
   useEffect(() => {
+    setLoading(true)
     getPercentages();
     getPercentagesByDate()
     getDrafts();
+    setLoading(false)
   }, [])
 
   const getPercentagesByDate = async () => {
@@ -84,8 +64,6 @@ export const Dashboard = () => {
       // Transformamos los datos antes de usarlos en el gráfico
       const lineas = procesarDatos(data.porcentajesPorFecha);
       setDataLineas(lineas);
-      console.log(dataLineas);
-      console.log(lineas, 'LINEASSS');
     } catch (error) {
       console.log(error);
     }
@@ -172,6 +150,9 @@ export const Dashboard = () => {
     '#F53020', // Naranja/Amarillo
     '#E8641C', // Naranja oscuro
   ];
+
+  if (loading) return <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
+
 
   return (
     <Box sx={{ maxWidth: "100%", overflow: "hidden" }}>

@@ -274,6 +274,16 @@ export const GestionAdministradores = () => {
                   Apellido Materno
                 </TableCell>
                 <TableCell
+                  sx={{
+                    backgroundColor: "#fff",
+                    color: "#8B0000",
+                    fontWeight: "bold",
+                    borderBottom: "2px solid #8B0000",
+                  }}
+                >
+                  Carrera
+                </TableCell>
+                <TableCell
                   align="right"
                   sx={{
                     backgroundColor: "#fff",
@@ -299,6 +309,7 @@ export const GestionAdministradores = () => {
                   <TableCell>{admin.nombre}</TableCell>
                   <TableCell>{admin.apellido_paterno}</TableCell>
                   <TableCell>{admin.apellido_materno}</TableCell>
+                  <TableCell>Ing. de software</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Editar">
                       <IconButton size="small" sx={{ color: "#8B0000" }} onClick={() => handleEditAdmin(admin)}>
@@ -408,6 +419,19 @@ export const GestionAdministradores = () => {
                       variant="outlined"
                       error={!!errors.apellido_materno}
                       helperText={errors.apellido_materno}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Carrera"
+                      name="carrera"
+                      value='carrera'
+                      onChange={handleInputChange}
+                      required
+                      variant="outlined"
+                      // error={!!errors.apellido_materno}
+                      // helperText={errors.apellido_materno}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>

@@ -24,6 +24,7 @@ export const theme = createTheme({
       primary: '#511013',
       secondary: '#575756',
     },
+    chartColors: ["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#ff0000", "#00c0ff"]    
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',

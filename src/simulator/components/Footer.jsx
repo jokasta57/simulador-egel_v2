@@ -23,7 +23,7 @@ export const Footer = () => {
           fontWeight: 400,
         }}
       >
-        {"Plataforma desarrollad por "}
+        {"Plataforma desarrollada por "}
         <Link
           href="https://github.com/JahirSamperio"
           underline="hover"

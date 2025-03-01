@@ -23,6 +23,7 @@ import {
   FormHelperText,
   Alert,
   Button,
+  CircularProgress,
 } from "@mui/material"
 import {
   LineChart,
@@ -43,120 +44,7 @@ import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
 import Swal from "sweetalert2"
 import DeleteIcon from "@mui/icons-material/Delete"
-
-// Datos de rendimiento por pregunta
-const rendimientoPreguntasFake = [
-  {
-    pregunta: 1,
-    porcentaje_aciertos: 0.72,
-    texto_pregunta: "¿Cuál es la capital de Francia?",
-    opciones: [
-      { opcion: "A", texto: "Berlín", frecuencia: 15 },
-      { opcion: "B", texto: "Madrid", frecuencia: 10 },
-      { opcion: "C", texto: "París", frecuencia: 70 },
-      { opcion: "D", texto: "Londres", frecuencia: 5 },
-    ],
-  },
-  {
-    pregunta: 2,
-    porcentaje_aciertos: 0.55,
-    texto_pregunta: "¿Quién escribió 'Cien años de soledad'?",
-    opciones: [
-      { opcion: "A", texto: "Mario Vargas Llosa", frecuencia: 25 },
-      { opcion: "B", texto: "Gabriel García Márquez", frecuencia: 55 },
-      { opcion: "C", texto: "Julio Cortázar", frecuencia: 15 },
-      { opcion: "D", texto: "Pablo Neruda", frecuencia: 5 },
-    ],
-  },
-  {
-    pregunta: 3,
-    porcentaje_aciertos: 0.68,
-    texto_pregunta: "¿Cuál es el resultado de 5 × 6?",
-    opciones: [
-      { opcion: "A", texto: "25", frecuencia: 20 },
-      { opcion: "B", texto: "30", frecuencia: 60 },
-      { opcion: "C", texto: "35", frecuencia: 15 },
-      { opcion: "D", texto: "40", frecuencia: 5 },
-    ],
-  },
-  {
-    pregunta: 4,
-    porcentaje_aciertos: 0.81,
-    texto_pregunta: "¿Qué gas es esencial para la respiración humana?",
-    opciones: [
-      { opcion: "A", texto: "Oxígeno", frecuencia: 85 },
-      { opcion: "B", texto: "Dióxido de carbono", frecuencia: 5 },
-      { opcion: "C", texto: "Nitrógeno", frecuencia: 8 },
-      { opcion: "D", texto: "Helio", frecuencia: 2 },
-    ],
-  },
-  {
-    pregunta: 5,
-    porcentaje_aciertos: 0.47,
-    texto_pregunta: "¿Cuál es el metal más abundante en la corteza terrestre?",
-    opciones: [
-      { opcion: "A", texto: "Hierro", frecuencia: 30 },
-      { opcion: "B", texto: "Aluminio", frecuencia: 50 },
-      { opcion: "C", texto: "Cobre", frecuencia: 15 },
-      { opcion: "D", texto: "Oro", frecuencia: 5 },
-    ],
-  },
-  {
-    pregunta: 6,
-    porcentaje_aciertos: 0.64,
-    texto_pregunta: "¿Quién desarrolló la teoría de la relatividad?",
-    opciones: [
-      { opcion: "A", texto: "Isaac Newton", frecuencia: 20 },
-      { opcion: "B", texto: "Albert Einstein", frecuencia: 65 },
-      { opcion: "C", texto: "Galileo Galilei", frecuencia: 10 },
-      { opcion: "D", texto: "Stephen Hawking", frecuencia: 5 },
-    ],
-  },
-  {
-    pregunta: 7,
-    porcentaje_aciertos: 0.53,
-    texto_pregunta: "¿Cuál es el río más largo del mundo?",
-    opciones: [
-      { opcion: "A", texto: "Nilo", frecuencia: 40 },
-      { opcion: "B", texto: "Amazonas", frecuencia: 45 },
-      { opcion: "C", texto: "Yangtsé", frecuencia: 10 },
-      { opcion: "D", texto: "Misisipi", frecuencia: 5 },
-    ],
-  },
-  {
-    pregunta: 8,
-    porcentaje_aciertos: 0.78,
-    texto_pregunta: "¿Qué planeta es conocido como el planeta rojo?",
-    opciones: [
-      { opcion: "A", texto: "Venus", frecuencia: 5 },
-      { opcion: "B", texto: "Marte", frecuencia: 85 },
-      { opcion: "C", texto: "Júpiter", frecuencia: 7 },
-      { opcion: "D", texto: "Saturno", frecuencia: 3 },
-    ],
-  },
-  {
-    pregunta: 9,
-    porcentaje_aciertos: 0.69,
-    texto_pregunta: "¿Cuál es el idioma más hablado del mundo?",
-    opciones: [
-      { opcion: "A", texto: "Español", frecuencia: 30 },
-      { opcion: "B", texto: "Inglés", frecuencia: 50 },
-      { opcion: "C", texto: "Chino mandarín", frecuencia: 15 },
-      { opcion: "D", texto: "Árabe", frecuencia: 5 },
-    ],
-  },
-  {
-    pregunta: 10,
-    porcentaje_aciertos: 0.92,
-    texto_pregunta: "¿Qué animal es conocido por su larga memoria?",
-    opciones: [
-      { opcion: "A", texto: "Perro", frecuencia: 10 },
-      { opcion: "B", texto: "Elefante", frecuencia: 85 },
-      { opcion: "C", texto: "Gato", frecuencia: 3 },
-      { opcion: "D", texto: "Delfín", frecuencia: 2 },
-    ],
-  },
-];
+import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
 
 // Distribución de calificaciones
 const distribucionCalificacionesFake = [
@@ -278,20 +166,24 @@ export const Statistics = () => {
   const [aprobacion, setAprobacion] = useState(emptyPieData)
   //Tabla de estudiantes
   const [calificaciones, setCalificaciones] = useState([])
-
+  
   //Preguntas por pagina para la grafica de moda
   const preguntasPorPagina = 5; // Mínimo 5 preguntas por página
   const [paginaActual, setPaginaActual] = useState(0);
+
+  //Loading
+  const [isLoading, setIsLoading] = useState(false)
+  
+  //Hook de estadisticas
+  const { handlePerformancePerQuestion, handleLastExamAttempt, handleSummaryAndGrades } = useAdminStatsStore();
+  const { handleLoadExams } = useExamsStore()
 
 
   const handleExamChange = (event) => {
     setSelectedExam(event.target.value)
     if (event.target.value) {
       // Aquí cargarías los datos reales del examen seleccionado
-      setDistribucionCalificaciones(distribucionCalificacionesFake)
-      setAprobacion(aprobacionFake)
       setCalificaciones(calificacionesFake)
-      setPreguntasData(rendimientoPreguntasFake)
 
     } else {
       // Resetear datos cuando no hay examen seleccionado
@@ -330,11 +222,19 @@ export const Statistics = () => {
     setSearchTerm(event.target.value)
   }
 
-  const { handleLoadExams, handleClearError, handleClearSuccess, handleSwitchState } = useExamsStore()
+  useEffect(() => {
+    setIsLoading(true);
+    handleLoadExams();
+    getLastExamAttempt();
+    setIsLoading(false);
+  }, [])
 
   useEffect(() => {
-    handleLoadExams()
-  }, [])
+    setIsLoading(true);
+    getPerformancePerQuestion();
+    getSummaryAndGrades()
+    setIsLoading(false);
+  }, [selectedExam, startDate, endDate])
 
   const { exams } = useSelector((state) => state.exams)
 
@@ -358,6 +258,34 @@ export const Statistics = () => {
     })
   }
 
+  const getPerformancePerQuestion = async() => {
+    try {
+      const data = await handlePerformancePerQuestion(selectedExam, startDate, endDate);
+      setPreguntasData(data.intentos)
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const getLastExamAttempt = async() => {
+    try {
+      const data = await handleLastExamAttempt();
+      setSelectedExam(data.examen.id_examen)
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const getSummaryAndGrades = async() => {
+    try {
+      const data = await handleSummaryAndGrades(selectedExam, startDate, endDate);
+      setDistribucionCalificaciones(data.resumen.distribucion_calificaciones)
+      setAprobacion(data.resumen.aprobacion)
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   const filteredStudents = useMemo(() => {
     return calificaciones.filter((student) => {
       const matchesSearch = Object.values(student).some((value) =>
@@ -370,6 +298,10 @@ export const Statistics = () => {
       return matchesSearch && matchesStatus
     })
   }, [searchTerm, statusFilter, calificaciones])
+
+
+  if (isLoading) return <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
+  
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -412,7 +344,6 @@ export const Statistics = () => {
               {!selectedExam && <FormHelperText>Debe seleccionar un examen</FormHelperText>}
             </FormControl>
           </Grid>
-
           <Grid item xs={6} md={3}>
             <TextField
               fullWidth

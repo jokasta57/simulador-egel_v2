@@ -16,11 +16,12 @@ export const useAuthStore = () => {
             localStorage.setItem('token', data.token);
             localStorage.setItem('token-init-date', new Date().getTime());
 
+            
             const { admin } = data;
             
             let role = admin?.superAdmin ? 'superAdmin' : 'admin' 
 
-            dispatch(onLoginSuccess({ nombre: admin.nombre, apellido_paterno: admin.apellido_paterno, apellido_materno: admin.apellido_materno ,id: admin.id_admin, token: data.token, role: role }));
+            dispatch(onLoginSuccess({ nombre: admin.nombre, apellido_paterno: admin.apellido_paterno, apellido_materno: admin.apellido_materno ,id: admin.id_admin, token: data.token, role: role, numero_identificacion: admin.numero_identificacion }));
         } catch (error) {
             let errorMessage = error.response.data.msg;
             dispatch(onLoginFailure(errorMessage || 'Error al iniciar sesión'));
@@ -103,6 +104,7 @@ export const useAuthStore = () => {
                 apellido_paterno: data.apellido_paterno,
                 apellido_materno: data.apellido_materno,
                 role: data.role,
+                numero_identificacion: data.numero_identificacion
             };
     
             if (data.role === 'admin' || data.role === 'superAdmin') {
@@ -128,6 +130,21 @@ export const useAuthStore = () => {
             return errorMessage
         }
     }
+
+    const startUpdatePassword = async (numero_identificacion, nip_actual, nip_nuevo) => {
+        // dispatch(onChecking());    
+        try {
+            const { data } = await simulatorApi.put('/admin-password', { numero_identificacion, nip_actual, nip_nuevo });
+            return data.msg
+
+        } catch (error) {
+            let errorMessage = error.response.data.msg;
+            dispatch(onLoginFailure(errorMessage || 'Error al actualizar contraseña'));
+            setTimeout(() => dispatch(clearErrorMessage()), 5000); // Ahora espera 5 segundos antes de limpiar
+            throw errorMessage
+        }
+    };
+
     const startLogout = () => {
         localStorage.clear();
         dispatch(onLogout());
@@ -146,7 +163,8 @@ export const useAuthStore = () => {
         startRegisterStudent,
         checkAuthToken,
         startLogout,
-        getUserInfo
+        getUserInfo,
+        startUpdatePassword
 
     }
 }

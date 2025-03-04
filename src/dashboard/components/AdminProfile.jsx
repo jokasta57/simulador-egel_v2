@@ -77,16 +77,19 @@ export const AdminProfile = () => {
 
             try {
                 setIsLoading(true)
-                await startUpdatePassword(passwords.currentPassword, passwords.newPassword)
-                setSuccess("Contraseña actualizada con éxito")
+                const msg = await startUpdatePassword(user.numero_identificacion, passwords.currentPassword, passwords.newPassword)
+                console.log(msg);
+                setSuccess(msg)
                 setPasswords({
                     currentPassword: "",
                     newPassword: "",
                     confirmPassword: "",
                 })
                 setShowSuccess(true)
+                setIsLoading(false)
+                console.log(isLoading.toString());
             } catch (err) {
-                setError("Error al actualizar la contraseña. Verifica los datos.")
+                setError(err)
             } finally {
                 setIsLoading(false)
             }
@@ -266,7 +269,7 @@ export const AdminProfile = () => {
                 <Alert onClose={handleCloseSnackbar} severity="success" variant="filled">
                     {success || "Contraseña actualizada exitosamente"} {/* Display success message */}
                 </Alert>
-            </Snackbar>
+            </Snackbar>                    
         </Box>
     )
 }

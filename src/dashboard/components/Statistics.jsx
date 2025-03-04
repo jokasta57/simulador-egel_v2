@@ -46,96 +46,6 @@ import Swal from "sweetalert2"
 import DeleteIcon from "@mui/icons-material/Delete"
 import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
 
-// Distribución de calificaciones
-const distribucionCalificacionesFake = [
-  { rango: "0-20", cantidad: 5 },
-  { rango: "21-40", cantidad: 15 },
-  { rango: "41-60", cantidad: 25 },
-  { rango: "61-80", cantidad: 35 },
-  { rango: "81-100", cantidad: 20 },
-]
-
-// Datos de aprobación
-const aprobacionFake = [
-  { name: "Aprobados", value: 75 },
-  { name: "Reprobados", value: 25 },
-]
-
-// Datos de calificaciones por estudiante
-const calificacionesFake = [
-  {
-    numero_cuenta: "E001",
-    nombre: "Juan Pérez",
-    apellido_paterno: "Pérez",
-    apellido_materno: "García",
-    calificacion: 85,
-  },
-  {
-    numero_cuenta: "E002",
-    nombre: "María Rodríguez",
-    apellido_paterno: "Rodríguez",
-    apellido_materno: "López",
-    calificacion: 92,
-  },
-  {
-    numero_cuenta: "E003",
-    nombre: "Carlos Sánchez",
-    apellido_paterno: "Sánchez",
-    apellido_materno: "Martínez",
-    calificacion: 78,
-  },
-  {
-    numero_cuenta: "E004",
-    nombre: "Ana Martínez",
-    apellido_paterno: "Martínez",
-    apellido_materno: "Gómez",
-    calificacion: 65,
-  },
-  {
-    numero_cuenta: "E005",
-    nombre: "Luis González",
-    apellido_paterno: "González",
-    apellido_materno: "Hernández",
-    calificacion: 88,
-  },
-  {
-    numero_cuenta: "E006",
-    nombre: "Laura Torres",
-    apellido_paterno: "Torres",
-    apellido_materno: "Ramírez",
-    calificacion: 73,
-  },
-  {
-    numero_cuenta: "E007",
-    nombre: "Pedro Díaz",
-    apellido_paterno: "Díaz",
-    apellido_materno: "Flores",
-    calificacion: 95,
-  },
-  {
-    numero_cuenta: "E008",
-    nombre: "Sofia Vargas",
-    apellido_paterno: "Vargas",
-    apellido_materno: "Castro",
-    calificacion: 82,
-  },
-  {
-    numero_cuenta: "E009",
-    nombre: "Miguel Ruiz",
-    apellido_paterno: "Ruiz",
-    apellido_materno: "Ortiz",
-    calificacion: 69,
-  },
-  {
-    numero_cuenta: "E010",
-    nombre: "Isabel Morales",
-    apellido_paterno: "Morales",
-    apellido_materno: "Jiménez",
-    calificacion: 91,
-  },
-]
-
-
 const COLORS = ["#2196f3", "#f44336"] // Azul para aprobados, Rojo para reprobados
 
 const emptyPieData = [
@@ -166,6 +76,7 @@ export const Statistics = () => {
   const [aprobacion, setAprobacion] = useState(emptyPieData)
   //Tabla de estudiantes
   const [calificaciones, setCalificaciones] = useState([])
+  const [resumen, setResumen] = useState({})
   
   //Preguntas por pagina para la grafica de moda
   const preguntasPorPagina = 5; // Mínimo 5 preguntas por página
@@ -183,7 +94,7 @@ export const Statistics = () => {
     setSelectedExam(event.target.value)
     if (event.target.value) {
       // Aquí cargarías los datos reales del examen seleccionado
-      setCalificaciones(calificacionesFake)
+      // setCalificaciones(calificacionesFake)
 
     } else {
       // Resetear datos cuando no hay examen seleccionado
@@ -281,6 +192,8 @@ export const Statistics = () => {
       const data = await handleSummaryAndGrades(selectedExam, startDate, endDate);
       setDistribucionCalificaciones(data.resumen.distribucion_calificaciones)
       setAprobacion(data.resumen.aprobacion)
+      setCalificaciones(data.calificaciones)
+      setResumen(data.resumen)
     } catch (error) {
       console.log(error);
     }
@@ -382,13 +295,13 @@ export const Statistics = () => {
             ) : (
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
-                  <Typography variant="body1">Promedio General: 82.5</Typography>
+                  <Typography variant="body1">Promedio General: {resumen.promedio_general}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <Typography variant="body1">Total de Estudiantes: 100</Typography>
+                  <Typography variant="body1">Total de Estudiantes: {resumen.total_estudiantes}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                  <Typography variant="body1">Tasa de Aprobación: 75%</Typography>
+                  <Typography variant="body1">Tasa de Aprobación: {resumen.tasa_aprobacion}%</Typography>
                 </Grid>
               </Grid>
             )}
@@ -574,8 +487,9 @@ export const Statistics = () => {
                     <TableCell>Apellido Paterno</TableCell>
                     <TableCell>Apellido Materno</TableCell>
                     <TableCell align="right">Calificación</TableCell>
+                    <TableCell align="right">No. de Intentos</TableCell>
                     <TableCell align="center">Estado</TableCell>
-                    <TableCell align="center">Acciones</TableCell>
+                    {/* <TableCell align="center">Acciones</TableCell> */}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -588,13 +502,14 @@ export const Statistics = () => {
                       <TableCell>{row.apellido_paterno}</TableCell>
                       <TableCell>{row.apellido_materno}</TableCell>
                       <TableCell align="right">{row.calificacion}</TableCell>
+                      <TableCell align="right">{row.total_intentos}</TableCell>
                       <TableCell align="center">
                         <Chip
                           label={row.calificacion >= 70 ? "Aprobado" : "Reprobado"}
                           color={row.calificacion >= 70 ? "success" : "error"}
                         />
                       </TableCell>
-                      <TableCell align="center">
+                      {/* <TableCell align="center">
                         <IconButton
                           aria-label="delete"
                           onClick={() =>
@@ -607,7 +522,7 @@ export const Statistics = () => {
                         >
                           <DeleteIcon />
                         </IconButton>
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   ))}
                 </TableBody>

@@ -24,6 +24,7 @@ import {
   Alert,
   Button,
   CircularProgress,
+  Snackbar,
 } from "@mui/material"
 import {
   LineChart,
@@ -58,6 +59,7 @@ export const Statistics = () => {
 
   //Examen seleccionado
   const [selectedExam, setSelectedExam] = useState("")
+  const [error, setError] = useState("")
 
   //Filtro de fechas inicio y fin
   const [startDate, setStartDate] = useState("")
@@ -77,14 +79,15 @@ export const Statistics = () => {
   //Tabla de estudiantes
   const [calificaciones, setCalificaciones] = useState([])
   const [resumen, setResumen] = useState({})
-  
+
   //Preguntas por pagina para la grafica de moda
   const preguntasPorPagina = 5; // Mínimo 5 preguntas por página
   const [paginaActual, setPaginaActual] = useState(0);
 
   //Loading
   const [isLoading, setIsLoading] = useState(false)
-  
+  const [isExamAvailable, setIsExamAvailable] = useState(true); // Estado para verificar si hay exámenes
+
   //Hook de estadisticas
   const { handlePerformancePerQuestion, handleLastExamAttempt, handleSummaryAndGrades } = useAdminStatsStore();
   const { handleLoadExams } = useExamsStore()
@@ -149,27 +152,7 @@ export const Statistics = () => {
 
   const { exams } = useSelector((state) => state.exams)
 
-  const handleDeleteStudent = (numeroCuenta, nombreCompleto) => {
-    Swal.fire({
-      title: "¿Estás seguro?",
-      text: `¿Deseas eliminar al alumno ${nombreCompleto}?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Aquí iría la lógica para eliminar al estudiante
-        console.log(`Eliminando al estudiante con número de cuenta: ${numeroCuenta}`)
-        // Actualizar el estado o hacer una llamada a la API para eliminar al estudiante
-        Swal.fire("¡Eliminado!", "El alumno ha sido eliminado.", "success")
-      }
-    })
-  }
-
-  const getPerformancePerQuestion = async() => {
+  const getPerformancePerQuestion = async () => {
     try {
       const data = await handlePerformancePerQuestion(selectedExam, startDate, endDate);
       setPreguntasData(data.intentos)
@@ -178,16 +161,19 @@ export const Statistics = () => {
     }
   }
 
-  const getLastExamAttempt = async() => {
+  const getLastExamAttempt = async () => {
     try {
       const data = await handleLastExamAttempt();
       setSelectedExam(data.examen.id_examen)
+      setIsExamAvailable(true);
+
     } catch (error) {
-      console.log(error);
+      setError(error)
+      setIsExamAvailable(false);
     }
   }
 
-  const getSummaryAndGrades = async() => {
+  const getSummaryAndGrades = async () => {
     try {
       const data = await handleSummaryAndGrades(selectedExam, startDate, endDate);
       setDistribucionCalificaciones(data.resumen.distribucion_calificaciones)
@@ -212,9 +198,13 @@ export const Statistics = () => {
     })
   }, [searchTerm, statusFilter, calificaciones])
 
+  const handleCloseSnackbar = () => {
+    if (error) setError("");
+  };
+
 
   if (isLoading) return <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
-  
+
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -229,9 +219,15 @@ export const Statistics = () => {
         Estadísticas por examen
       </Typography>
       <br />
-      {!selectedExam && (
+      {isExamAvailable ? (
+        !selectedExam && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Por favor, selecciona un examen para ver las estadísticas.
+          </Alert>
+        )
+      ) : (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Por favor, selecciona un examen para ver las estadísticas.
+          No hay exámenes disponibles. Por favor, agrega exámenes para ver las estadísticas.
         </Alert>
       )}
       <br />
@@ -239,22 +235,26 @@ export const Statistics = () => {
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
             <FormControl fullWidth error={!selectedExam}>
-              <InputLabel>Seleccionar Examen</InputLabel>
+              {isExamAvailable ? (<InputLabel>Seleccionar Examen</InputLabel>) : (<InputLabel>No hay exámenes disponibles</InputLabel>)}
               <Select
                 value={selectedExam || ""}
                 label="Seleccionar Examen"
                 onChange={handleExamChange}
+                disabled={exams.length === 0} // Desactiva el select si no hay exámenes disponibles
               >
                 <MenuItem value="" disabled>
                   -- Selecciona un examen --
                 </MenuItem>
-                {exams.map((exam) => (
-                  <MenuItem key={exam.id_examen} value={exam.id_examen}>
-                    {exam.nombre} - {exam.periodo}
-                  </MenuItem>
-                ))}
+                {exams.length === 0 ? (
+                  <MenuItem disabled>No hay exámenes disponibles</MenuItem> // Mensaje si no hay exámenes
+                ) : (
+                  exams.map((exam) => (
+                    <MenuItem key={exam.id_examen} value={exam.id_examen}>
+                      {exam.nombre} - {exam.periodo}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
-              {!selectedExam && <FormHelperText>Debe seleccionar un examen</FormHelperText>}
             </FormControl>
           </Grid>
           <Grid item xs={6} md={3}>
@@ -266,6 +266,7 @@ export const Statistics = () => {
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
+              disabled={exams.length === 0}
             />
           </Grid>
 
@@ -279,6 +280,7 @@ export const Statistics = () => {
               onChange={(e) => setEndDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
               inputProps={{ min: startDate }}
+              disabled={exams.length === 0}
             />
           </Grid>
         </Grid>
@@ -290,20 +292,24 @@ export const Statistics = () => {
             <Typography variant="h6" gutterBottom>
               Resumen General
             </Typography>
-            {!selectedExam ? (
-              <Typography color="error">Selecciona un examen para ver las estadísticas</Typography>
+            {isExamAvailable ? (
+              !selectedExam ? (
+                <Typography color="error">Selecciona un examen para ver las estadísticas</Typography>
+              ) : (
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="body1"><strong>Promedio General: </strong>{isNaN(resumen.promedio_general) || resumen.promedio_general === null ? 'Sin resultados aún' : resumen.promedio_general}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="body1"><strong> Total de Estudiantes: </strong>{resumen.total_estudiantes}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="body1"> <strong> Tasa de Aprobación: </strong>{isNaN(resumen.tasa_aprobacion) || resumen.tasa_aprobacion === null ? 'Sin resultados aún' : resumen.tasa_aprobacion + '%'}</Typography>
+                  </Grid>
+                </Grid>
+              )
             ) : (
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body1">Promedio General: {resumen.promedio_general}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body1">Total de Estudiantes: {resumen.total_estudiantes}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body1">Tasa de Aprobación: {resumen.tasa_aprobacion}%</Typography>
-                </Grid>
-              </Grid>
+              <Typography color="error">No hay datos disponibles</Typography>
             )}
           </Paper>
         </Grid>
@@ -314,13 +320,25 @@ export const Statistics = () => {
             <Typography variant="h6" gutterBottom>
               Rendimiento por pregunta
             </Typography>
+
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={preguntasData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="pregunta" label={{ value: "Pregunta", position: "insideBottom", offset: -5}}/>
-                <YAxis domain={[0, 1]} tickFormatter={(value) => `${value * 100}%`} label={{value: "Acertividad (%)", angle: -90, position: "insideLeft", dy: 60}} />
+                <XAxis dataKey="pregunta" label={{ value: "Pregunta", position: "insideBottom", offset: -5 }} />
+                <YAxis
+                  domain={[0, 1]}
+                  tickFormatter={(value) => `${value * 100}%`}
+                  label={{ value: "Acertividad (%)", angle: -90, position: "insideLeft", dy: 60 }}
+                />
                 <Tooltip formatter={(value) => `${(value * 100).toFixed(0)}%`} />
                 <Line type="monotone" dataKey="porcentaje_aciertos" stroke={theme.palette.primary.main} />
+
+                {/* Mensaje si no hay datos */}
+                {preguntasData.length === 0 && (
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
+                    No hay datos disponibles
+                  </text>
+                )}
               </LineChart>
             </ResponsiveContainer>
           </Paper>
@@ -335,12 +353,18 @@ export const Statistics = () => {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={distribucionCalificaciones}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="rango" label={{ value: "Rango de calificaciones", position: "insideBottom", offset: -5}}/>
-                <YAxis label={{value: "Número de estudiantes", angle: -90, position: "insideLeft", dy: 80}}/>
+                <XAxis dataKey="rango" label={{ value: "Rango de calificaciones", position: "insideBottom", offset: -5 }} />
+                <YAxis label={{ value: "Número de estudiantes", angle: -90, position: "insideLeft", dy: 80 }} />
 
 
                 <Tooltip />
                 <Bar dataKey="cantidad" fill={theme.palette.primary.main} />
+                {/* Mensaje si no hay datos */}
+                {distribucionCalificaciones.every(item => item.cantidad === 0) && (
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
+                    No hay datos disponibles
+                  </text>
+                )}
               </BarChart>
             </ResponsiveContainer>
           </Paper>
@@ -375,6 +399,11 @@ export const Statistics = () => {
                     connectNulls={true} // Evita cortes en la línea si una opción no está presente en una pregunta
                   />
                 ))}
+                {datosTransformados.length === 0 && (
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
+                    No hay datos disponibles
+                  </text>
+                )}
               </LineChart>
             </ResponsiveContainer>
             {/* Controles de paginación */}
@@ -425,6 +454,11 @@ export const Statistics = () => {
                   ))}
                 </Pie>
                 <Tooltip />
+                {aprobacion.every(item => item.value === null) && (
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
+                    No hay datos disponibles
+                  </text>
+                )}
               </PieChart>
             </ResponsiveContainer>
           </Paper>
@@ -493,45 +527,52 @@ export const Statistics = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredStudents.map((row) => (
-                    <TableRow key={row.numero_cuenta} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                      <TableCell component="th" scope="row">
-                        {row.numero_cuenta}
+                  {filteredStudents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        No hay estudiantes disponibles.
                       </TableCell>
-                      <TableCell>{row.nombre}</TableCell>
-                      <TableCell>{row.apellido_paterno}</TableCell>
-                      <TableCell>{row.apellido_materno}</TableCell>
-                      <TableCell align="right">{row.calificacion}</TableCell>
-                      <TableCell align="right">{row.total_intentos}</TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={row.calificacion >= 70 ? "Aprobado" : "Reprobado"}
-                          color={row.calificacion >= 70 ? "success" : "error"}
-                        />
-                      </TableCell>
-                      {/* <TableCell align="center">
-                        <IconButton
-                          aria-label="delete"
-                          onClick={() =>
-                            handleDeleteStudent(
-                              row.numero_cuenta,
-                              `${row.nombre} ${row.apellido_paterno} ${row.apellido_materno}`,
-                            )
-                          }
-                          sx={{ color: theme.palette.primary.main }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell> */}
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredStudents.map((row) => (
+                      <TableRow key={row.numero_cuenta} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                        <TableCell component="th" scope="row">
+                          {row.numero_cuenta}
+                        </TableCell>
+                        <TableCell>{row.nombre}</TableCell>
+                        <TableCell>{row.apellido_paterno}</TableCell>
+                        <TableCell>{row.apellido_materno}</TableCell>
+                        <TableCell align="right">{row.calificacion}</TableCell>
+                        <TableCell align="right">{row.total_intentos}</TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={row.calificacion >= 70 ? "Aprobado" : "Reprobado"}
+                            color={row.calificacion >= 70 ? "success" : "error"}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
           </Paper>
         </Grid>
       </Grid>
-
+      <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={'error'}
+          variant="filled"
+        >
+          {typeof error === 'string' ? error : JSON.stringify(error)}
+        </Alert>
+      </Snackbar>
     </Box >
   )
 }

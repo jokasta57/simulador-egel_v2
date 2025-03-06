@@ -69,9 +69,10 @@ export const useAdminStatsStore = () => {
             return data;
 
         } catch (error) {
-            console.log(error);
+            let errorMessage = error.response?.data.msg
+            console.log(error.response?.data.msg);
             // dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
-            throw error;
+            throw errorMessage;
         }
     }, [dispatch]);
 

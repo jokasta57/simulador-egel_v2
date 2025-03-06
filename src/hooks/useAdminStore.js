@@ -8,7 +8,7 @@ export const useAdminStore = () => {
 
     const handleAddNewAdmin = useCallback(async (admin = {}) => {
         try {
-            const {data} = await adminApi.post(`/admin-managment`, admin);
+            const { data } = await adminApi.post(`/admin-managment`, admin);
             return data;
 
         } catch (error) {
@@ -36,7 +36,7 @@ export const useAdminStore = () => {
 
     const handleUpdateAdmin = useCallback(async (id_admin, admin = {}) => {
         try {
-            const {data} = await adminApi.put(`/admin-managment/${id_admin}`, admin);
+            const { data } = await adminApi.put(`/admin-managment/${id_admin}`, admin);
             return data;
 
         } catch (error) {
@@ -60,35 +60,33 @@ export const useAdminStore = () => {
         } finally {
             // dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
-    }, [dispatch]);    
-    
+    }, [dispatch]);
+
     const handleGetAdmins = useCallback(async () => {
         try {
-            const {data} = await adminApi.get(`/admin-managment`);
+            const { data } = await adminApi.get(`/admin-managment`);
             return data;
 
         } catch (error) {
-            console.log(error);
-            // dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
-            throw error;
+            let errorMessage = error.response.data.msg || 'Error al obtener informacion de los administradores'; // Si existe data.msg, se toma, si no, queda vacío
+            throw errorMessage;
         } finally {
             // dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
-    }, [dispatch]);    
+    }, [dispatch]);
 
     const handleDeleteAdmin = useCallback(async (id_admin) => {
         try {
-            const {data} = await adminApi.delete(`/admin-managment/${id_admin}`);
+            const { data } = await adminApi.delete(`/admin-managment/${id_admin}`);
             return data;
 
         } catch (error) {
-            console.log(error);
-            // dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
-            throw error;
+            let errorMessage = error.response.data.msg || 'Error al eliminar el administrador'; // Si existe data.msg, se toma, si no, queda vacío
+            throw errorMessage;
         } finally {
             // dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
-    }, [dispatch]);    
+    }, [dispatch]);
 
     return {
         handleAddNewAdmin,

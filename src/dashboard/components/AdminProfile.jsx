@@ -78,7 +78,6 @@ export const AdminProfile = () => {
             try {
                 setIsLoading(true)
                 const msg = await startUpdatePassword(user.numero_identificacion, passwords.currentPassword, passwords.newPassword)
-                console.log(msg);
                 setSuccess(msg)
                 setPasswords({
                     currentPassword: "",
@@ -87,10 +86,8 @@ export const AdminProfile = () => {
                 })
                 setShowSuccess(true)
                 setIsLoading(false)
-                console.log(isLoading.toString());
             } catch (err) {
                 setError(err)
-                console.log(err);
             } finally {
                 setIsLoading(false)
             }

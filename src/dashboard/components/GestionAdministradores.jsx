@@ -53,40 +53,29 @@ export const GestionAdministradores = () => {
       const data = await handleGetAdmins();
       setAdministrators(data.administradores);
     } catch (error) {
-      console.log(error);
+      setError(error)
     }
   }
 
   const handleCloseSnackbar = () => {
-    ""
     if (error) setError("");
     if (success) setSuccess("");
   };
 
   const handleAddOrUpdateAdmin = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
 
     try {
-      if (!editingAdmin) {
-
-        const data = await handleAddNewAdmin(newAdmin);
-        console.log(data);
-
-      }
+      let message = "";
 
       if (editingAdmin) {
-        const data = await handleUpdateAdmin(editingAdmin.id_admin, newAdmin)
-        console.log(newAdmin, 'EDITARRRR');
-        console.log(data);
-        setEditingAdmin(null)
-
+        await handleUpdateAdmin(editingAdmin.id_admin, newAdmin);
+        message = "Los datos del administrador han sido actualizados correctamente.";
+        setEditingAdmin(null);
       } else {
-        const newAdminWithId = {
-          ...newAdmin,
-          id_admin: administrators.length + 1,
-          nip: "******",
-        }
-        setAdministrators([...administrators, newAdminWithId])
+        await handleAddNewAdmin(newAdmin);
+        message = "El nuevo administrador ha sido registrado correctamente.";
       }
 
       setNewAdmin({
@@ -97,23 +86,38 @@ export const GestionAdministradores = () => {
         nip: "",
         confirmarNip: "",
       })
+
       setShowForm(false)
+      setIsLoading(false)
+      setReload((prev) => !prev); // 🔄 Forzar recarga de datos
 
       Swal.fire({
-        icon: "success",
         title: editingAdmin ? "Administrador actualizado" : "Administrador creado",
-        showConfirmButton: false,
-        timer: 1500,
-      })
+        text: message,
+        icon: "success",
+        timer: 1500, // ⏳ Se cerrará en 1.5 segundos
+        showConfirmButton: true,
+        confirmButtonText: "Entendido",
+        allowOutsideClick: false,
+        color: "#511013",
+        confirmButtonColor: "#B91116",
+        customClass: {
+          popup: "swal-custom-popup",
+          title: "swal-custom-title",
+          confirmButton: "swal-custom-button",
+        },
+      });
+
     } catch (error) {
-      console.log(error);
       setError(error);
+    } finally {
+      setIsLoading(false);
     }
 
   }
 
   const deleteAdmin = async (id, nombre) => {
-    await Swal.fire({
+    Swal.fire({
       title: `¿Estás seguro de eliminar al administrador "${nombre}"?`,
       text: "Esta acción no se puede deshacer. Para confirmar, escribe 'eliminar'.",
       input: "text",
@@ -130,14 +134,25 @@ export const GestionAdministradores = () => {
           return "La palabra no es correcta. Debes escribir 'eliminar' para proceder.";
         }
       },
-    }).then(async(result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           await handleDeleteAdmin(id);
-          console.log(`Administrador ${nombre} eliminado.`);
           setReload((prev) => !prev); // 🔄 Forzar recarga de datos
+          Swal.fire({
+            title: "Administrador eliminado",
+            text: `El administrador "${nombre}" ha sido eliminado correctamente.`,
+            icon: "success",
+            timer: 2000, // ⏳ Se cerrará automáticamente
+            showConfirmButton: false,
+          });
         } catch (error) {
-          console.error("Error al eliminar administrador:", error);
+          Swal.fire({
+            title: "Error",
+            text: error,
+            icon: "error",
+            confirmButtonText: "Entendido",
+          });
         }
       }
     });
@@ -254,37 +269,45 @@ export const GestionAdministradores = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {administrators.map((admin, index) => (
-                <TableRow
-                  key={admin.id_admin}
-                  sx={{
-                    backgroundColor: index % 2 === 0 ? "#f5f5f5" : "#fff",
-                    "&:hover": { backgroundColor: "#f0f0f0" },
-                  }}
-                >
-                  <TableCell>{admin.numero_identificacion}</TableCell>
-                  <TableCell>{admin.nombre}</TableCell>
-                  <TableCell>{admin.apellido_paterno}</TableCell>
-                  <TableCell>{admin.apellido_materno}</TableCell>
-                  <TableCell>{admin.carrera}</TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Editar">
-                      <IconButton size="small" sx={{ color: "#8B0000" }} onClick={() => handleEditAdmin(admin)}>
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Eliminar">
-                      <IconButton
-                        size="small"
-                        sx={{ color: "#8B0000" }}
-                        onClick={() => deleteAdmin(admin.id_admin, admin.nombre)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
+              {administrators.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    No hay administradores disponibles.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                administrators.map((admin, index) => (
+                  <TableRow
+                    key={admin.id_admin}
+                    sx={{
+                      backgroundColor: index % 2 === 0 ? "#f5f5f5" : "#fff",
+                      "&:hover": { backgroundColor: "#f0f0f0" },
+                    }}
+                  >
+                    <TableCell>{admin.numero_identificacion}</TableCell>
+                    <TableCell>{admin.nombre}</TableCell>
+                    <TableCell>{admin.apellido_paterno}</TableCell>
+                    <TableCell>{admin.apellido_materno}</TableCell>
+                    <TableCell>{admin.carrera}</TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Editar">
+                        <IconButton size="small" sx={{ color: "#8B0000" }} onClick={() => handleEditAdmin(admin)}>
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Eliminar">
+                        <IconButton
+                          size="small"
+                          sx={{ color: "#8B0000" }}
+                          onClick={() => deleteAdmin(admin.id_admin, admin.nombre)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -331,6 +354,7 @@ export const GestionAdministradores = () => {
                       fullWidth
                       label="Número de Identificación"
                       name="numero_identificacion"
+                      type="number"
                       value={newAdmin.numero_identificacion}
                       onChange={handleInputChange}
                       required
@@ -366,7 +390,6 @@ export const GestionAdministradores = () => {
                       name="apellido_materno"
                       value={newAdmin.apellido_materno}
                       onChange={handleInputChange}
-                      required
                       variant="outlined"
                     />
                   </Grid>
@@ -385,6 +408,7 @@ export const GestionAdministradores = () => {
                       renderInput={(params) => (
                         <TextField {...params}
                           label="Carrera"
+                          required
                           inputProps={{ ...params.inputProps, readOnly: true }} />
                       )}
                     />

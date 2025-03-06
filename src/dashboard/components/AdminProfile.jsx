@@ -71,7 +71,7 @@ export const AdminProfile = () => {
             setSuccess("")
 
             if (passwords.newPassword !== passwords.confirmPassword) {
-                setError("Las contraseñas nuevas no coinciden")
+                setError("Los NIP's nuevos no coinciden")
                 return
             }
 
@@ -90,6 +90,7 @@ export const AdminProfile = () => {
                 console.log(isLoading.toString());
             } catch (err) {
                 setError(err)
+                console.log(err);
             } finally {
                 setIsLoading(false)
             }
@@ -152,7 +153,7 @@ export const AdminProfile = () => {
                             <Divider sx={{ my: 2 }} />
 
                             <Typography variant="h6" gutterBottom>
-                                Cambiar Contraseña
+                                Cambiar NIP
                             </Typography>
 
                             <form onSubmit={handleSubmit}>
@@ -160,7 +161,7 @@ export const AdminProfile = () => {
                                     margin="normal"
                                     fullWidth
                                     name="currentPassword"
-                                    label="Contraseña actual"
+                                    label="NIP actual"
                                     type={showPasswords.currentPassword ? "text" : "password"}
                                     value={passwords.currentPassword}
                                     onChange={handleInputChange}
@@ -187,13 +188,13 @@ export const AdminProfile = () => {
                                 />
                                 <Divider sx={{ my: 2 }} />
                                 <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, mb: 1 }}>
-                                    Nueva Contraseña
+                                    Nuevo NIP
                                 </Typography>
                                 <TextField
                                     margin="normal"
                                     fullWidth
                                     name="newPassword"
-                                    label="Nueva contraseña"
+                                    label="Nuevo NIP"
                                     type={showPasswords.newPassword ? "text" : "password"}
                                     value={passwords.newPassword}
                                     onChange={handleInputChange}
@@ -222,7 +223,7 @@ export const AdminProfile = () => {
                                     margin="normal"
                                     fullWidth
                                     name="confirmPassword"
-                                    label="Confirmar nueva contraseña"
+                                    label="Confirmar nuevo NIP"
                                     type={showPasswords.confirmPassword ? "text" : "password"}
                                     value={passwords.confirmPassword}
                                     onChange={handleInputChange}
@@ -256,7 +257,7 @@ export const AdminProfile = () => {
 
                                 <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
                                     <Button variant="contained" type="submit">
-                                        Actualizar Contraseña
+                                        Actualizar NIP
                                     </Button>
                                 </Box>
                             </form>
@@ -264,10 +265,14 @@ export const AdminProfile = () => {
                     </Card>
                 </Grid>
             </Grid>
-
-            <Snackbar open={showSuccess} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+            <Snackbar 
+                open={showSuccess} 
+                autoHideDuration={6000} 
+                onClose={handleCloseSnackbar}         
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} 
+            >
                 <Alert onClose={handleCloseSnackbar} severity="success" variant="filled">
-                    {success || "Contraseña actualizada exitosamente"} {/* Display success message */}
+                    {success || "NIP actualizado exitosamente"}
                 </Alert>
             </Snackbar>                    
         </Box>

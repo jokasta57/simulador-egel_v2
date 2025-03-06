@@ -126,16 +126,23 @@ export const Dashboard = () => {
         {
           title: "Último Examen Aplicado",
           value: `${data.datosInicio.ultimoExamen.examen.nombre}`,
-          subvalue: new Date(data.datosInicio.ultimoExamen.fecha_aplicacion).toLocaleDateString("es-ES", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          }),
+          subvalue: (() => {
+            const fechaStr = data.datosInicio.ultimoExamen.fecha_aplicacion;
+            const partes = fechaStr.split("-");
+            const fechaLocal = new Date(partes[0], partes[1] - 1, partes[2]);
+          
+            return fechaLocal.toLocaleDateString("es-ES", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            });
+          })(),
           icon: <Event sx={{ fontSize: 28 }} />,
           valueColor: "#B91116",
         },
       ];
       setResumenData(transformedResumen);
+
 
     } catch (error) {
       console.log(error);

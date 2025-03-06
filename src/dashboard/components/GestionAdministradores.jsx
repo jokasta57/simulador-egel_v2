@@ -1,74 +1,43 @@
 "use client"
 
-import { useState, useRef } from "react"
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Card,
-  CardContent,
-  Grid,
-  IconButton,
-  useMediaQuery,
-  Tooltip,
-} from "@mui/material"
+import { useState, useRef, useEffect } from "react"
+import { Box, Typography, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, Grid, IconButton, useMediaQuery, Tooltip, CircularProgress, Autocomplete, Snackbar, Alert, } from "@mui/material"
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Close as CloseIcon } from "@mui/icons-material"
 import { useTheme } from "@mui/material/styles"
 import Swal from "sweetalert2"
+import { useAdminStore } from "../../hooks/useAdminStore"
+import { Controller } from "react-hook-form"
 
-// Mock data
-const mockAdministrators = [
-  {
-    id_admin: 1,
-    nombre: "Juan",
-    apellido_paterno: "Pérez",
-    apellido_materno: "García",
-    numero_identificacion: "ADM001",
-    nip: "******",
-  },
-  {
-    id_admin: 2,
-    nombre: "María",
-    apellido_paterno: "López",
-    apellido_materno: "Sánchez",
-    numero_identificacion: "ADM002",
-    nip: "******",
-  },
-  {
-    id_admin: 3,
-    nombre: "Carlos",
-    apellido_paterno: "Rodríguez",
-    apellido_materno: "Martínez",
-    numero_identificacion: "ADM003",
-    nip: "******",
-  },
-]
 
 export const GestionAdministradores = () => {
-  const [administrators, setAdministrators] = useState(mockAdministrators)
+  const [administrators, setAdministrators] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingAdmin, setEditingAdmin] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
   const formRef = useRef(null)
+  const [reload, setReload] = useState(false);
   const [newAdmin, setNewAdmin] = useState({
     nombre: "",
     apellido_paterno: "",
     apellido_materno: "",
+    carrera: "",
     numero_identificacion: "",
     nip: "",
     confirmarNip: "", // Nuevo campo para confirmar NIP
   })
   const [errors, setErrors] = useState({})
 
+  const { handleGetAdmins, handleAddNewAdmin, handleUpdateAdmin, handleDeleteAdmin } = useAdminStore();
+
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+
+  useEffect(() => {
+    setIsLoading(true)
+    getAdmins();
+    setIsLoading(false)
+  }, [editingAdmin, reload])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -79,115 +48,100 @@ export const GestionAdministradores = () => {
     }
   }
 
-  const validateForm = () => {
-    const newErrors = {}
-
-    if (!newAdmin.numero_identificacion) {
-      newErrors.numero_identificacion = "El número de identificación es requerido"
+  const getAdmins = async () => {
+    try {
+      const data = await handleGetAdmins();
+      setAdministrators(data.administradores);
+    } catch (error) {
+      console.log(error);
     }
-    if (!newAdmin.nombre) {
-      newErrors.nombre = "El nombre es requerido"
-    }
-    if (!newAdmin.apellido_paterno) {
-      newErrors.apellido_paterno = "El apellido paterno es requerido"
-    }
-    if (!newAdmin.apellido_materno) {
-      newErrors.apellido_materno = "El apellido materno es requerido"
-    }
-    if (!editingAdmin) {
-      if (!newAdmin.nip) {
-        newErrors.nip = "El NIP es requerido"
-      }
-      if (!newAdmin.confirmarNip) {
-        newErrors.confirmarNip = "La confirmación del NIP es requerida"
-      }
-      if (newAdmin.nip !== newAdmin.confirmarNip) {
-        newErrors.nip = "Los NIPs no coinciden"
-        newErrors.confirmarNip = "Los NIPs no coinciden"
-      }
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
   }
+
+  const handleCloseSnackbar = () => {
+    ""
+    if (error) setError("");
+    if (success) setSuccess("");
+  };
 
   const handleAddOrUpdateAdmin = async (e) => {
     e.preventDefault()
 
-    if (!validateForm()) {
-      return
-    }
+    try {
+      if (!editingAdmin) {
 
-    if (!editingAdmin) {
-      // Confirmar la creación del administrador
-      const result = await Swal.fire({
-        title: "¿Confirmar NIP?",
-        input: "password",
-        inputLabel: "Por favor, ingrese el NIP nuevamente para confirmar",
-        inputPlaceholder: "Confirmar NIP",
-        showCancelButton: true,
-        confirmButtonText: "Confirmar",
-        cancelButtonText: "Cancelar",
-        inputValidator: (value) => {
-          if (value !== newAdmin.nip) {
-            return "El NIP no coincide"
-          }
-        },
+        const data = await handleAddNewAdmin(newAdmin);
+        console.log(data);
+
+      }
+
+      if (editingAdmin) {
+        const data = await handleUpdateAdmin(editingAdmin.id_admin, newAdmin)
+        console.log(newAdmin, 'EDITARRRR');
+        console.log(data);
+        setEditingAdmin(null)
+
+      } else {
+        const newAdminWithId = {
+          ...newAdmin,
+          id_admin: administrators.length + 1,
+          nip: "******",
+        }
+        setAdministrators([...administrators, newAdminWithId])
+      }
+
+      setNewAdmin({
+        nombre: "",
+        apellido_paterno: "",
+        apellido_materno: "",
+        numero_identificacion: "",
+        nip: "",
+        confirmarNip: "",
       })
+      setShowForm(false)
 
-      if (!result.isConfirmed) {
-        return
-      }
+      Swal.fire({
+        icon: "success",
+        title: editingAdmin ? "Administrador actualizado" : "Administrador creado",
+        showConfirmButton: false,
+        timer: 1500,
+      })
+    } catch (error) {
+      console.log(error);
+      setError(error);
     }
 
-    if (editingAdmin) {
-      setAdministrators(
-        administrators.map((admin) => (admin.id_admin === editingAdmin.id_admin ? { ...admin, ...newAdmin } : admin)),
-      )
-      setEditingAdmin(null)
-    } else {
-      const newAdminWithId = {
-        ...newAdmin,
-        id_admin: administrators.length + 1,
-        nip: "******",
-      }
-      setAdministrators([...administrators, newAdminWithId])
-    }
-
-    setNewAdmin({
-      nombre: "",
-      apellido_paterno: "",
-      apellido_materno: "",
-      numero_identificacion: "",
-      nip: "",
-      confirmarNip: "",
-    })
-    setShowForm(false)
-
-    Swal.fire({
-      icon: "success",
-      title: editingAdmin ? "Administrador actualizado" : "Administrador creado",
-      showConfirmButton: false,
-      timer: 1500,
-    })
   }
 
-  const handleDeleteAdmin = (id) => {
-    Swal.fire({
-      title: "¿Estás seguro?",
-      text: "No podrás revertir esta acción",
-      icon: "warning",
+  const deleteAdmin = async (id, nombre) => {
+    await Swal.fire({
+      title: `¿Estás seguro de eliminar al administrador "${nombre}"?`,
+      text: "Esta acción no se puede deshacer. Para confirmar, escribe 'eliminar'.",
+      input: "text",
+      inputLabel: "Confirmación de eliminación",
+      inputPlaceholder: "Escribe 'eliminar'",
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Sí, eliminar",
+      confirmButtonText: "Eliminar",
       cancelButtonText: "Cancelar",
-    }).then((result) => {
+      confirmButtonColor: theme.palette.error.main,
+      cancelButtonColor: theme.palette.grey[500],
+      icon: "warning",
+      inputValidator: (value) => {
+        if (value !== 'eliminar') {
+          return "La palabra no es correcta. Debes escribir 'eliminar' para proceder.";
+        }
+      },
+    }).then(async(result) => {
       if (result.isConfirmed) {
-        setAdministrators(administrators.filter((admin) => admin.id_admin !== id))
-        Swal.fire("Eliminado", "El administrador ha sido eliminado.", "success")
+        try {
+          await handleDeleteAdmin(id);
+          console.log(`Administrador ${nombre} eliminado.`);
+          setReload((prev) => !prev); // 🔄 Forzar recarga de datos
+        } catch (error) {
+          console.error("Error al eliminar administrador:", error);
+        }
       }
-    })
+    });
+
   }
 
   const handleEditAdmin = (admin) => {
@@ -196,6 +150,7 @@ export const GestionAdministradores = () => {
       nombre: admin.nombre,
       apellido_paterno: admin.apellido_paterno,
       apellido_materno: admin.apellido_materno,
+      carrera: admin.carrera || "",
       numero_identificacion: admin.numero_identificacion,
       nip: "",
       confirmarNip: "",
@@ -205,6 +160,8 @@ export const GestionAdministradores = () => {
       formRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
     }
   }
+
+  if (isLoading) return <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
 
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>
@@ -241,7 +198,7 @@ export const GestionAdministradores = () => {
                     borderBottom: "2px solid #8B0000",
                   }}
                 >
-                  Número de Cuenta
+                  Número de Identificación
                 </TableCell>
                 <TableCell
                   sx={{
@@ -309,7 +266,7 @@ export const GestionAdministradores = () => {
                   <TableCell>{admin.nombre}</TableCell>
                   <TableCell>{admin.apellido_paterno}</TableCell>
                   <TableCell>{admin.apellido_materno}</TableCell>
-                  <TableCell>Ing. de software</TableCell>
+                  <TableCell>{admin.carrera}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Editar">
                       <IconButton size="small" sx={{ color: "#8B0000" }} onClick={() => handleEditAdmin(admin)}>
@@ -320,7 +277,7 @@ export const GestionAdministradores = () => {
                       <IconButton
                         size="small"
                         sx={{ color: "#8B0000" }}
-                        onClick={() => handleDeleteAdmin(admin.id_admin)}
+                        onClick={() => deleteAdmin(admin.id_admin, admin.nombre)}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -378,8 +335,6 @@ export const GestionAdministradores = () => {
                       onChange={handleInputChange}
                       required
                       variant="outlined"
-                      error={!!errors.numero_identificacion}
-                      helperText={errors.numero_identificacion}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -391,8 +346,6 @@ export const GestionAdministradores = () => {
                       onChange={handleInputChange}
                       required
                       variant="outlined"
-                      error={!!errors.nombre}
-                      helperText={errors.nombre}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -404,8 +357,6 @@ export const GestionAdministradores = () => {
                       onChange={handleInputChange}
                       required
                       variant="outlined"
-                      error={!!errors.apellido_paterno}
-                      helperText={errors.apellido_paterno}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -417,52 +368,54 @@ export const GestionAdministradores = () => {
                       onChange={handleInputChange}
                       required
                       variant="outlined"
-                      error={!!errors.apellido_materno}
-                      helperText={errors.apellido_materno}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Carrera"
-                      name="carrera"
-                      value='carrera'
-                      onChange={handleInputChange}
-                      required
-                      variant="outlined"
-                      // error={!!errors.apellido_materno}
-                      // helperText={errors.apellido_materno}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="NIP"
-                      name="nip"
-                      type="password"
-                      value={newAdmin.nip}
-                      onChange={handleInputChange}
-                      required={!editingAdmin}
-                      variant="outlined"
-                      error={!!errors.nip}
-                      helperText={errors.nip}
+                    <Autocomplete
+                      onChange={(event, newValue) => {
+                        setNewAdmin((prev) => ({ ...prev, carrera: newValue }));
+                      }}
+                      options={[
+                        "Ingeniería de Software",
+                        "Medicina",
+                        "Licenciatura en Administración",
+                        "Enfermería"
+                      ]}
+                      value={newAdmin.carrera || ""}  // Esto debería ser el valor de la carrera
+                      renderInput={(params) => (
+                        <TextField {...params}
+                          label="Carrera"
+                          inputProps={{ ...params.inputProps, readOnly: true }} />
+                      )}
                     />
                   </Grid>
                   {!editingAdmin && (
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Confirmar NIP"
-                        name="confirmarNip"
-                        type="password"
-                        value={newAdmin.confirmarNip}
-                        onChange={handleInputChange}
-                        required
-                        variant="outlined"
-                        error={!!errors.confirmarNip}
-                        helperText={errors.confirmarNip}
-                      />
-                    </Grid>
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          label="NIP"
+                          name="nip"
+                          type="password"
+                          value={newAdmin.nip}
+                          onChange={handleInputChange}
+                          required={!editingAdmin}
+                          variant="outlined"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          fullWidth
+                          label="Confirmar NIP"
+                          name="confirmarNip"
+                          type="password"
+                          value={newAdmin.confirmarNip}
+                          onChange={handleInputChange}
+                          required
+                          variant="outlined"
+                        />
+                      </Grid>
+                    </>
                   )}
                   <Grid item xs={12}>
                     <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
@@ -487,6 +440,21 @@ export const GestionAdministradores = () => {
           </Card>
         )}
       </Card>
+      <Snackbar
+        open={Boolean(error || success)}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={error ? 'error' : 'success'}
+          variant="filled"
+        >
+          {error ? (typeof error === 'string' ? error : JSON.stringify(error)) :
+            (typeof success === 'string' ? success : JSON.stringify(success))}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

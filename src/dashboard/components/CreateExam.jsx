@@ -87,10 +87,12 @@ export const CreateExam = () => {
   const [success, setSuccess] = useState(null)
   const [lastSaved, setLastSaved] = useState(null)
 
+
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { totalQuestions, currentOrder, preguntaNueva, currentQuestion } = useSelector((state) => state.exams)
   const { newExamInfo } = useSelector((state) => state.createExam)
+  const { user } = useSelector(state => state.auth)
 
   const handleCloseSnackbar = () => {
     setError(null)
@@ -388,14 +390,18 @@ export const CreateExam = () => {
             />
 
             <Autocomplete
-              value={examInfo.carrera}
-              onChange={(event, newValue) => handleAutocompleteChange("carrera", newValue)}
+              value={user.carrera}  // El valor se obtiene de user.carrera
               options={["Ingeniería de Software", "Medicina", "Licenciatura en Administración", "Enfermería"]}
-              disableClearable // No permite limpiar el campo manualmente
+              disableClearable  // No permite limpiar el campo manualmente
               renderInput={(params) => (
-                <TextField {...params} label="Carrera" inputProps={{ ...params.inputProps, readOnly: true }} />
+                <TextField
+                  {...params}
+                  label="Carrera"
+                  value={user.carrera}  // Muestra el valor de user.carrera
+                  inputProps={{ ...params.inputProps, readOnly: true }} // Hace que el campo sea de solo lectura
+                />
               )}
-              disabled={!isExamInfoEditable} // Sigue respetando la edición del examen
+              // disabled={true}  // Deshabilita el campo para que no sea editable por el usuario
             />
 
             <TextField

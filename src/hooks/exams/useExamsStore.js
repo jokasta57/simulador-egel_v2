@@ -19,7 +19,8 @@ import {
     addNewQuestionStart,
     setIsLoadingFalse,
     setIsLoading,
-    setCurrentAttempt
+    setCurrentAttempt,
+    resetExams
 } from '../../store/exams/examsSlice';
 import simulatorApi from '../../api/simulatorApi';
 
@@ -33,10 +34,10 @@ export const useExamsStore = () => {
             const response = await adminApi.get('/exams');
             dispatch(loadExams(response.data.examenes));
             return response.data;
-        } catch (error) {
-            console.log(error);
-            dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
-            throw error;
+        } catch (err) {
+            let errorMessage = err.response?.data.msg || 'Error al cargar examenes'
+            dispatch(setError(err.response?.data.msg || 'Error al cargar examenes'));
+            throw errorMessage;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
@@ -429,6 +430,9 @@ export const useExamsStore = () => {
         isLoading,
         error,
         success,
+        setError,
+        clearError,
+        resetExams,
         handleLoadExams,
         handleLoadExam,
         handleUpdateExam,

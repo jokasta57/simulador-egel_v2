@@ -7,6 +7,7 @@ import { useTheme } from "@mui/material/styles"
 import Swal from "sweetalert2"
 import { useAdminStore } from "../../hooks/useAdminStore"
 import { Controller } from "react-hook-form"
+import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 
 export const GestionAdministradores = () => {
@@ -34,9 +35,7 @@ export const GestionAdministradores = () => {
   const theme = useTheme()
 
   useEffect(() => {
-    setIsLoading(true)
     getAdmins();
-    setIsLoading(false)
   }, [editingAdmin, reload])
 
   const handleInputChange = (e) => {
@@ -49,11 +48,14 @@ export const GestionAdministradores = () => {
   }
 
   const getAdmins = async () => {
+    setIsLoading(true)
     try {
       const data = await handleGetAdmins();
       setAdministrators(data.administradores);
     } catch (error) {
       setError(error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -176,7 +178,7 @@ export const GestionAdministradores = () => {
     }
   }
 
-  if (isLoading) return <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
+  if (isLoading) return <LoadingSpinner />
 
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>
@@ -185,9 +187,9 @@ export const GestionAdministradores = () => {
           variant="h4"
           component="h1"
           sx={{
+            color: theme.palette.text.primary,
             fontWeight: "bold",
-            color: "#8B0000",
-            mb: 3,
+            mb: 3
           }}
         >
           Gestión de Administradores

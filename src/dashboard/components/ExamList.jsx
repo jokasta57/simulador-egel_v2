@@ -17,6 +17,9 @@ import {
   InputLabel,
   Button,
   Switch,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from "@mui/material"
 import {
   Edit as EditIcon,
@@ -25,9 +28,10 @@ import {
   Add as AddIcon,
 } from "@mui/icons-material"
 import Swal from "sweetalert2"
-import { useSelector } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { Link } from "react-router-dom"
+import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 const periodosFiltro = ["Todos", "Último mes", "Últimos 3 meses", "Último año"]
 
@@ -36,12 +40,19 @@ export const ExamList = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [periodoFilter, setPeriodoFilter] = useState("Todos")
   const [stateFilter, setStateFilter] = useState("Todos")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+  const { user } = useSelector((state) => state.auth)
+  const dispatch = useDispatch();
 
-  const { handleLoadExams, handleClearError, handleClearSuccess, handleSwitchState } = useExamsStore()
+  const { handleLoadExams, handleClearError, handleClearSuccess, handleSwitchState, resetExams } = useExamsStore()
 
   useEffect(() => {
-    handleLoadExams()
-  }, [handleLoadExams]) // Added handleLoadExams to dependencies
+    getExams()
+    return () => {
+      dispatch(resetExams())
+  };
+  }, []) // Added handleLoadExams to dependencies
 
   const { exams } = useSelector((state) => state.exams)
 
@@ -70,6 +81,17 @@ export const ExamList = () => {
       const matchesState = stateFilter === "Todos" || examen.estado === stateFilter
       return matchesSearch && matchesPeriodo && matchesState
     }) || []
+
+  const getExams = async () => {
+    setLoading(true)
+    try {
+      await handleLoadExams()
+    } catch (error) {
+      setError(error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleDelete = (examenId, examenNombre) => {
     Swal.fire({
@@ -124,6 +146,13 @@ export const ExamList = () => {
     }
   }
 
+  const handleCloseSnackbar = () => {
+    if (error) setError("");
+  };
+
+  if (loading) return <LoadingSpinner />
+
+
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>
       <Box
@@ -142,7 +171,7 @@ export const ExamList = () => {
             fontWeight: "bold",
           }}
         >
-          Exámenes EGEL de Ingeniería de Software
+          Exámenes EGEL de {user.carrera}
         </Typography>
         <Button
           variant="contained"
@@ -201,128 +230,153 @@ export const ExamList = () => {
       </Box>
 
       <Stack spacing={2}>
-        {filteredExams.map((examen) => (
-          <Card
-            key={examen.id_examen}
-            sx={{
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 2,
-              boxShadow: "none",
-              transition: "all 0.2s ease-in-out",
-              "&:hover": {
-                borderColor: theme.palette.primary.main,
-                transform: "translateY(-2px)",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-              },
-            }}
-          >
-            <CardContent
+
+        {filteredExams.length > 0 ? (
+          filteredExams.map((examen) => (
+            <Card
+              key={examen.id_examen}
               sx={{
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "flex-start", sm: "center" },
-                justifyContent: "space-between",
-                gap: 2,
-                p: "24px !important",
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 2,
+                boxShadow: "none",
+                transition: "all 0.2s ease-in-out",
+                "&:hover": {
+                  borderColor: theme.palette.primary.main,
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                },
               }}
             >
-              <Box sx={{ flex: 1 }}>
-                <Typography
-                  variant="h6"
-                  component="h3"
-                  sx={{
-                    fontWeight: "medium",
-                    color: theme.palette.text.primary,
-                    mb: 1,
-                  }}
-                >
-                  {examen.nombre}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: theme.palette.text.secondary,
-                    mb: 1,
-                  }}
-                >
-                  Periodo: {examen.periodo} | {formatDuration(examen.duracion)} minutos
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: theme.palette.primary.main,
-                    fontWeight: 500,
-                    mb: 1,
-                  }}
-                >
-                  Última actualización: {new Date(examen.fecha_modificacion).toLocaleDateString("es-ES", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </Typography>
+              <CardContent
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: { xs: "flex-start", sm: "center" },
+                  justifyContent: "space-between",
+                  gap: 2,
+                  p: "24px !important",
+                }}
+              >
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="h6"
+                    component="h3"
+                    sx={{
+                      fontWeight: "medium",
+                      color: theme.palette.text.primary,
+                      mb: 1,
+                    }}
+                  >
+                    {examen.nombre}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      mb: 1,
+                    }}
+                  >
+                    Periodo: {examen.periodo} | {formatDuration(examen.duracion)} minutos
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: theme.palette.primary.main,
+                      fontWeight: 500,
+                      mb: 1,
+                    }}
+                  >
+                    Última actualización: {new Date(examen.fecha_modificacion).toLocaleDateString("es-ES", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <Switch
+                      checked={examen.estado === "activo"}
+                      onChange={() => handleToggleState(examen)}
+                      color="primary"
+                      size="small"
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: "medium",
+                        textTransform: "uppercase",
+                        ...getStateStyle(examen.estado),
+                      }}
+                    >
+                      {examen.estado}
+                    </Typography>
+                  </Box>
+                </Box>
                 <Box
                   sx={{
                     display: "flex",
-                    alignItems: "center",
                     gap: 1,
+                    alignSelf: { xs: "flex-end", sm: "center" },
                   }}
                 >
-                  <Switch
-                    checked={examen.estado === "activo"}
-                    onChange={() => handleToggleState(examen)}
-                    color="primary"
-                    size="small"
-                  />
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: "medium",
-                      textTransform: "uppercase",
-                      ...getStateStyle(examen.estado),
-                    }}
-                  >
-                    {examen.estado}
-                  </Typography>
-                </Box>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 1,
-                  alignSelf: { xs: "flex-end", sm: "center" },
-                }}
-              >
-                <Link to={`/admin/exams/${examen.id_examen}/edit`}>
+                  <Link to={`/admin/exams/${examen.id_examen}/edit`}>
+                    <IconButton
+                      size="small"
+                      sx={{
+                        color: theme.palette.primary.main,
+                        "&:hover": {
+                          backgroundColor: theme.palette.primary.lighter,
+                        },
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Link>
                   <IconButton
                     size="small"
+                    onClick={() => handleDelete(examen.id_examen, examen.nombre)}
                     sx={{
-                      color: theme.palette.primary.main,
+                      color: theme.palette.error.main,
                       "&:hover": {
-                        backgroundColor: theme.palette.primary.lighter,
+                        backgroundColor: theme.palette.error.lighter,
                       },
                     }}
                   >
-                    <EditIcon />
+                    <DeleteIcon />
                   </IconButton>
-                </Link>
-                <IconButton
-                  size="small"
-                  onClick={() => handleDelete(examen.id_examen, examen.nombre)}
-                  sx={{
-                    color: theme.palette.error.main,
-                    "&:hover": {
-                      backgroundColor: theme.palette.error.lighter,
-                    },
-                  }}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            </CardContent>
-          </Card>
-        ))}
+                </Box>
+              </CardContent>
+            </Card>
+          ))) : (
+          <Box sx={{ textAlign: "center", p: 3 }}>
+            <Typography variant="h6" color="textSecondary">
+              No hay exámenes disponibles
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              Empieza a crear un nuevo examen para verlo aquí.
+            </Typography>
+          </Box>
+        )}
       </Stack>
+      <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={'error'}
+          variant="filled"
+        >
+          {typeof error === 'string' ? error : JSON.stringify(error)}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

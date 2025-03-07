@@ -86,17 +86,21 @@ export const Exams = () => {
 
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>
-      <Typography
-        variant="h4"
-        component="h1"
-        sx={{
-          color: theme.palette.primary.main,
-          fontWeight: "bold",
-          mb: 4,
-          textAlign: "center",
-        }}
-      >
+      <Typography variant="h4" component="h1" sx={{ color: theme.palette.text.primary, mb: 4, fontWeight: "bold", }}>
         Simulaciones de Examen EGEL
+      </Typography>
+      <Typography variant="body2" sx={{
+        color: "text.disabled",
+        textTransform: "uppercase",
+        letterSpacing: 1,
+        borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
+        paddingBottom: 1,
+        mb: 2,
+        fontWeight: 600, // Aumenta el peso para que no se pierda tanto
+        fontSize: '1rem', // Tamaño más pequeño pero aún legible
+        mt: -2, // Ajusta este valor para moverlo hacia arriba
+      }}>
+        {user.carrera}
       </Typography>
 
       <Box

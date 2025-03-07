@@ -21,7 +21,7 @@ export const useAuthStore = () => {
 
             let role = admin?.superAdmin ? 'superAdmin' : 'admin'
 
-            dispatch(onLoginSuccess({ nombre: admin.nombre, apellido_paterno: admin.apellido_paterno, apellido_materno: admin.apellido_materno, id: admin.id_admin, token: data.token, role: role, numero_identificacion: admin.numero_identificacion }));
+            dispatch(onLoginSuccess({ nombre: admin.nombre, apellido_paterno: admin.apellido_paterno, apellido_materno: admin.apellido_materno, id: admin.id_admin, token: data.token, role: role, numero_identificacion: admin.numero_identificacion, carrera: admin.carrera }));
         } catch (error) {
             let errorMessage = error.response.data.msg;
             dispatch(onLoginFailure(errorMessage || 'Error al iniciar sesión'));
@@ -104,7 +104,8 @@ export const useAuthStore = () => {
                 apellido_paterno: data.apellido_paterno,
                 apellido_materno: data.apellido_materno,
                 role: data.role,
-                numero_identificacion: data.numero_identificacion
+                numero_identificacion: data.numero_identificacion,
+                carrera: data.carrera
             };
 
             if (data.role === 'admin' || data.role === 'superAdmin') {

@@ -25,11 +25,8 @@ export const useAdminStatsStore = () => {
             return data;
 
         } catch (error) {
-            console.log(error);
-            // dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
-            throw error;
-        } finally {
-            // dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+            let errorMessage = error.response
+            throw errorMessage;
         }
     }, [dispatch]);
 
@@ -39,11 +36,8 @@ export const useAdminStatsStore = () => {
             return data;
 
         } catch (error) {
-            console.log(error);
-            // dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
-            throw error;
-        } finally {
-            // dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+            let errorMessage = error.response?.data.msg
+            throw errorMessage;
         }
     }, [dispatch]);
 
@@ -70,7 +64,6 @@ export const useAdminStatsStore = () => {
 
         } catch (error) {
             let errorMessage = error.response?.data.msg
-            console.log(error.response?.data.msg);
             // dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
             throw errorMessage;
         }

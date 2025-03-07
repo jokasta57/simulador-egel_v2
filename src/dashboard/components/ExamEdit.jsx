@@ -26,6 +26,7 @@ import { addNewQuestionTemp, resetCurrentOrder, resetPreguntaNueva, resetTotalQu
 import Swal from "sweetalert2"
 import QuestionPanel from "./QuestionPanel"
 import { ArrowLeft } from "lucide-react"
+import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 const generatePeriodOptions = () => {
   const currentYear = new Date().getFullYear()
@@ -303,14 +304,7 @@ export const ExamEdit = () => {
   }
 
 
-  if (isInitialLoading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress />
-      </Box>
-    )
-  }
-
+  if (isInitialLoading) return <LoadingSpinner />
   return (
     <Box
       sx={{

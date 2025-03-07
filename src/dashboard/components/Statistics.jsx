@@ -46,6 +46,7 @@ import { useSelector } from "react-redux"
 import Swal from "sweetalert2"
 import DeleteIcon from "@mui/icons-material/Delete"
 import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
+import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 const COLORS = ["#2196f3", "#f44336"] // Azul para aprobados, Rojo para reprobados
 
@@ -137,18 +138,40 @@ export const Statistics = () => {
   }
 
   useEffect(() => {
-    setIsLoading(true);
-    handleLoadExams();
-    getLastExamAttempt();
-    setIsLoading(false);
-  }, [])
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          handleLoadExams(),
+          getLastExamAttempt()
+        ]);
+      } catch (error) {
+        console.log("Error al cargar los exámenes:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []); // Solo se ejecuta una vez al montar el componente
 
   useEffect(() => {
-    setIsLoading(true);
-    getPerformancePerQuestion();
-    getSummaryAndGrades()
-    setIsLoading(false);
-  }, [selectedExam, startDate, endDate])
+    const loadPerformanceData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          getPerformancePerQuestion(),
+          getSummaryAndGrades()
+        ]);
+      } catch (error) {
+        console.log("Error al cargar los datos de rendimiento:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPerformanceData();
+  }, [selectedExam, startDate, endDate]); // Se ejecuta cuando cambian estos valores
 
   const { exams } = useSelector((state) => state.exams)
 
@@ -203,8 +226,7 @@ export const Statistics = () => {
   };
 
 
-  if (isLoading) return <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
-
+  if (isLoading) return <LoadingSpinner />
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -523,7 +545,6 @@ export const Statistics = () => {
                     <TableCell align="right">Calificación</TableCell>
                     <TableCell align="right">No. de Intentos</TableCell>
                     <TableCell align="center">Estado</TableCell>
-                    {/* <TableCell align="center">Acciones</TableCell> */}
                   </TableRow>
                 </TableHead>
                 <TableBody>

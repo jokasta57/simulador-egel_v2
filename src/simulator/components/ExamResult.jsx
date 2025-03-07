@@ -36,15 +36,14 @@ export const ExamResult = () => {
   }, [navigate]);
 
   useEffect(() => {
-    setIsLoading(true);
     getResults(currentAttempt.id_intento);
-    setIsLoading(false)
     return () => {
       dispatch(resetCurrentAttempt())
     }
   }, [])
 
   const getResults = async (currentAttempt) => {
+    setIsLoading(true);
     try {
       const data = await handleGetResultsAttempt(currentAttempt);
 
@@ -67,6 +66,8 @@ export const ExamResult = () => {
 
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLoading(false)
     }
   }
 

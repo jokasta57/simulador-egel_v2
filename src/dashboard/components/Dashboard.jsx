@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Grid, Typography, Box, useTheme, Card, CardContent, Button, Select, MenuItem, TextField, CircularProgress } from "@mui/material"
+import { Grid, Typography, Box, useTheme, Card, CardContent, Button, Select, MenuItem, TextField, CircularProgress, Snackbar, Alert } from "@mui/material"
 import {
   LineChart,
   Line,
@@ -15,9 +15,11 @@ import {
   Pie,
   Cell,
 } from "recharts"
-import { Assignment, People, Edit, Event } from "@mui/icons-material"
+import { Assignment, People, Edit, Event, School } from "@mui/icons-material"
 import { Link as RouterLink } from "react-router-dom"
 import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
+import { useSelector } from "react-redux"
+import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 const COLORS = ["#0088FE", "#FF8042"]
 
@@ -28,6 +30,7 @@ export const Dashboard = () => {
   const [dataPie, setDataPie] = useState([])
   const [examenesBorrador, setExamenesBorrador] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
 
   //Filtros
@@ -49,13 +52,25 @@ export const Dashboard = () => {
 
   //************** */
   const { handlePercentageByDate, handlePercentage, handleDrafts } = useAdminStatsStore();
+  const { user } = useSelector(state => state.auth)
 
   useEffect(() => {
-    setLoading(true)
-    getPercentages();
-    getPercentagesByDate()
-    getDrafts();
-    setLoading(false)
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([
+          getPercentages(),
+          getPercentagesByDate(),
+          getDrafts()
+        ]);
+      } catch (error) {
+        console.error("Error al cargar los datos:", error);
+      } finally {
+        setLoading(false); // ✅ Solo se ejecuta cuando TODO ha terminado
+      }
+    };
+
+    fetchData();
   }, [])
 
   const getPercentagesByDate = async () => {
@@ -83,7 +98,7 @@ export const Dashboard = () => {
       }));
       setExamenesBorrador(borradoresFormateados);
     } catch (error) {
-      console.log(error);
+      setError((prevError) => `${prevError} ${error}`);
     }
   }
 
@@ -104,8 +119,8 @@ export const Dashboard = () => {
 
       // Transformar datos para el gráfico de pastel
       const transformedData = [
-        { name: "Aprobados", value: parseFloat(data.porcentajes.aprobados) },
-        { name: "Reprobados", value: parseFloat(data.porcentajes.reprobados) }
+        { name: "Aprobados", value: parseFloat(data.porcentajes.aprobados) || 0 },
+        { name: "Reprobados", value: parseFloat(data.porcentajes.reprobados) || 0 }
       ];
       setDataPie(transformedData);
 
@@ -113,24 +128,27 @@ export const Dashboard = () => {
       const transformedResumen = [
         {
           title: "Total de Exámenes",
-          value: data.datosInicio.totalExamenes.toString(),
+          value: data.datosInicio?.totalExamenes?.toString() || 'No hay datos disponibles',
           icon: <Assignment sx={{ fontSize: 28 }} />,
           valueColor: "#B91116",
         },
         {
           title: "Estudiantes Registrados",
-          value: data.datosInicio.estudiantesRegistrados.toString(),
+          value: data.datosInicio?.estudiantesRegistrados?.toString() || 'No hay datos disponibles',
           icon: <People sx={{ fontSize: 28 }} />,
           valueColor: "#B91116",
         },
         {
           title: "Último Examen Aplicado",
-          value: `${data.datosInicio.ultimoExamen.examen.nombre}`,
+          value: data.datosInicio?.ultimoExamen?.examen?.nombre || 'No hay datos disponibles',
           subvalue: (() => {
+            if (!data.datosInicio?.ultimoExamen?.fecha_aplicacion) {
+              return 'No hay fecha disponible';
+            }
             const fechaStr = data.datosInicio.ultimoExamen.fecha_aplicacion;
             const partes = fechaStr.split("-");
             const fechaLocal = new Date(partes[0], partes[1] - 1, partes[2]);
-          
+
             return fechaLocal.toLocaleDateString("es-ES", {
               day: "2-digit",
               month: "short",
@@ -143,9 +161,38 @@ export const Dashboard = () => {
       ];
       setResumenData(transformedResumen);
 
-
     } catch (error) {
-      console.log(error);
+
+      // Si el error es 404, mostrar datos vacíos
+      if (error.status === 404) {
+        setDataPie([
+          { name: "Aprobados", value: 0 },
+          { name: "Reprobados", value: 0 }
+        ]);
+
+        setResumenData([
+          {
+            title: "Total de Exámenes",
+            value: "Sin datos",
+            icon: <Assignment sx={{ fontSize: 28 }} />,
+            valueColor: "#B91116",
+          },
+          {
+            title: "Estudiantes Registrados",
+            value: "Sin datos",
+            icon: <People sx={{ fontSize: 28 }} />,
+            valueColor: "#B91116",
+          },
+          {
+            title: "Último Examen Aplicado",
+            value: "Sin datos",
+            subvalue: "N/A",
+            icon: <Event sx={{ fontSize: 28 }} />,
+            valueColor: "#B91116",
+          },
+        ]);
+        setError('Aún no hay intentos de examen registrados.')
+      }
     }
   };
 
@@ -158,13 +205,29 @@ export const Dashboard = () => {
     '#E8641C', // Naranja oscuro
   ];
 
-  if (loading) return <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
+  const handleCloseSnackbar = () => {
+    if (error) setError("");
+  };
+
+  if (loading) return <LoadingSpinner />
 
 
   return (
     <Box sx={{ maxWidth: "100%", overflow: "hidden" }}>
-      <Typography variant="h5" component="h2" sx={{ color: "#B91116", mb: 3, fontWeight: 500 }}>
+      <Typography variant="h4" component="h1" sx={{ color: theme.palette.text.primary, fontWeight: "bold", }}>
         Dashboard
+      </Typography>
+      <Typography variant="body2" sx={{
+        color: "text.disabled",
+        textTransform: "uppercase",
+        letterSpacing: 1,
+        borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
+        paddingBottom: 1,
+        mb: 2,
+        fontWeight: 600, // Aumenta el peso para que no se pierda tanto
+        fontSize: '1rem', // Tamaño más pequeño pero aún legible
+      }}>
+        {user.carrera}
       </Typography>
       <Grid container spacing={3}>
         {resumenData.map((item, index) => (
@@ -327,6 +390,12 @@ export const Dashboard = () => {
                     ]}
                   />
                   <Legend />
+                  {filteredData.length === 0 && (
+                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
+                      No hay datos disponibles
+                    </text>
+
+                  )}
                   {Array.from(new Set(filteredData.map((item) => item.nombre))).map((examen, index) => (
                     <Line
                       key={examen}
@@ -378,6 +447,11 @@ export const Dashboard = () => {
                     ))}
                   </Pie>
                   <Tooltip />
+                  {dataPie.every(item => item.value === 0) && (
+                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
+                      No hay datos disponibles
+                    </text>
+                  )}
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
@@ -405,57 +479,78 @@ export const Dashboard = () => {
                 <Edit sx={{ color: "#B91116" }} />
               </Box>
               <Box sx={{ maxHeight: 300, overflowY: "auto" }}>
-                {examenesBorrador.map((examen, index) => (
-                  <Box
-                    key={examen.id_examen}
-                    sx={{
-                      p: 2,
-                      mb: 1,
-                      borderRadius: 1,
-                      backgroundColor: "background.paper",
-                      border: "1px solid",
-                      borderColor: "rgba(0, 0, 0, 0.08)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        backgroundColor: `rgba(185, 17, 22, 0.08)`,
-                        borderColor: "#B91116",
-                      },
-                    }}
-                  >
-                    <Box>
-                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        {examen.nombre}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        {examen.fecha_modificacion}
-                      </Typography>
-                    </Box>
-                    <Button
-                      component={RouterLink}
-                      to={`/admin/exams/${examen.id_examen}/edit`}
-                      variant="outlined"
-                      size="small"
+                {examenesBorrador.length === 0 ? (
+                  <Typography variant="body2" color="textSecondary">
+                    No hay borradores disponibles
+                  </Typography>
+                ) : (
+                  examenesBorrador.map((examen, index) => (
+                    <Box
+                      key={examen.id_examen}
                       sx={{
-                        color: "#B91116",
-                        borderColor: "#B91116",
+                        p: 2,
+                        mb: 1,
+                        borderRadius: 1,
+                        backgroundColor: "background.paper",
+                        border: "1px solid",
+                        borderColor: "rgba(0, 0, 0, 0.08)",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        transition: "all 0.2s ease",
                         "&:hover": {
-                          backgroundColor: "rgba(185, 17, 22, 0.04)",
+                          backgroundColor: `rgba(185, 17, 22, 0.08)`,
                           borderColor: "#B91116",
                         },
                       }}
                     >
-                      Editar
-                    </Button>
-                  </Box>
-                ))}
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {examen.nombre}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {examen.fecha_modificacion}
+                        </Typography>
+                      </Box>
+                      <Button
+                        component={RouterLink}
+                        to={`/admin/exams/${examen.id_examen}/edit`}
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                          color: "#B91116",
+                          borderColor: "#B91116",
+                          "&:hover": {
+                            backgroundColor: "rgba(185, 17, 22, 0.04)",
+                            borderColor: "#B91116",
+                          },
+                        }}
+                      >
+                        Editar
+                      </Button>
+                    </Box>
+                  ))
+                )}
               </Box>
             </CardContent>
+
           </Card>
         </Grid>
       </Grid>
+      <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={'error'}
+          variant="filled"
+        >
+          {typeof error === 'string' ? error : JSON.stringify(error)}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

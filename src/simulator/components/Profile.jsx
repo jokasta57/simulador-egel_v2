@@ -27,6 +27,7 @@ import {
 } from "@mui/icons-material"
 import { useAuthStore } from "../../hooks/useAuthStore"
 import { useSelector } from "react-redux"
+import { LoadingSpinner } from "./LoadingSpinner"
 
 const initialFormData = {
   nombre: "",
@@ -153,13 +154,7 @@ export const Profile = () => {
     </Box>
   )
 
-  if (isLoading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress />
-      </Box>
-    )
-  }
+  if (isLoading) return <LoadingSpinner />
 
   if (error) {
     return (
@@ -172,7 +167,7 @@ export const Profile = () => {
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 4 }}>
-        <Typography variant="h4" component="h1" sx={{ color: theme.palette.primary.main }}>
+        <Typography variant="h4" component="h1" sx={{ color: theme.palette.text.primary, mb: 4, fontWeight: "bold", }}>
           Mi Perfil
         </Typography>
         {!isEditing && (
@@ -245,12 +240,11 @@ export const Profile = () => {
                   ) : (
                     <>
                       <Typography variant="h5">
-                        {`${studentData.nombre ?? ""} ${studentData.apellido_paterno ?? ""} ${
-                          studentData.apellido_materno ?? ""
-                        }`}
+                        {`${studentData.nombre ?? ""} ${studentData.apellido_paterno ?? ""} ${studentData.apellido_materno ?? ""
+                          }`}
                       </Typography>
                       <Typography variant="body1" color="text.secondary">
-                        Estudiante
+                        Estudiante de {user.carrera}
                       </Typography>
                     </>
                   )}

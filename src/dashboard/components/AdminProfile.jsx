@@ -29,6 +29,7 @@ import {
 } from "@mui/icons-material"
 import { useAuthStore } from "../../hooks/useAuthStore"
 import { useSelector } from "react-redux"
+import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 export const AdminProfile = () => {
     const theme = useTheme()
@@ -99,17 +100,11 @@ export const AdminProfile = () => {
         setShowSuccess(false)
     }, [])
 
-    if (isLoading) {
-        return (
-            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-                <CircularProgress />
-            </Box>
-        )
-    }
+    if (isLoading) return <LoadingSpinner />
 
     return (
         <Box sx={{ maxWidth: 600, margin: "0 auto", p: 3 }}>
-            <Typography variant="h4" component="h1" sx={{ color: theme.palette.primary.main, mb: 4 }}>
+            <Typography variant="h4" component="h1" sx={{ color: theme.palette.text.primary, mb: 4, fontWeight: "bold", }}>
                 Mi Perfil
             </Typography>
 

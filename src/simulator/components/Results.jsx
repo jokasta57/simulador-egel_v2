@@ -39,6 +39,7 @@ import {
 
 import { useStudentStatsStore } from "../../hooks/statistics/useStudentStatsStore"
 import { useSelector } from "react-redux"
+import { LoadingSpinner } from "./LoadingSpinner"
 
 export const Results = () => {
   const theme = useTheme()
@@ -68,7 +69,7 @@ export const Results = () => {
           throw new Error(data.msg || "Error al obtener los resultados")
         }
 
-        
+
         // Guardar los datos en el estado
         setResultados(data.resultados)
         setExamenes(data.historialExamenes)
@@ -84,7 +85,7 @@ export const Results = () => {
     getResults()
   }, [user.numero_cuenta])
 
-  if (loading) return <CircularProgress sx={{ display: "block", margin: "auto", mt: 5 }} />
+  if (loading) return <LoadingSpinner />
   if (error) return <Typography color="error">{error}</Typography>
 
   // Calcular estadísticas
@@ -125,8 +126,21 @@ export const Results = () => {
 
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 4, color: theme.palette.primary.main }}>
+      <Typography variant="h4" component="h1" sx={{ color: theme.palette.text.primary, mb: 4, fontWeight: "bold", }}>
         Mis Resultados
+      </Typography>
+      <Typography variant="body2" sx={{
+        color: "text.disabled",
+        textTransform: "uppercase",
+        letterSpacing: 1,
+        borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
+        paddingBottom: 1,
+        mb: 2,
+        fontWeight: 600, // Aumenta el peso para que no se pierda tanto
+        fontSize: '1rem', // Tamaño más pequeño pero aún legible
+        mt: -2, // Ajusta este valor para moverlo hacia arriba
+      }}>
+        {user.carrera}
       </Typography>
 
       {/* Tarjetas de Estadísticas */}
@@ -341,8 +355,8 @@ export const Results = () => {
       >
         <Alert onClose={handleCloseSnackbar} severity="error" variant="filled">
           {typeof error === "string"
-              ? error
-              : JSON.stringify(error)
+            ? error
+            : JSON.stringify(error)
           }
         </Alert>
       </Snackbar>

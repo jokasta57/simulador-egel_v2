@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Tooltip, IconButton, Avatar, Snackbar, Alert } from '@mui/material';
-import { Image as ImageIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Image as ImageIcon, Delete as DeleteIcon, HideImage } from '@mui/icons-material';
 
 export const ImageUpload = ({ currentImage, onImageUpload, label, setIsSaved }) => {
   const [previewUrl, setPreviewUrl] = useState(currentImage)
@@ -106,7 +106,7 @@ export const ImageUpload = ({ currentImage, onImageUpload, label, setIsSaved }) 
               },
             }}
           >
-            <DeleteIcon fontSize="medium" />
+            <HideImage fontSize="medium" />
           </IconButton>
         </Box>
       )}

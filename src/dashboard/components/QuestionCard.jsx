@@ -170,7 +170,7 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
   }
 
   return (
-    <Card id={`pregunta-${localQuestion.id_pregunta}`}>
+    <Card id={`pregunta-${localQuestion.id_pregunta}`} >
       <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
         <Box
           sx={{
@@ -179,6 +179,7 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
             justifyContent: "space-between",
             alignItems: { xs: "flex-start", sm: "center" },
             mb: { xs: 2, sm: 3 },
+            mt: { xs: 2, sm: 3 }, // Agregar margen superior
           }}
         >
           <Typography variant="h6" sx={{ mb: { xs: 1, sm: 0 } }}>

@@ -29,22 +29,22 @@ export const OptionList = ({
     setOptions(prevOptions =>
       opciones.map((opt, index) => {
         let prevOption = prevOptions[index];
-  
+
         let previewUrl =
           prevOption?.id_opcion === opt.id_opcion
             ? prevOption?.previewUrl ?? opt.imagen_url ?? ""
             : ""; // Si el ID cambia, se vacía previewUrl
-  
+
         // Convertir a cadena de manera segura
         if (typeof previewUrl !== "string") {
           previewUrl = "";
         }
-  
+
         // Si previewUrl comienza con "https", lo vaciamos
         if (previewUrl.startsWith("https")) {
           previewUrl = "";
         }
-  
+
         return {
           ...opt,
           previewUrl
@@ -103,30 +103,37 @@ export const OptionList = ({
 
   const deleteOption = async (index, opcion) => {
     try {
-      if (opcion.es_correcta) {
-        const result = await Swal.fire({
-          title: "¿Estás seguro?",
-          text: "Esta opción es la respuesta correcta. Si la eliminas, deberás seleccionar otra como correcta.",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#d32f2f",
-          cancelButtonColor: "#6c757d",
-          confirmButtonText: "Sí, eliminar",
-          cancelButtonText: "Cancelar"
-        });
+      let message = "¿Estás seguro de que quieres eliminar esta opción?";
+      let title = "Confirmar eliminación";
 
-        if (!result.isConfirmed) {
-          return; // No se elimina si el usuario cancela
-        }
+      if (opcion.es_correcta) {
+        title = "⚠️ ¡Cuidado! Opción correcta";
+        message = `<strong style="color: red;">Esta opción es la respuesta correcta.</strong> <br><br> 
+             Si la eliminas, <strong>deberás seleccionar otra como correcta</strong>.`;
       }
+
+      const result = await Swal.fire({
+        title: title,
+        html: message, // Usa 'html' en lugar de 'text' para personalizar el mensaje
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d32f2f",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar"
+      });
+
+      if (!result.isConfirmed) return; // Si el usuario cancela, salir
 
       if (options.length > 2) {
         const newOptions = options.filter((_, i) => i !== index)
         onOptionUpdate(-1, "update_all", newOptions)
       }
+
       await handleDeleteOption(opcion.id_opcion, opcion.id_pregunta);
+
     } catch (error) {
-      console.log(error);
+      console.error(error);
 
     }
   }

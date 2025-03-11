@@ -68,6 +68,8 @@ export const ExamEdit = () => {
   const [isDirty, setIsDirty] = useState(false); // Estado para saber si hay cambios sin guardar
   const [prevTotalQuestions, setPrevTotalQuestions] = useState(0); // ✅ Guardar estado previo
 
+  const [hasCorrectOption, setHasCorrectOption] = useState(false); // Nuevo estado
+
 
   const navigate = useNavigate();
 
@@ -158,6 +160,20 @@ export const ExamEdit = () => {
       dispatch(resetPreguntaNueva())
     }
   }, [handleResetCurrentQuestion])
+
+
+
+  useEffect(() => {
+    if (!currentQuestion || !currentQuestion?.opcion || currentQuestion.opcion.length === 0){
+      setHasCorrectOption(false);
+      return;
+    } 
+
+    const correctOptionExists = currentQuestion.opcion.some(opcion => opcion.es_correcta);
+
+    setHasCorrectOption(correctOptionExists); // Actualiza el estado según si hay una respuesta correcta
+
+  }, [currentQuestion]);
 
   useEffect(() => {
     if (currentOrder && !preguntaNueva && totalQuestions > 0) {
@@ -291,6 +307,7 @@ export const ExamEdit = () => {
   const actualizarPregunta = (preguntaId, campo, valor) => {
     if (!currentQuestion) return
     const updatedQuestion = { ...currentQuestion, [campo]: valor }
+    console.log(updatedQuestion);
     handleUpdateQuestion(preguntaId, updatedQuestion)
   }
 
@@ -481,6 +498,7 @@ export const ExamEdit = () => {
             onQuestionSelect={handleQuestionSelect}
             isDirty={isDirty}
             setIsDirty={setIsDirty}
+            hasCorrectOption={hasCorrectOption}
           />
           {preguntaNueva ? (
             <Box>

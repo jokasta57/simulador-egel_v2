@@ -1,6 +1,8 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { RadioGroup, FormControlLabel, Radio, TextField, IconButton, Box, Button, Stack, Tooltip, Typography } from "@mui/material"
 import { Delete as DeleteIcon, Add as AddIcon, Image as ImageIcon, HideImage } from "@mui/icons-material"
+import { useExamsStore } from "../../hooks/exams/useExamsStore"
+import Swal from "sweetalert2"
 
 const defaultOptions = [
   { contenido: "", imagen_url: null, es_correcta: false, public_id_imagen: null },
@@ -19,7 +21,40 @@ export const OptionList = ({
   setIsSaved,
   hasAttemptedSave
 }) => {
-  const options = opciones.length > 0 ? opciones : opcion.length > 0 ? opcion : defaultOptions
+
+  const [options, setOptions] = useState([]);
+  const { handleDeleteOption, handleDeleteOptionImage } = useExamsStore()
+
+  useEffect(() => {
+    setOptions(prevOptions =>
+      opciones.map((opt, index) => {
+        let prevOption = prevOptions[index];
+  
+        let previewUrl =
+          prevOption?.id_opcion === opt.id_opcion
+            ? prevOption?.previewUrl ?? opt.imagen_url ?? ""
+            : ""; // Si el ID cambia, se vacía previewUrl
+  
+        // Convertir a cadena de manera segura
+        if (typeof previewUrl !== "string") {
+          previewUrl = "";
+        }
+  
+        // Si previewUrl comienza con "https", lo vaciamos
+        if (previewUrl.startsWith("https")) {
+          previewUrl = "";
+        }
+  
+        return {
+          ...opt,
+          previewUrl
+        };
+      })
+    );
+  }, [opciones]); // Solo ejecuta si `opciones` cambia
+
+
+
 
   const handleOptionTextChange = (index, value) => {
     setIsSaved(false);
@@ -30,9 +65,24 @@ export const OptionList = ({
     onOptionUpdate(-1, "update_all", newOptions);
   };
 
-  const handleOptionImageUpload = (index, imageData) => {
-    onOptionUpdate(index, "imagen_url", imageData)
-  }
+  const handleOptionImageUpload = (event, index) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Crear URL temporal para la vista previa
+    const objectUrl = URL.createObjectURL(file);
+
+    // Actualizar solo la opción correspondiente
+    setOptions(prevOptions =>
+      prevOptions.map((opt, i) =>
+        i === index ? { ...opt, previewUrl: objectUrl } : opt
+      )
+    );
+
+    // Actualizar valores en el estado principal
+    onOptionUpdate(index, "imagen_url", file);
+    onOptionUpdate(index, "previewUrl", objectUrl);
+  };
 
   const handleAddOption = () => {
     if (options.length < 6) {
@@ -51,10 +101,63 @@ export const OptionList = ({
     }
   };
 
-  const handleDeleteOption = (index) => {
-    if (options.length > 2) {
-      const newOptions = options.filter((_, i) => i !== index)
-      onOptionUpdate(-1, "update_all", newOptions)
+  const deleteOption = async (index, opcion) => {
+    try {
+      if (opcion.es_correcta) {
+        const result = await Swal.fire({
+          title: "¿Estás seguro?",
+          text: "Esta opción es la respuesta correcta. Si la eliminas, deberás seleccionar otra como correcta.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#d32f2f",
+          cancelButtonColor: "#6c757d",
+          confirmButtonText: "Sí, eliminar",
+          cancelButtonText: "Cancelar"
+        });
+
+        if (!result.isConfirmed) {
+          return; // No se elimina si el usuario cancela
+        }
+      }
+
+      if (options.length > 2) {
+        const newOptions = options.filter((_, i) => i !== index)
+        onOptionUpdate(-1, "update_all", newOptions)
+      }
+      await handleDeleteOption(opcion.id_opcion, opcion.id_pregunta);
+    } catch (error) {
+      console.log(error);
+
+    }
+  }
+
+  const handleRemoveOptionImage = async (index, { id_opcion, id_pregunta }) => {
+    try {
+      Swal.fire({
+        title: "¿Eliminar imagen?",
+        text: "La imagen de esta opción se eliminará permanentemente.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d32f2f",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar"
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          // Actualizar el estado eliminando la imagen de la opción
+          setOptions((prevOptions) => {
+            const updatedOptions = prevOptions.map((opt, i) =>
+              i === index ? { ...opt, imagen_url: "", previewUrl: "" } : opt
+            );
+            return [...updatedOptions]; // Devuelve un nuevo array para forzar la re-renderización
+          });
+          onOptionUpdate(index, "imagen_url", null);
+          onOptionUpdate(index, "previewUrl", null);
+          await handleDeleteOptionImage(id_opcion, id_pregunta);
+        }
+      });
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -125,7 +228,7 @@ export const OptionList = ({
                       }}
                     />
 
-                    {opcion.imagen_url && (
+                    {(opcion.previewUrl || opcion.imagen_url) && (
                       <Box
                         sx={{
                           position: "relative",
@@ -147,7 +250,7 @@ export const OptionList = ({
                         }}
                       >
                         <img
-                          src={opcion.imagen_url}
+                          src={opcion.previewUrl || opcion.imagen_url}
                           alt="Opción"
                           style={{
                             width: "100%",
@@ -155,9 +258,8 @@ export const OptionList = ({
                             objectFit: "contain",
                           }}
                         />
-
                         <IconButton
-                          onClick={() => handleRemoveOptionImage(index)}
+                          onClick={() => handleRemoveOptionImage(index, opcion)}
                           size="small"
                           sx={{
                             position: "absolute",
@@ -191,26 +293,28 @@ export const OptionList = ({
 
                   {/* Botones de acción */}
                   <Box sx={{ display: "flex", gap: 0.5 }}>
-                    <Tooltip title="Agregar imagen">
+                    <Tooltip title={opcion.imagen_url ? "Cambiar Imagen" : "Agregar Imagen"}>
                       <IconButton
+                        component="label"
                         size="small"
-                        onClick={() => handleOptionImageUpload(index)}
                         sx={{ color: "action.active", "&:hover": { color: "#d32f2f" } }}
                       >
-                        <ImageIcon fontSize="small" />
+                        <input type="file" hidden accept="image/*" onChange={(e) => handleOptionImageUpload(e, index)} />
+                        {!opcion.imagen_url && <ImageIcon fontSize="small" />}
                       </IconButton>
                     </Tooltip>
-                    {options.length > 2 && (
-                      <Tooltip title="Eliminar opción">
+                    <Tooltip title={options.length <= 2 ? "No puede haber menos de 2 opciones disponibles" : "Eliminar opción"}>
+                      <span>
                         <IconButton
                           size="small"
-                          onClick={() => handleDeleteOption(index)}
+                          onClick={() => deleteOption(index, opcion)}
                           sx={{ color: "action.active", "&:hover": { color: "#d32f2f" } }}
+                          disabled={options.length <= 2}
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
-                      </Tooltip>
-                    )}
+                      </span>
+                    </Tooltip>
                   </Box>
                 </Box>
               </Box>

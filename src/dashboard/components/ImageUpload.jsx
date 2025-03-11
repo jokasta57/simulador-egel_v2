@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Tooltip, IconButton, Avatar, Snackbar, Alert } from '@mui/material';
 import { Image as ImageIcon, Delete as DeleteIcon, HideImage } from '@mui/icons-material';
+import Swal from 'sweetalert2';
+import { useExamsStore } from '../../hooks/exams/useExamsStore';
 
-export const ImageUpload = ({ currentImage, onImageUpload, label, setIsSaved }) => {
+export const ImageUpload = ({ currentImage, currentQuestion, onImageUpload, label, isSaved, setIsSaved, setIsDirty }) => {
   const [previewUrl, setPreviewUrl] = useState(currentImage)
+  const { handleDeleteQuestionImage } = useExamsStore()
 
 
   useEffect(() => {
@@ -24,19 +27,36 @@ export const ImageUpload = ({ currentImage, onImageUpload, label, setIsSaved }) 
       // Crear una URL temporal para la vista previa
       const objectUrl = URL.createObjectURL(file)
       setPreviewUrl(objectUrl)
-
       // Enviar el archivo original al componente padre
       onImageUpload(file)
 
       // Marcar como no guardado
+      setIsDirty(false)
       setIsSaved(false)
     }
   };
 
   const handleDeleteImage = () => {
-    setPreviewUrl(null)
-    setIsSaved(false)
-    onImageUpload(null);
+    try {
+      Swal.fire({
+        title: "¿Eliminar imagen?",
+        text: "La imagen de esta pregunta se eliminará permanentemente.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d32f2f",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar"
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          setPreviewUrl(null)
+          onImageUpload(null);
+          await handleDeleteQuestionImage(currentQuestion.id_pregunta);
+        }
+      });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (

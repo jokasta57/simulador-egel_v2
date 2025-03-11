@@ -3,13 +3,24 @@ import Swal from "sweetalert2"
 import { useDispatch, useSelector } from "react-redux"
 import { setCurrentOrder, setIsLoadingFalse, setPreguntaNueva, setTotalQuestions } from "../../store/exams/examsSlice"
 
-const QuestionPanel = ({ onQuestionSelect, isDirty, setIsDirty }) => {
+const QuestionPanel = ({ onQuestionSelect, isDirty, setIsDirty, hasCorrectOption }) => {
   const dispatch = useDispatch()
-  const { totalQuestions, currentOrder, preguntaNueva, isLoading, answeredQuestions } = useSelector(
+  const { totalQuestions, currentOrder, preguntaNueva, isLoading, answeredQuestions, currentQuestion } = useSelector(
     (state) => state.exams,
   )
 
   const handleQuestionClick = (orden) => {
+    if (Object.keys(currentQuestion).length > 0 && !hasCorrectOption) {
+      Swal.fire({
+        title: "Atención",
+        text: "No hay ninguna opción marcada como correcta. Debes seleccionar una antes de continuar.",
+        icon: "warning",
+        confirmButtonColor: "#d32f2f",
+        confirmButtonText: "Entendido"
+      });
+      return; // 🔴 Evita cambiar de pregunta si no hay opción correcta
+    }
+
     if (preguntaNueva && preguntaNueva.orden === orden) {
       setCurrentOrder(orden)
       dispatch(setIsLoadingFalse())

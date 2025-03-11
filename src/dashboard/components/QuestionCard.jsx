@@ -45,7 +45,7 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
     return () => {
       handleResetCurrentQuestion();
     }
-  }, [handleResetCurrentQuestion])
+  }, [])
 
 
   const handleQuestionChange = useCallback((e) => {
@@ -71,9 +71,15 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
       } else if (campo === "delete") {
         nuevasOpciones.splice(opcionIndex, 1)
       } else if (campo === "update_all") {
+        setIsDirty(false)
         return { ...prev, opcion: valor }
       } else {
+        setIsDirty(false)
         nuevasOpciones[opcionIndex] = { ...nuevasOpciones[opcionIndex], [campo]: valor }
+        // Si el campo actualizado es previewUrl, mantener isDirty en true
+        if (campo === "previewUrl") {
+          setIsDirty(true);
+        }
       }
       return { ...prev, opcion: nuevasOpciones }
     })
@@ -151,7 +157,6 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
       } else if (typeof error.response?.data?.msg === "string") {
         errorMessage = error.response.data.msg;
       }
-      console.log('ERRORROROR', error);
       setSnackbarMessage(errorMessage);
       setShowSnackbar(true);
     }
@@ -212,7 +217,11 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
 
           <ImageUpload
             currentImage={localQuestion.imagen_url}
+            currentQuestion={localQuestion}
             onImageUpload={handleImageUpload}
+            isSaved={isSaved}
+            setIsSaved={setIsSaved}
+            setIsDirty={setIsDirty}
             label="Imagen de la pregunta"
           />
 

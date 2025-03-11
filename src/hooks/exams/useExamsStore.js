@@ -5,6 +5,7 @@ import {
     setCurrentExam,
     clearError,
     clearSuccess,
+    setSuccess,
     loadExams,
     loadExamsStart,
     updateExamStart,
@@ -172,6 +173,7 @@ export const useExamsStore = () => {
         dispatch(updateQuestionStart());
         try {
             const formData = new FormData();
+            console.log(updateData);
 
             // Añadir el contenido de la pregunta
             formData.append("contenido", updateData.contenido);
@@ -202,20 +204,37 @@ export const useExamsStore = () => {
 
             // Procesar opciones existentes con PUT
             const updatePromises = opcionesExistentes.map(async (opcion) => {
-                return adminApi.put(`/options/${opcion.id_opcion}`, opcion, {
-                    headers: { "Content-Type": "application/json" },
+                const formData = new FormData();
+                formData.append("contenido", opcion.contenido);
+                formData.append("es_correcta", opcion.es_correcta);
+            
+                if (opcion.imagen_url instanceof File) {
+                    formData.append("imagen", opcion.imagen_url); // ✅ Si es archivo, lo agrega a FormData
+                }
+            
+                return adminApi.put(`/options/${opcion.id_opcion}`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
                 });
             });
 
             // Procesar opciones nuevas con POST
             const createPromises = opcionesNuevas.map(async (opcion) => {
-                return adminApi.post(`/options`, opcion, {
-                    headers: { "Content-Type": "application/json" },
+                const formData = new FormData();
+                formData.append("contenido", opcion.contenido);
+                formData.append("es_correcta", opcion.es_correcta);
+            
+                if (opcion.imagen_url instanceof File) {
+                    formData.append("imagen", opcion.imagen_url);
+                }
+            
+                return adminApi.post(`/options`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
                     params: {
                         id_pregunta: updateData.id_pregunta
                     }
                 });
             });
+            
 
             // Esperar a que todas las opciones se actualicen o creen
             await Promise.all([...updatePromises, ...createPromises]);
@@ -309,6 +328,66 @@ export const useExamsStore = () => {
         } catch (error) {
             console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al eliminar pregunta'));
+            throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
+    }, [dispatch]);
+    
+    const handleDeleteOption = useCallback(async (id_opcion, id_pregunta) => {
+        dispatch(updateQuestionStart());
+        try {
+            await adminApi.delete(`/options/${id_opcion}`);
+
+            const response = await adminApi.get(`/questions/id/${id_pregunta}`);
+
+            dispatch(updateQuestion(response.data.pregunta))
+            dispatch(setSuccess('Opción eliminada correctamente'))
+
+            return response.data.pregunta;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al eliminar opcion'));
+            throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
+    }, [dispatch]);
+
+    const handleDeleteOptionImage = useCallback(async (id_opcion, id_pregunta) => {
+        dispatch(updateQuestionStart());
+        try {
+            await adminApi.put(`/options/imagen/${id_opcion}`);
+
+            const response = await adminApi.get(`/questions/id/${id_pregunta}`);
+
+            dispatch(updateQuestion(response.data.pregunta))
+            dispatch(setSuccess('Imagen eliminada correctamente'))
+
+            return response.data.pregunta;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al eliminar imagen'));
+            throw error;
+        } finally {
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
+    }, [dispatch]);
+
+    const handleDeleteQuestionImage = useCallback(async (id_pregunta) => {
+        dispatch(updateQuestionStart());
+        try {
+            await adminApi.put(`/questions/imagen/${id_pregunta}`);
+
+            const response = await adminApi.get(`/questions/id/${id_pregunta}`);
+
+            dispatch(updateQuestion(response.data.pregunta))
+            dispatch(setSuccess('Imagen eliminada correctamente'))
+
+            return response.data.pregunta;
+        } catch (error) {
+            console.log(error);
+            dispatch(setError(error.response?.data.msg || 'Error al eliminar imagen'));
             throw error;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -452,6 +531,9 @@ export const useExamsStore = () => {
         handleUpdateAnswer, 
         handleGetResultsAttempt,
         handleReviewAttempt,
-        handlePanelQuestions
+        handlePanelQuestions,
+        handleDeleteOption,
+        handleDeleteOptionImage,
+        handleDeleteQuestionImage
     };
 };

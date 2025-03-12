@@ -337,7 +337,7 @@ export const ExamList = () => {
                       <EditIcon />
                     </IconButton>
                   </Link>
-                  <IconButton
+                  {/* <IconButton
                     size="small"
                     onClick={() => handleDelete(examen.id_examen, examen.nombre)}
                     sx={{
@@ -348,7 +348,7 @@ export const ExamList = () => {
                     }}
                   >
                     <DeleteIcon />
-                  </IconButton>
+                  </IconButton> */}
                 </Box>
               </CardContent>
             </Card>

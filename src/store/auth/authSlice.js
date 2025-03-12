@@ -35,8 +35,11 @@ export const authSlice = createSlice({
         },
         setError: (state, {payload}) => {
             state.error = payload
+        },
+        setUser: (state, {payload}) => {
+            state.user = payload
         }
     }
 })
 
-export const { setError, onChecking, onLoginSuccess, onLoginFailure, onLogout, clearErrorMessage} = authSlice.actions
+export const { setError, onChecking, onLoginSuccess, onLoginFailure, onLogout, clearErrorMessage, setUser} = authSlice.actions

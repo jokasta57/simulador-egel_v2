@@ -5,12 +5,12 @@ import { setCurrentOrder, setIsLoadingFalse, setPreguntaNueva, setTotalQuestions
 
 const QuestionPanel = ({ onQuestionSelect, isDirty, setIsDirty, hasCorrectOption }) => {
   const dispatch = useDispatch()
-  const { totalQuestions, currentOrder, preguntaNueva, isLoading, answeredQuestions, currentQuestion } = useSelector(
+  const { totalQuestions, currentOrder, preguntaNueva, isLoading, answeredQuestions, currentQuestion, remainingTime } = useSelector(
     (state) => state.exams,
   )
 
   const handleQuestionClick = (orden) => {
-    if (Object.keys(currentQuestion).length > 0 && !hasCorrectOption) {
+    if ((!remainingTime || remainingTime === "00:00:00") && Object.keys(currentQuestion).length > 0 && !hasCorrectOption) {
       Swal.fire({
         title: "Atención",
         text: "No hay ninguna opción marcada como correcta. Debes seleccionar una antes de continuar.",

@@ -138,68 +138,78 @@ export const Exams = () => {
       </Box>
 
       <Stack spacing={2}>
-        {filteredExams.map((exam) => (
-          <Card
-            key={exam.id_examen}
-            sx={{
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 2,
-              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-              transition: "all 0.3s ease-in-out",
-              "&:hover": {
-                transform: "translateY(-5px)",
-                boxShadow: "0 6px 12px rgba(0,0,0,0.15)",
-              },
-            }}
-          >
-            <CardContent
+        {filteredExams.length > 0 ? (
+          filteredExams.map((exam) => (
+            <Card
+              key={exam.id_examen}
               sx={{
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "flex-start", sm: "center" },
-                justifyContent: "space-between",
-                gap: 2,
-                p: "24px !important",
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 2,
+                boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                transition: "all 0.3s ease-in-out",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: "0 6px 12px rgba(0,0,0,0.15)",
+                },
               }}
             >
-              <Box sx={{ flex: 1 }}>
-                <Typography
-                  variant="h6"
-                  component="h3"
-                  sx={{
-                    fontWeight: "medium",
-                    color: theme.palette.text.primary,
-                    mb: 1,
-                  }}
-                >
-                  {exam.nombre}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: theme.palette.text.secondary,
-                    mb: 1,
-                  }}
-                >
-                  Área: {exam.area} | Duración: {exam.duracion} minutos
-                </Typography>
-              </Box>
-              <Button
-                onClick={() => handleStartExam(exam)}
-                variant="contained"
-                startIcon={<StartIcon />}
+              <CardContent
                 sx={{
-                  backgroundColor: theme.palette.success.main,
-                  "&:hover": {
-                    backgroundColor: theme.palette.success.dark,
-                  },
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: { xs: "flex-start", sm: "center" },
+                  justifyContent: "space-between",
+                  gap: 2,
+                  p: "24px !important",
                 }}
               >
-                Iniciar Examen
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    variant="h6"
+                    component="h3"
+                    sx={{
+                      fontWeight: "medium",
+                      color: theme.palette.text.primary,
+                      mb: 1,
+                    }}
+                  >
+                    {exam.nombre}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      mb: 1,
+                    }}
+                  >
+                    Área: {exam.area} | Duración: {exam.duracion} minutos
+                  </Typography>
+                </Box>
+                <Button
+                  onClick={() => handleStartExam(exam)}
+                  variant="contained"
+                  startIcon={<StartIcon />}
+                  sx={{
+                    backgroundColor: theme.palette.success.main,
+                    "&:hover": {
+                      backgroundColor: theme.palette.success.dark,
+                    },
+                  }}
+                >
+                  Iniciar Examen
+                </Button>
+              </CardContent>
+            </Card>
+          ))) : (
+          <Box sx={{ textAlign: "center", p: 3 }}>
+            <Typography variant="h6" color="textSecondary">
+              No hay exámenes disponibles
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              Aún no se han publicado exámenes. Vuelve más tarde para revisarlos.
+            </Typography>
+          </Box>
+        )}
       </Stack>
     </Box>
   )

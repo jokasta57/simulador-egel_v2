@@ -29,10 +29,10 @@ export const useExamsStore = () => {
     const dispatch = useDispatch();
     const { exams, currentExam, isLoading, error, success, currentQuestion } = useSelector(state => state.exams);
 
-    const handleLoadExams = useCallback(async () => {
+    const handleLoadExams = useCallback(async (carrera) => {
         dispatch(loadExamsStart());
         try {
-            const response = await adminApi.get('/exams');
+            const response = await adminApi.get(`/exams?carrera=${carrera}`);
             dispatch(loadExams(response.data.examenes));
             return response.data;
         } catch (err) {
@@ -404,9 +404,9 @@ export const useExamsStore = () => {
             });
             return response.data.examen;
         } catch (error) {
-            console.log(error);
+            let errorMessage = error.response?.data.msg || 'Error en el cambio de estado' 
             dispatch(setError(error.response?.data.msg || 'Error al eliminar pregunta'));
-            throw error;
+            throw errorMessage;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }

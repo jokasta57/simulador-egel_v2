@@ -93,6 +93,10 @@ export const Statistics = () => {
   const { handlePerformancePerQuestion, handleLastExamAttempt, handleSummaryAndGrades } = useAdminStatsStore();
   const { handleLoadExams } = useExamsStore()
 
+  const { exams } = useSelector((state) => state.exams)
+  const { user } = useSelector((state) => state.auth)
+
+
 
   const handleExamChange = (event) => {
     setSelectedExam(event.target.value)
@@ -141,15 +145,23 @@ export const Statistics = () => {
     const loadData = async () => {
       setIsLoading(true);
       try {
+        if (!user?.carrera) {
+          setError("No se pudo obtener la información del usuario. Por favor, vuelve a iniciar sesión.");
+        }
         await Promise.all([
-          handleLoadExams(),
+          handleLoadExams(user.carrera),
           getLastExamAttempt()
         ]);
       } catch (error) {
-        console.log("Error al cargar los exámenes:", error);
+        if (!user?.carrera) {
+          setError("No se pudo obtener la información del usuario. Por favor, vuelve a iniciar sesión.");
+        } else {
+          setError("Error al cargar los exámenes. Intenta de nuevo más tarde.");
+        }
       } finally {
         setIsLoading(false);
       }
+
     };
 
     loadData();
@@ -164,7 +176,7 @@ export const Statistics = () => {
           getSummaryAndGrades()
         ]);
       } catch (error) {
-        console.log("Error al cargar los datos de rendimiento:", error);
+        setError("Error al cargar los datos de rendimiento");
       } finally {
         setIsLoading(false);
       }
@@ -173,26 +185,28 @@ export const Statistics = () => {
     loadPerformanceData();
   }, [selectedExam, startDate, endDate]); // Se ejecuta cuando cambian estos valores
 
-  const { exams } = useSelector((state) => state.exams)
-
   const getPerformancePerQuestion = async () => {
     try {
       const data = await handlePerformancePerQuestion(selectedExam, startDate, endDate);
       setPreguntasData(data.intentos)
     } catch (error) {
-      console.log(error);
+      setError("Error al cargar los datos de rendimiento");
     }
   }
 
   const getLastExamAttempt = async () => {
     try {
-      const data = await handleLastExamAttempt();
+      if (!user?.carrera) {
+        setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
+        return;
+      }
+      const data = await handleLastExamAttempt(user.carrera);
       setSelectedExam(data.examen.id_examen)
       setIsExamAvailable(true);
 
     } catch (error) {
       setError(error)
-      setIsExamAvailable(false);
+      exams.length === 0 ? setIsExamAvailable(false) : setIsExamAvailable(true)
     }
   }
 
@@ -204,7 +218,7 @@ export const Statistics = () => {
       setCalificaciones(data.calificaciones)
       setResumen(data.resumen)
     } catch (error) {
-      console.log(error);
+      setError("Error al cargar datos");
     }
   }
 
@@ -268,7 +282,7 @@ export const Statistics = () => {
                   -- Selecciona un examen --
                 </MenuItem>
                 {exams.length === 0 ? (
-                  <MenuItem disabled>No hay exámenes disponibles</MenuItem> // Mensaje si no hay exámenes
+                  <MenuItem disabled>No hay exámenes disponibles</MenuItem>// Mensaje si no hay exámenes
                 ) : (
                   exams.map((exam) => (
                     <MenuItem key={exam.id_examen} value={exam.id_examen}>

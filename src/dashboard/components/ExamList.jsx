@@ -1,37 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  IconButton,
-  Stack,
-  useTheme,
-  TextField,
-  InputAdornment,
-  MenuItem,
-  FormControl,
-  Select,
-  InputLabel,
-  Button,
-  Switch,
-  Snackbar,
-  Alert,
-  CircularProgress,
-} from "@mui/material"
-import {
-  Edit as EditIcon,
-  DeleteOutline as DeleteIcon,
-  Search as SearchIcon,
-  Add as AddIcon,
-} from "@mui/icons-material"
-import Swal from "sweetalert2"
 import { useDispatch, useSelector } from "react-redux"
-import { useExamsStore } from "../../hooks/exams/useExamsStore"
+import { Box, Typography, Card, CardContent, IconButton, Stack, useTheme, TextField, InputAdornment, MenuItem, FormControl, Select, InputLabel, Button, Switch, Snackbar, Alert, CircularProgress, } from "@mui/material"
+import { Edit as EditIcon, DeleteOutline as DeleteIcon, Search as SearchIcon, Add as AddIcon, } from "@mui/icons-material"
 import { Link } from "react-router-dom"
+import Swal from "sweetalert2"
 import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
+import { useExamsStore } from "../../hooks/exams/useExamsStore"
 
 const periodosFiltro = ["Todos", "Último mes", "Últimos 3 meses", "Último año"]
 
@@ -42,19 +18,22 @@ export const ExamList = () => {
   const [stateFilter, setStateFilter] = useState("Todos")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
-  const { user } = useSelector((state) => state.auth)
-  const dispatch = useDispatch();
+  const [loadingStates, setLoadingStates] = useState({});
+  const { handleLoadExams, handleSwitchState, resetExams } = useExamsStore()
 
-  const { handleLoadExams, handleClearError, handleClearSuccess, handleSwitchState, resetExams } = useExamsStore()
+
+
+  const dispatch = useDispatch();
+  const { exams } = useSelector((state) => state.exams)
+  const { user } = useSelector((state) => state.auth)
 
   useEffect(() => {
     getExams()
     return () => {
       dispatch(resetExams())
-  };
+    };
   }, []) // Added handleLoadExams to dependencies
 
-  const { exams } = useSelector((state) => state.exams)
 
   const filtrarPorPeriodo = (examen) => {
     const hoy = new Date()
@@ -85,7 +64,11 @@ export const ExamList = () => {
   const getExams = async () => {
     setLoading(true)
     try {
-      await handleLoadExams()
+      if (!user?.carrera) {
+        setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
+        return;
+      }
+      await handleLoadExams(user.carrera)
     } catch (error) {
       setError(error)
     } finally {
@@ -93,37 +76,41 @@ export const ExamList = () => {
     }
   }
 
-  const handleDelete = (examenId, examenNombre) => {
-    Swal.fire({
-      title: "¿Estás seguro?",
-      text: `¿Deseas eliminar el examen "${examenNombre}"?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: theme.palette.error.main,
-      cancelButtonColor: theme.palette.grey[500],
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Aquí iría la lógica para eliminar el examen en el backend
-        console.log(`Eliminar examen con ID: ${examenId}`)
-        Swal.fire("¡Eliminado!", "El examen ha sido eliminado.", "success")
-      }
-    })
-  }
+  // const handleDelete = (examenId, examenNombre) => {
+  //   Swal.fire({
+  //     title: "¿Estás seguro?",
+  //     text: `¿Deseas eliminar el examen "${examenNombre}"?`,
+  //     icon: "warning",
+  //     showCancelButton: true,
+  //     confirmButtonColor: theme.palette.error.main,
+  //     cancelButtonColor: theme.palette.grey[500],
+  //     confirmButtonText: "Sí, eliminar",
+  //     cancelButtonText: "Cancelar",
+  //   }).then((result) => {
+  //     if (result.isConfirmed) {
+  //       // Aquí iría la lógica para eliminar el examen en el backend
+  //       Swal.fire("¡Eliminado!", "El examen ha sido eliminado.", "success")
+  //     }
+  //   })
+  // }
 
   const handleToggleState = async (examen) => {
+    const { id_examen } = examen;
+    setLoadingStates((prev) => ({ ...prev, [id_examen]: true }));
+    
     const nuevoEstado = examen.estado === "activo" ? "borrador" : "activo"
-    console.log(nuevoEstado)
-
     try {
       // ✅ Petición al backend para actualizar estado
-      const examenActualizado = await handleSwitchState(nuevoEstado, examen.id_examen)
-
-      await handleLoadExams()
+      await handleSwitchState(nuevoEstado, id_examen)
+      if (!user?.carrera) {
+        setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
+        return;
+      }
+      await handleLoadExams(user.carrera)
     } catch (error) {
-      console.error("Error al cambiar el estado", error)
-      Swal.fire("Error", "No se pudo actualizar el estado del examen", "error")
+      Swal.fire("Error", error, "error")
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, [id_examen]: false }));
     }
   }
 
@@ -305,16 +292,25 @@ export const ExamList = () => {
                       color="primary"
                       size="small"
                     />
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: "medium",
-                        textTransform: "uppercase",
-                        ...getStateStyle(examen.estado),
-                      }}
-                    >
-                      {examen.estado}
-                    </Typography>
+                    {loadingStates[examen.id_examen] ? (
+                      <CircularProgress
+                        size={24}
+                        sx={{
+                          color: theme.palette.primary.main,
+                        }}
+                      />
+                    ) : (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: "medium",
+                          textTransform: "uppercase",
+                          ...getStateStyle(examen.estado),
+                        }}
+                      >
+                        {examen.estado}
+                      </Typography>
+                    )}
                   </Box>
                 </Box>
                 <Box
@@ -337,6 +333,7 @@ export const ExamList = () => {
                       <EditIcon />
                     </IconButton>
                   </Link>
+
                   {/* <IconButton
                     size="small"
                     onClick={() => handleDelete(examen.id_examen, examen.nombre)}

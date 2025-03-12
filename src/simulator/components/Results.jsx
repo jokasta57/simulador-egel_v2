@@ -73,7 +73,6 @@ export const Results = () => {
         // Guardar los datos en el estado
         setResultados(data.resultados)
         setExamenes(data.historialExamenes)
-        console.log(examenes);
         setLoading(false)
       } catch (error) {
         setError(error.response?.data?.msg || error.message || 'Error al cargar la pagina')
@@ -305,45 +304,54 @@ export const Results = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {examenes
-              .filter((examen) => {
-                const searchTermLower = searchTerm.toLowerCase()
-                const matchesSearch =
-                  examen.nombre.toLowerCase().includes(searchTermLower) ||
-                  examen.area.toLowerCase().includes(searchTermLower)
-                const matchesStatus =
-                  statusFilter === "all" ||
-                  (statusFilter === "aprobado" && examen.calificacion >= calificacionMinima) ||
-                  (statusFilter === "reprobado" && examen.calificacion < calificacionMinima)
-                const matchesDate = !dateFilter || examen.fecha_aplicacion.includes(dateFilter)
-                const matchesArea = !areaFilter || examen.area === areaFilter
+            {examenes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  No hay intentos de examen disponibles.
+                </TableCell>
+              </TableRow>
+            ) : (
+              examenes
+                .filter((examen) => {
+                  const searchTermLower = searchTerm.toLowerCase();
+                  const matchesSearch =
+                    examen.nombre.toLowerCase().includes(searchTermLower) ||
+                    examen.area.toLowerCase().includes(searchTermLower);
+                  const matchesStatus =
+                    statusFilter === "all" ||
+                    (statusFilter === "aprobado" && examen.calificacion >= calificacionMinima) ||
+                    (statusFilter === "reprobado" && examen.calificacion < calificacionMinima);
+                  const matchesDate = !dateFilter || examen.fecha_aplicacion.includes(dateFilter);
+                  const matchesArea = !areaFilter || examen.area === areaFilter;
 
-                return matchesSearch && matchesStatus && matchesDate && matchesArea
-              })
-              .map((examen, index) => (
-                <TableRow key={index} hover>
-                  <TableCell>{examen.nombre}</TableCell>
-                  <TableCell>{examen.area}</TableCell>
-                  <TableCell>{examen.fecha_aplicacion}</TableCell>
-                  <TableCell>{examen.intento}°</TableCell>
-                  <TableCell>
-                    {examen.calificacion ? formatCalificacion(examen.calificacion) : 0}
-                  </TableCell>
-                  <TableCell>{examen.calificacion >= calificacionMinima ? "Aprobado" : "Reprobado"}</TableCell>
-                  <TableCell>
-                    <Button
-                      component={Link}
-                      to={`/student/exams/${examen.id_intento}/review`}
-                      startIcon={<VisibilityIcon />}
-                      variant="outlined"
-                      size="small"
-                      onClick={() => console.log(`Redirigiendo a: /student/results/revision/${examen.id_intento}`)}
-                    >
-                      Ver Revisión
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                  return matchesSearch && matchesStatus && matchesDate && matchesArea;
+                })
+                .map((examen, index) => (
+                  <TableRow key={index} hover>
+                    <TableCell>{examen.nombre}</TableCell>
+                    <TableCell>{examen.area}</TableCell>
+                    <TableCell>{examen.fecha_aplicacion}</TableCell>
+                    <TableCell>{examen.intento}°</TableCell>
+                    <TableCell>
+                      {examen.calificacion ? formatCalificacion(examen.calificacion) : 0}
+                    </TableCell>
+                    <TableCell>
+                      {examen.calificacion >= calificacionMinima ? "Aprobado" : "Reprobado"}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        component={Link}
+                        to={`/student/exams/${examen.id_intento}/review`}
+                        startIcon={<VisibilityIcon />}
+                        variant="outlined"
+                        size="small"
+                      >
+                        Ver Revisión
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>

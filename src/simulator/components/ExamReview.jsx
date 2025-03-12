@@ -261,23 +261,23 @@ export const ExamReview = () => {
               </Typography>
               <Typography variant="body1" sx={{ fontWeight: "bold", color: "#555" }}>
                 {p.opcion_escogida ? p.opcion_escogida : "No se ha seleccionado una respuesta"}
-                {p.opcion_escogida_imagen && (
-                  <Box sx={{ textAlign: "center", mb: 2 }}>
-                    <img
-                      src={p.opcion_escogida_imagen || "/placeholder.svg"}
-                      alt={`Imagen`}
-                      style={{
-                        width: "100%",
-                        maxWidth: "350px",
-                        height: "auto",
-                        objectFit: "contain",
-                        borderRadius: "8px",
-                        boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
-                      }}
-                    />
-                  </Box>
-                )}
               </Typography>
+              {p.opcion_escogida_imagen && (
+                <Box sx={{ textAlign: "center", mb: 2 }}>
+                  <img
+                    src={p.opcion_escogida_imagen || "/placeholder.svg"}
+                    alt={`Imagen`}
+                    style={{
+                      width: "100%",
+                      maxWidth: "350px",
+                      height: "auto",
+                      objectFit: "contain",
+                      borderRadius: "8px",
+                      boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
+                    }}
+                  />
+                </Box>
+              )}
             </Paper>
             <Paper sx={{ p: 2, textAlign: "center", backgroundColor: "#e3f2fd", borderRadius: "8px" }}>
               <Typography variant="subtitle2" sx={{ fontWeight: "bold", color: "#333" }}>

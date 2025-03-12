@@ -23,10 +23,11 @@ import {
   Assessment as ResultsIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
+  PersonOutline
 } from "@mui/icons-material"
 import { useSelector } from "react-redux"
 import { useAuthStore } from "../../hooks/useAuthStore"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 const drawerWidth = 240
 
@@ -55,6 +56,8 @@ export const StudentLayout = ({ children }) => {
   const [anchorEl, setAnchorEl] = useState(null)
   const { startLogout } = useAuthStore()
   const location = useLocation()
+  const navigate = useNavigate();
+
 
   const { user } = useSelector((state) => state.auth)
 
@@ -68,7 +71,13 @@ export const StudentLayout = ({ children }) => {
 
   const handleMenuClose = () => {
     setAnchorEl(null)
+
   }
+  const handleProfileClick = () => {
+    setAnchorEl(null); // Cierra el menú primero
+    setTimeout(() => navigate("/student/perfil"), 100); // Redirige después de un pequeño delay
+  };
+
 
   const handleLogOut = () => {
     startLogout()
@@ -133,7 +142,12 @@ export const StudentLayout = ({ children }) => {
             </IconButton>
           </Box>
           <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} sx={{ mt: 1 }}>
-            <MenuItem onClick={handleMenuClose}>Perfil</MenuItem>
+            <MenuItem onClick={handleProfileClick}>
+              <ListItemIcon>
+                <PersonOutline fontSize="small" />
+              </ListItemIcon>
+              Perfil
+            </MenuItem>
             <MenuItem onClick={handleLogOut}>
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />

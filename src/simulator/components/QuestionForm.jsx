@@ -7,7 +7,7 @@ import { LoadingSpinner } from "./LoadingSpinner"
 import { useNavigate, useParams } from "react-router-dom"
 import { setCurrentQuestion } from "../../store"
 
-export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQuestion }) => {
+export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQuestion, onPreviousQuestion }) => {
   const dispatch = useDispatch();
   const { currentQuestion, totalQuestions, currentOrder } = useSelector((state) => state.exams);
   const navigate = useNavigate();
@@ -40,6 +40,36 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
 
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="contained"
+            onClick={onPreviousQuestion}
+            disabled={currentOrder === 1}
+            sx={{
+              bgcolor: "grey.300",
+              color: "text.primary",
+              "&:hover": { bgcolor: "grey.400" },
+              "&:disabled": { bgcolor: "grey.200", color: "text.disabled" },
+            }}
+          >
+            Pregunta Anterior
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={totalQuestions === currentOrder ? handleFinishExam : onNextQuestion}
+            disabled={totalQuestions === currentOrder}
+            sx={{
+              bgcolor: "#e23d28",
+              color: "white",
+              "&:hover": { bgcolor: "#c62828" },
+            }}
+          >
+            Siguiente Pregunta
+          </Button>
+        </Box>
+      </Box>
       <Box display="flex" flexDirection="column" alignItems="flex-start" mb={3}>
         <Typography variant="h6" sx={{ color: "text.primary", mb: 2 }}>
           {currentQuestion.contenido}
@@ -85,7 +115,7 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
         ))}
       </RadioGroup>
 
-      <Box sx={{ mt: 3, display: "flex", justifyContent: "space-between" }}>
+      <Box sx={{ mt: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Button
           variant="contained"
           onClick={onSaveAnswer}
@@ -102,16 +132,17 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
 
         <Button
           variant="contained"
-          onClick={totalQuestions === currentOrder ? handleFinishExam : onNextQuestion}
+          onClick={handleFinishExam}
           sx={{
-            bgcolor: "#e23d28",
+            bgcolor: "#d32f2f",
             color: "white",
-            "&:hover": { bgcolor: "#c62828" },
+            "&:hover": { bgcolor: "#b71c1c" },
           }}
         >
-          {totalQuestions === currentOrder ? "Terminar Intento" : "Siguiente Pregunta"}
+          Terminar Intento
         </Button>
       </Box>
+
     </Paper>
   );
 };

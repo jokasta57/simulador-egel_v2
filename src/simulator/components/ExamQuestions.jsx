@@ -127,15 +127,26 @@ export const ExamQuestions = () => {
   }, [remainingTime, id]);
 
   const handleQuestionSelect = async (orden) => {
+    if (!Number.isInteger(orden) || orden < 1) {
+      setError("Orden de pregunta no válido")
+      return
+    }
+
+    setLoading(true)
+    setError(null) // Limpiar errores previos
+
     try {
       const pregunta = await handleLoadQuestionAndAnswer(id, orden, currentAttempt.id_intento)
+
       if (!pregunta || pregunta.ok === false) {
         throw new Error(pregunta?.msg || "Error al cargar la pregunta")
       }
+
       dispatch(setCurrentOrder(orden))
     } catch (error) {
-      console.error("Error al cargar la pregunta:", error)
-      setError(error.response?.data?.msg || error.message)
+      setError(error?.response?.data?.msg || error.message || "Error desconocido")
+    } finally {
+      setLoading(false) // Se ejecuta siempre, evitando duplicación
     }
   }
 
@@ -210,7 +221,8 @@ export const ExamQuestions = () => {
           selectedAnswer={answers[question]}
           onAnswerChange={handleAnswerChange}
           onSaveAnswer={saveAnswer}
-          onNextQuestion={() => handleQuestionSelect(question + 1)}
+          onNextQuestion={() => handleQuestionSelect(currentOrder + 1)}
+          onPreviousQuestion={() => handleQuestionSelect(currentOrder - 1)}
         />
       </Box>
 

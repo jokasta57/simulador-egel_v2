@@ -166,6 +166,7 @@ export const useAuthStore = () => {
         try {
             await simulatorApi.put(`/students/${numero_cuenta}`, formData);
             const { data } = await simulatorApi.get(`/students/${numero_cuenta}`);
+            data.estudiante.role = 'student';
 
             dispatch(setUser(data.estudiante))
             

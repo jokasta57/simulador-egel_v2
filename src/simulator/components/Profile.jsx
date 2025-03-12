@@ -57,7 +57,6 @@ export const Profile = () => {
   })
 
   const carreras = [
-    "Ingeniería en Software",
     "Ingeniería de Software",
     "Medicina",
     "Administración de Empresas",

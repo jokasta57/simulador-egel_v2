@@ -1,30 +1,12 @@
 "use client"
 
 import { useState, useCallback, useMemo, useEffect } from "react"
-import {
-  Button,
-  TextField,
-  Paper,
-  Typography,
-  Box,
-  InputAdornment,
-  IconButton,
-  useTheme,
-  useMediaQuery,
-  Snackbar,
-  Alert,
-} from "@mui/material"
-import {
-  LockOutlined as LockOutlinedIcon,
-  Visibility,
-  VisibilityOff,
-  Badge as BadgeIcon,
-  Home as HomeIcon,
-} from "@mui/icons-material"
-import { useAuthStore } from "../../hooks/useAuthStore"
 import { useDispatch, useSelector } from "react-redux"
-import { clearErrorMessage, setError } from "../../store/auth/authSlice"; // Importamos la acción para limpiar el error
 import { Link, Link as RouterLink, useLocation, useNavigate } from "react-router-dom"
+import { Button, TextField, Paper, Typography, Box, InputAdornment, IconButton, useTheme, useMediaQuery, Snackbar, Alert,} from "@mui/material"
+import { LockOutlined as LockOutlinedIcon, Visibility, VisibilityOff, Badge as BadgeIcon, Home as HomeIcon, } from "@mui/icons-material"
+import { useAuthStore } from "../../hooks/useAuthStore"
+import { clearErrorMessage, setError } from "../../store/auth/authSlice"; // Importamos la acción para limpiar el error
 
 export const LoginPage = () => {
   const { startLoginAdmin, startLoginStudent } = useAuthStore()
@@ -32,7 +14,6 @@ export const LoginPage = () => {
   const dispatch = useDispatch()
   const { error } = useSelector((state) => state.auth)
 
-  
   const location = useLocation()
   const role = location.state?.role || "student"
   
@@ -44,7 +25,6 @@ export const LoginPage = () => {
   
   // ✅ Estado para mensajes de éxito y error
   const [success, setSuccess] = useState("")
-  // const [error, setError] = useState("")
 
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))

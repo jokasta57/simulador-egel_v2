@@ -1,24 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSelector } from "react-redux"
 import { Grid, Typography, Box, useTheme, Card, CardContent, Button, Select, MenuItem, TextField, CircularProgress, Snackbar, Alert } from "@mui/material"
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts"
-import { Assignment, People, Edit, Event, School } from "@mui/icons-material"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,} from "recharts"
+import { Assignment, People, Edit, Event } from "@mui/icons-material"
 import { Link as RouterLink } from "react-router-dom"
 import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
-import { useSelector } from "react-redux"
 import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 const COLORS = ["#0088FE", "#FF8042"]
@@ -64,7 +52,7 @@ export const Dashboard = () => {
           getDrafts()
         ]);
       } catch (error) {
-        console.error("Error al cargar los datos:", error);
+        setError("Error al cargar los datos");
       } finally {
         setLoading(false); // ✅ Solo se ejecuta cuando TODO ha terminado
       }
@@ -75,18 +63,26 @@ export const Dashboard = () => {
 
   const getPercentagesByDate = async () => {
     try {
-      const data = await handlePercentageByDate();
+      if (!user?.carrera) {
+        setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
+        return;
+      }
+      const data = await handlePercentageByDate(user.carrera);
       // Transformamos los datos antes de usarlos en el gráfico
       const lineas = procesarDatos(data.porcentajesPorFecha);
       setDataLineas(lineas);
     } catch (error) {
-      console.log(error);
+      setError("Error al obtener porcentajes");
     }
   }
 
   const getDrafts = async () => {
     try {
-      const data = await handleDrafts();
+      if (!user?.carrera) {
+        setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
+        return;
+      }
+      const data = await handleDrafts(user.carrera);
       // Formatear fechas antes de actualizar el estado
       const borradoresFormateados = data.borradores.map((borrador) => ({
         ...borrador,
@@ -115,7 +111,12 @@ export const Dashboard = () => {
 
   const getPercentages = async () => {
     try {
-      const data = await handlePercentage();
+      if (!user?.carrera) {
+        setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
+        return;
+      }
+
+      const data = await handlePercentage(user.carrera);
 
       // Transformar datos para el gráfico de pastel
       const transformedData = [

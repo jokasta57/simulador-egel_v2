@@ -403,8 +403,8 @@ export const GestionAdministradores = () => {
                       options={[
                         "Ingeniería de Software",
                         "Medicina",
-                        "Licenciatura en Administración",
-                        "Enfermería"
+                        "Administración de Empresas",
+                        "Enfermería",
                       ]}
                       value={newAdmin.carrera || ""}  // Esto debería ser el valor de la carrera
                       renderInput={(params) => (

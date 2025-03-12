@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux"
-import { onChecking, onLoginFailure, onLoginSuccess, onLogout, clearErrorMessage, setError } from "../store/auth/authSlice";
+import { onChecking, onLoginFailure, onLoginSuccess, onLogout, clearErrorMessage, setError, setUser } from "../store/auth/authSlice";
 import simulatorApi from "../api/simulatorApi"
 import { useNavigate } from "react-router-dom";
 
@@ -160,6 +160,39 @@ export const useAuthStore = () => {
             throw errorMessage;
         }
     };
+    
+    const updateInfoStudent = async (numero_cuenta, formData) => {
+        // dispatch(onChecking());    
+        try {
+            await simulatorApi.put(`/students/${numero_cuenta}`, formData);
+            const { data } = await simulatorApi.get(`/students/${numero_cuenta}`);
+
+            dispatch(setUser(data.estudiante))
+            
+            return data.msg
+
+        } catch (error) {
+            let errorMessage = error.response.data.msg || ''; // Si existe data.msg, se toma, si no, queda vacío
+
+            // Verificamos si hay errores en los campos
+            if (error.response.data.errors && typeof error.response.data.errors === 'object') {
+                for (let field in error.response.data.errors) {
+                    if (error.response.data.errors.hasOwnProperty(field)) {
+                        const fieldError = error.response.data.errors[field];
+
+                        // Si hay un mensaje en el error del campo, lo agregamos a errorMessage
+                        if (fieldError && typeof fieldError === 'object' && fieldError.msg) {
+                            errorMessage += ` ${fieldError.msg}`;
+                        }
+                    }
+                }
+            }
+
+            dispatch(onLoginFailure(errorMessage || 'Error al actualizar contraseña'));
+            setTimeout(() => dispatch(clearErrorMessage()), 5000); // Limpiar después de 5 segundos
+            throw errorMessage;
+        }
+    };
 
     const startLogout = () => {
         localStorage.clear();
@@ -180,7 +213,7 @@ export const useAuthStore = () => {
         checkAuthToken,
         startLogout,
         getUserInfo,
-        startUpdatePassword
-
+        startUpdatePassword,
+        updateInfoStudent
     }
 }

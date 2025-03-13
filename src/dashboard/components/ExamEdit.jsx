@@ -224,9 +224,9 @@ export const ExamEdit = () => {
   }
 
   const onSubmit = async (data) => {
-    if (!isExamInfoComplete) return
-    console.log(data);
+    // if (!isExamInfoComplete) return
 
+    console.log(data, 'info');
     try {
       await handleUpdateExam(id, data)
       setIsExamInfoEditable(false)
@@ -234,6 +234,7 @@ export const ExamEdit = () => {
         await handleLoadQuestion(id, currentOrder) // Recargar la pregunta actual después de guardar el examen
       }
     } catch (error) {
+      console.log('error');
       console.error(error)
     }
   }
@@ -360,7 +361,6 @@ export const ExamEdit = () => {
             <Controller
               name="nombre"
               control={control}
-              rules={{ required: true }}
               render={({ field }) => (
                 <TextField
                   label="Nombre del Examen"
@@ -375,7 +375,6 @@ export const ExamEdit = () => {
             <Controller
               name="periodo"
               control={control}
-              rules={{ required: true }}
               render={({ field: { onChange, value } }) => (
                 <Autocomplete
                   value={value}
@@ -383,7 +382,7 @@ export const ExamEdit = () => {
                     onChange(newValue)
                   }}
                   options={generatePeriodOptions()}
-                  renderInput={(params) => <TextField {...params} label="Periodo" />}
+                  renderInput={(params) => <TextField {...params} label="Periodo"/>}
                   disabled={!isExamInfoEditable}
                 />
               )}
@@ -392,7 +391,7 @@ export const ExamEdit = () => {
             <Controller
               name="duracion"
               control={control}
-              rules={{ required: true, pattern: /^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/ }}
+              rules={{ pattern: /^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/ }}
               render={({ field: { onChange, value }, fieldState: { error } }) => (
                 <TextField
                   label="Duración"
@@ -410,7 +409,6 @@ export const ExamEdit = () => {
             <Controller
               name="carrera"
               control={control}
-              rules={{ required: true }}
               render={({ field: { onChange, value } }) => (
                 <Autocomplete
                   value={value}
@@ -477,7 +475,8 @@ export const ExamEdit = () => {
             <Button
               type="submit"
               variant="contained"
-              disabled={isLoading || !isExamInfoComplete || !isExamInfoEditable}
+              // disabled={isLoading || !isExamInfoComplete || !isExamInfoEditable}
+              disabled={isLoading || !isExamInfoEditable}
               sx={{
                 width: { xs: "100%", sm: "auto" },
               }}

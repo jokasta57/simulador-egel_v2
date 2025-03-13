@@ -100,9 +100,23 @@ export const useExamsStore = () => {
             dispatch(updateExamSuccess(response.data.examen));
             return response.data;
         } catch (error) {
-            console.log(error);
-            dispatch(updateExamFailure(error.response?.data.msg || 'Error al actualizar el examen'));
-            throw error;
+            let errorMessage = error.response.data.msg || ''; // Si existe data.msg, se toma, si no, queda vacío
+            
+            // Verificamos si hay errores en los campos
+            if (error.response.data.errors && typeof error.response.data.errors === 'object') {
+                for (let field in error.response.data.errors) {
+                    if (error.response.data.errors.hasOwnProperty(field)) {
+                        const fieldError = error.response.data.errors[field];
+                        
+                        // Si hay un mensaje en el error del campo, lo agregamos a errorMessage
+                        if (fieldError && typeof fieldError === 'object' && fieldError.msg) {
+                            errorMessage += ` ${fieldError.msg}`;
+                        }
+                    }
+                }
+            }
+            dispatch(updateExamFailure(errorMessage || 'Error al actualizar el examen'));
+            throw errorMessage;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }

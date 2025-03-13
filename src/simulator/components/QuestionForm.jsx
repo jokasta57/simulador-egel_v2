@@ -40,7 +40,13 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
 
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+        {/* Número de la pregunta alineado a la izquierda */}
+        <Typography variant="h6" sx={{ color: "text.primary", fontWeight: "bold" }}>
+          {`Pregunta ${currentQuestion.orden}`}
+        </Typography>
+
+        {/* Botones alineados a la derecha */}
         <Box sx={{ display: "flex", gap: 1 }}>
           <Button
             variant="contained"
@@ -71,9 +77,10 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
         </Box>
       </Box>
       <Box display="flex" flexDirection="column" alignItems="flex-start" mb={3}>
-        <Typography variant="h6" sx={{ color: "text.primary", mb: 2 }}>
+        <Typography variant="h6" sx={{ color: "text.primary", mb: 2, whiteSpace: "pre-line" }}>
           {currentQuestion.contenido}
         </Typography>
+
         {currentQuestion.imagen_url && (
           <img
             src={currentQuestion.imagen_url || "/placeholder.svg"}

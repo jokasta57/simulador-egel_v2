@@ -205,8 +205,9 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
           <TextField
             fullWidth
             multiline
-            rows={3}
+            rows={5}
             label=""
+            placeholder="Escribe la pregunta aquí..." // Placeholder agregado
             value={localQuestion.contenido || ""}
             onChange={handleQuestionChange}
             sx={{ mb: 2 }}
@@ -218,6 +219,7 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
           <ImageUpload
             currentImage={localQuestion.imagen_url}
             currentQuestion={localQuestion}
+            setCurrentQuestion={setLocalQuestion}
             onImageUpload={handleImageUpload}
             isSaved={isSaved}
             setIsSaved={setIsSaved}

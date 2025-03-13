@@ -160,7 +160,9 @@ export const OptionList = ({
           });
           onOptionUpdate(index, "imagen_url", null);
           onOptionUpdate(index, "previewUrl", null);
-          await handleDeleteOptionImage(id_opcion, id_pregunta);
+          if (id_opcion !== undefined && id_pregunta !== undefined) {
+            await handleDeleteOptionImage(id_opcion, id_pregunta);
+          }          
         }
       });
     } catch (error) {
@@ -223,17 +225,20 @@ export const OptionList = ({
                     </Typography>
                     <TextField
                       fullWidth
+                      multiline
+                      rows={3} // Aumenta el número de filas para mayor altura
                       placeholder={`Opción ${index + 1}`}
                       value={opcion.contenido || ""}
                       onChange={(e) => handleOptionTextChange(index, e.target.value)}
-                      size="small"
                       error={hasAttemptedSave && (!opcion.contenido?.trim() && !opcion.imagen_url)}
                       helperText={hasAttemptedSave && (!opcion.contenido?.trim() && !opcion.imagen_url) ? "Debe agregar texto o una imagen." : ""}
                       sx={{
                         "& .MuiOutlinedInput-root": { backgroundColor: "#fff" },
                         "& .MuiOutlinedInput-input::placeholder": { color: "rgba(0, 0, 0, 0.38)" },
+                        minHeight: "100px", // Asegura que el campo tenga más altura
                       }}
                     />
+
 
                     {(opcion.previewUrl || opcion.imagen_url) && (
                       <Box

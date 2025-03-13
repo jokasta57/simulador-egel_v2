@@ -4,7 +4,7 @@ import { Image as ImageIcon, Delete as DeleteIcon, HideImage } from '@mui/icons-
 import Swal from 'sweetalert2';
 import { useExamsStore } from '../../hooks/exams/useExamsStore';
 
-export const ImageUpload = ({ currentImage, currentQuestion, onImageUpload, label, isSaved, setIsSaved, setIsDirty }) => {
+export const ImageUpload = ({ currentImage, currentQuestion, setCurrentQuestion, onImageUpload, label, isSaved, setIsSaved, setIsDirty }) => {
   const [previewUrl, setPreviewUrl] = useState(currentImage)
   const { handleDeleteQuestionImage } = useExamsStore()
 
@@ -31,8 +31,10 @@ export const ImageUpload = ({ currentImage, currentQuestion, onImageUpload, labe
       onImageUpload(file)
 
       // Marcar como no guardado
-      setIsDirty(false)
+      setIsDirty(true)
       setIsSaved(false)
+      // Limpiar el valor del input para permitir volver a subir la misma imagen
+      event.target.value = "";
     }
   };
 
@@ -51,7 +53,13 @@ export const ImageUpload = ({ currentImage, currentQuestion, onImageUpload, labe
         if (result.isConfirmed) {
           setPreviewUrl(null)
           onImageUpload(null);
-          await handleDeleteQuestionImage(currentQuestion.id_pregunta);
+          setCurrentQuestion((prev) => ({
+            ...prev,
+            imagen_url: null, // ✅ Almacenar correctamente la imagen nueva
+          }));
+          if (currentQuestion.id_pregunta !== undefined) {
+            await handleDeleteQuestionImage(currentQuestion.id_pregunta);
+          }
         }
       });
     } catch (error) {

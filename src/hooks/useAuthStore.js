@@ -33,8 +33,6 @@ export const useAuthStore = () => {
 
     const startLoginStudent = async (numero_cuenta, nip) => {
         dispatch(onChecking());
-        let errorMessage = "Credenciales incorrectas";
-
         try {
             const { data } = await simulatorApi.post('/students/auth', { numero_cuenta, nip });
             const { estudiante } = data;
@@ -71,14 +69,12 @@ export const useAuthStore = () => {
             dispatch(onLoginSuccess({ nombre: estudiante.nombre, numero_cuenta: estudiante.numero_cuenta, carrera: estudiante.carrera, role: "student" }))
         } catch (error) {
             let errorMessage = error.response?.data?.msg || "Error desconocido";
-            console.error("Error al registrar estudiante:", errorMessage);
             if (error.response?.data) {
                 errorMessage = error.response.data.msg || JSON.stringify(error.response.data);
             }
             dispatch(onLoginFailure(errorMessage));
-            setTimeout(() => {
-                dispatch(clearErrorMessage())
-            }, 10)
+            setTimeout(() => dispatch(clearErrorMessage()), 5000); // Ahora espera 5 segundos antes de limpiar
+            throw errorMessage
         }
     }
     const checkAuthToken = async () => {

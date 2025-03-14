@@ -32,7 +32,7 @@ export const useExamsStore = () => {
     const handleLoadExams = useCallback(async (carrera) => {
         dispatch(loadExamsStart());
         try {
-            const response = await adminApi.get(`/exams?carreras=${carrera}`);
+            const response = await adminApi.get(`/exams?carrera=${carrera}`);
             dispatch(loadExams(response.data.examenes));
             return response.data;
         } catch (err) {

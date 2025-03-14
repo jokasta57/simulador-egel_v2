@@ -4,14 +4,15 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Paper, Typography, TextField, Button, Grid, MenuItem, FormControl, InputLabel, Select, Alert, Snackbar, IconButton } from '@mui/material';
 import { ArrowBack, Save as SaveIcon } from '@mui/icons-material';
 import { validateStudentForm } from '../helpers/formValidation';
+import { setError } from "../../store/auth/authSlice";
 import { useAuthStore } from '../../hooks/useAuthStore';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 
 const carreras = [
   'Ingeniería de Software',
-  "Medicina", 
-  "Licenciatura en Administración", 
+  "Medicina",
+  "Licenciatura en Administración",
   "Enfermería"
 ];
 
@@ -130,6 +131,11 @@ export const RegisterPage = () => {
       });
     }
   }, [error]);
+
+  const handleCloseSnackbar = useCallback(() => {
+    setError("")
+    setSnackbar(prev => ({ ...prev, open: false }))
+  }, [])
 
   return (
     <Box sx={{
@@ -327,10 +333,10 @@ export const RegisterPage = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        onClose={handleCloseSnackbar}
       >
         <Alert
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >

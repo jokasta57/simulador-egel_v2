@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Typography, RadioGroup, FormControlLabel, Radio, Paper, Box, Button } from "@mui/material"
+import { Typography, RadioGroup, FormControlLabel, Radio, Paper, Box, Button, Modal } from "@mui/material"
 import { useSelector, useDispatch } from "react-redux"
 import { LoadingSpinner } from "./LoadingSpinner"
 import { useNavigate, useParams } from "react-router-dom"
@@ -14,6 +14,50 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
   const { id } = useParams();
 
   const [selectedValue, setSelectedValue] = useState("");
+  const [openQuestionModal, setOpenQuestionModal] = useState(false);
+  const [openOptionModal, setOpenOptionModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState("");
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+
+  const handleOpenQuestionImage = () => {
+    setSelectedImage(currentQuestion.imagen_url);
+    setOpenQuestionModal(true);
+    setScale(1);
+  };
+
+  const handleOpenOptionImage = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setOpenOptionModal(true);
+    setScale(1);
+  };
+
+  const handleCloseModals = () => {
+    setOpenQuestionModal(false);
+    setOpenOptionModal(false);
+  };
+
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const newScale = e.deltaY < 0 ? scale * 1.1 : scale * 0.9;
+    setScale(Math.min(Math.max(newScale, 1), 5)); // Límite entre 1x y 5x
+  };
+
+  const handleMouseDown = (event) => {
+    setDragging(true);
+    setStartPosition({ x: event.clientX - position.x, y: event.clientY - position.y });
+  };
+
+  const handleMouseMove = (event) => {
+    if (!dragging) return;
+    setPosition({ x: event.clientX - startPosition.x, y: event.clientY - startPosition.y });
+  };
+
+  const handleMouseUp = () => {
+    setDragging(false);
+  };
 
   // **Mantiene la respuesta seleccionada en el estado global**
   useEffect(() => {
@@ -40,13 +84,12 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
 
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+      {/* Header with question number and navigation buttons */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-        {/* Número de la pregunta alineado a la izquierda */}
         <Typography variant="h6" sx={{ color: "text.primary", fontWeight: "bold" }}>
           {`Pregunta ${currentQuestion.orden}`}
         </Typography>
 
-        {/* Botones alineados a la derecha */}
         <Box sx={{ display: "flex", gap: 1 }}>
           <Button
             variant="contained"
@@ -76,52 +119,175 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
           </Button>
         </Box>
       </Box>
-      <Box display="flex" flexDirection="column" alignItems="flex-start" mb={3}>
-        <Typography variant="h6" sx={{ color: "text.primary", mb: 2, whiteSpace: "pre-line" }}>
-          {currentQuestion.contenido}
-        </Typography>
 
-        {currentQuestion.imagen_url && (
-          <img
-            src={currentQuestion.imagen_url || "/placeholder.svg"}
-            alt="Imagen de la Pregunta"
-            style={{
-              width: "100%",
-              maxWidth: "450px",
-              maxHeight: "300px",
-              objectFit: "contain",
-              marginTop: "8px",
+      {/* Two-column layout */}
+      <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: 3, mb: 3 }}>
+        {/* Left column: Question content */}
+        <Box sx={{ width: { xs: "100%", md: "50%" } }}>
+          <Box
+            sx={{
+              maxHeight: "400px",
+              overflowY: "auto",
+              pr: 2,
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "rgba(0,0,0,0.2)",
+                borderRadius: "4px",
+              },
             }}
-          />
-        )}
-      </Box>
+          >
+            <Typography variant="subtitle1" sx={{ color: "text.primary", fontWeight: 350, mb: 2, whiteSpace: "pre-line" }}>
+              {currentQuestion.contenido}
+            </Typography>
 
-      <RadioGroup value={selectedValue} onChange={handleRadioChange}>
-        {currentQuestion.opcion.map((option) => (
-          <Box key={option.id_opcion} display="flex" alignItems="center" mb={2}>
-            <FormControlLabel
-              value={option.id_opcion.toString()}
-              control={<Radio />}
-              label=""
-              sx={{ marginRight: "8px" }}
-            />
-            {option.imagen_url && (
+
+            {currentQuestion.imagen_url && (
               <img
-                src={option.imagen_url || "/placeholder.svg"}
-                alt={`Opción ${option.id_opcion}`}
+                src={currentQuestion.imagen_url || "/placeholder.svg"}
+                alt="Imagen de la Pregunta"
                 style={{
-                  width: "200px",
-                  height: "200px",
+                  width: "100%",
+                  maxWidth: "450px",
+                  maxHeight: "300px",
                   objectFit: "contain",
-                  marginRight: "16px",
+                  marginTop: "8px",
+                  cursor: "pointer",
                 }}
+                onClick={handleOpenQuestionImage}
               />
             )}
-            <Typography sx={{ fontSize: "1.2rem" }}>{option.contenido}</Typography>
-          </Box>
-        ))}
-      </RadioGroup>
 
+            {/* Modal de la pregunta */}
+            <Modal open={openQuestionModal} onClose={handleCloseModals}>
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  bgcolor: "white",
+                  boxShadow: 24,
+                  p: 2,
+                  maxWidth: "90vw",
+                  maxHeight: "90vh",
+                  overflow: "hidden",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+                onWheel={(event) => {
+                  setScale((prevScale) => Math.min(Math.max(prevScale + event.deltaY * -0.001, 1), 3));
+                }}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+              >
+                <img
+                  src={selectedImage}
+                  alt="Imagen ampliada"
+                  style={{
+                    transform: `scale(${scale})`,
+                    transition: "transform 0.1s ease",
+                    maxWidth: "100%",
+                    maxHeight: "80vh",
+                    objectFit: "contain",
+                  }}
+                />
+              </Box>
+            </Modal>
+
+          </Box>
+        </Box>
+
+        {/* Right column: Answer options */}
+        <Box sx={{ width: { xs: "100%", md: "50%" } }}>
+          <Box
+            sx={{
+              maxHeight: "400px",
+              overflowY: "auto",
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "rgba(0,0,0,0.2)",
+                borderRadius: "4px",
+              },
+            }}
+          >
+            <RadioGroup value={selectedValue} onChange={handleRadioChange}>
+              {currentQuestion.opcion.map((option) => (
+                <Box key={option.id_opcion} display="flex" alignItems="center" mb={2}>
+                  <FormControlLabel
+                    value={option.id_opcion.toString()}
+                    control={<Radio />}
+                    label=""
+                    sx={{ marginRight: "8px" }}
+                  />
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    {option.imagen_url && (
+                      <img
+                        src={option.imagen_url || "/placeholder.svg"}
+                        alt={`Opción ${option.id_opcion}`}
+                        style={{
+                          width: "200px",
+                          height: "200px",
+                          objectFit: "contain",
+                          marginRight: "16px",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => handleOpenOptionImage(option.imagen_url)}
+                      />
+                    )}
+                    <Typography variant="subtitle1" sx={{ fontWeight: 350, fontSize: "1rem" }}>
+                      {option.contenido}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+
+              {/* Modal de opciones */}
+              <Modal open={openOptionModal} onClose={handleCloseModals}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    bgcolor: "white",
+                    boxShadow: 24,
+                    p: 2,
+                    maxWidth: "90vw",
+                    maxHeight: "90vh",
+                    overflow: "hidden",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                  onWheel={(event) => {
+                    setScale((prevScale) => Math.min(Math.max(prevScale + event.deltaY * -0.001, 1), 3));
+                  }}
+                >
+                  <img
+                    src={selectedImage}
+                    alt="Imagen ampliada"
+                    style={{
+                      transform: `scale(${scale})`,
+                      transition: "transform 0.1s ease",
+                      maxWidth: "100%",
+                      maxHeight: "80vh",
+                      objectFit: "contain",
+                    }}
+                  />
+                </Box>
+              </Modal>
+            </RadioGroup>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Footer with action buttons */}
       <Box sx={{ mt: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Button
           variant="contained"
@@ -149,7 +315,6 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
           Terminar Intento
         </Button>
       </Box>
-
     </Paper>
-  );
+  )
 };

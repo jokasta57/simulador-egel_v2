@@ -1,68 +1,64 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Stack,
-  useTheme,
-  TextField,
-  InputAdornment,
-  MenuItem,
-  FormControl,
-  Select,
-  InputLabel,
-  Button,
-} from "@mui/material"
-import { Search as SearchIcon, PlayArrow as StartIcon } from "@mui/icons-material"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
-import { LoadingSpinner } from "./LoadingSpinner"
 import Swal from "sweetalert2"
+import { Box, Typography, Card, CardContent, Stack, useTheme, TextField, InputAdornment, MenuItem, FormControl, Select, InputLabel, Button, Snackbar, Alert, } from "@mui/material"
+import { Search as SearchIcon, PlayArrow as StartIcon } from "@mui/icons-material"
+import { LoadingSpinner } from "./LoadingSpinner"
 
 export const Exams = () => {
   const theme = useTheme()
   const navigate = useNavigate()
-  const [searchTerm, setSearchTerm] = useState("")
-  const [areaFilter, setAreaFilter] = useState("Todas")
-  const [isLoading, setIsLoading] = useState(false)
-  const { exams } = useSelector((state) => state.exams)
+  const [searchTerm, setSearchTerm] = useState("") // Estado para el término de búsqueda
+  const [areaFilter, setAreaFilter] = useState("Todas") // Estado para el filtro de área
+  const [isLoading, setIsLoading] = useState(false) // Estado para indicar si se están cargando los exámenes
+
+  // Obtener exámenes y usuario desde Redux
+  const { exams, remainingTime, currentAttempt } = useSelector((state) => state.exams)
   const { user } = useSelector((state) => state.auth)
 
-  const { handleLoadExams, handleClearError, handleClearSuccess, handleLoadExamsByCareer } = useExamsStore()
+  // Obtener funciones del store para manejar errores y cargar exámenes
+  const { handleClearError, handleLoadExamsByCareer, error } = useExamsStore()
 
+  // Cargar los exámenes automáticamente cuando se tenga la carrera del usuario
   useEffect(() => {
     if (user?.carrera) {
-      const fetchExams = async () => {
-        setIsLoading(true)
-        await handleLoadExamsByCareer(user.carrera)
-        setIsLoading(false)
-      }
       fetchExams()
     }
-  }, [user?.carrera]) // Added handleLoadExamsByCareer to dependencies
+  }, [user?.carrera])
 
+  // Obtener las áreas únicas de los exámenes para el filtro
   const areasFiltro = useMemo(() => {
     const uniqueAreas = new Set(exams.map((exam) => exam.area))
     return ["Todas", ...uniqueAreas]
   }, [exams])
 
+  // Función para cargar los exámenes según la carrera del usuario
+  const fetchExams = async () => {
+    setIsLoading(true);
+    await handleLoadExamsByCareer(user.carrera).finally(() => setIsLoading(false));
+  };  
+
+  // Filtrar exámenes según el término de búsqueda y el área seleccionada
   const filteredExams = exams?.filter((exam) => {
     const matchesSearch = exam.nombre.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesArea = areaFilter === "Todas" || exam.area === areaFilter
     return matchesSearch && matchesArea
   })
 
+  // Función para manejar el inicio de un examen
   const handleStartExam = (exam) => {
+    // Formatea la duración del examen para mostrarla en el mensaje
     const formatDuration = (duration) => {
       const [hours, minutes] = duration.split(":").map(Number)
       if (hours > 0) return `${hours} h ${minutes} min`
       return `${minutes} min`
     }
 
+    // Muestra una alerta de confirmación antes de iniciar el examen
     Swal.fire({
       title: "Confirmación de inicio",
       text: `Vas a iniciar el examen: "${exam.nombre}". Tienes ${formatDuration(exam.duracion)} y no podrás pausarlo. 
@@ -75,11 +71,17 @@ export const Exams = () => {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
-        navigate(`/student/exams/${exam.id_examen}`)
+        navigate(`/student/exams/${exam.id_examen}`) // Redirige al usuario al examen seleccionado
       }
     });
   }
 
+  // Cierra la notificación de error
+  const handleCloseSnackbar = useCallback(() => {
+    handleClearError();
+  }, [])
+
+  // Si los exámenes están cargando, muestra el spinner
   if (isLoading) {
     return <LoadingSpinner />
   }
@@ -96,9 +98,9 @@ export const Exams = () => {
         borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
         paddingBottom: 1,
         mb: 2,
-        fontWeight: 600, // Aumenta el peso para que no se pierda tanto
-        fontSize: '1rem', // Tamaño más pequeño pero aún legible
-        mt: -2, // Ajusta este valor para moverlo hacia arriba
+        fontWeight: 600,
+        fontSize: '1rem',
+        mt: -2,
       }}>
         {user.carrera}
       </Typography>
@@ -206,11 +208,21 @@ export const Exams = () => {
               No hay exámenes disponibles
             </Typography>
             <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-              Aún no se han publicado exámenes. Vuelve más tarde para revisarlos.
+              No encontramos exámenes en este momento. Intenta nuevamente más tarde o revisa tu búsqueda.
             </Typography>
           </Box>
         )}
       </Stack>
+      <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" variant="filled">
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

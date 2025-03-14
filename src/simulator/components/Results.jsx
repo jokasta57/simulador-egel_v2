@@ -1,112 +1,87 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Card,
-  CardContent,
-  Grid,
-  useTheme,
-  CircularProgress,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  IconButton,
-  Snackbar,
-  Alert,
-} from "@mui/material"
-import {
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  Stars as StarsIcon,
-  Assessment as AssessmentIcon,
-  Search as SearchIcon,
-  FilterList as FilterListIcon,
-  Visibility as VisibilityIcon,
-} from "@mui/icons-material"
-
-import { useStudentStatsStore } from "../../hooks/statistics/useStudentStatsStore"
 import { useSelector } from "react-redux"
+import { useStudentStatsStore } from "../../hooks/statistics/useStudentStatsStore"
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Card, CardContent, Grid, useTheme, CircularProgress, TextField, FormControl, InputLabel, Select, MenuItem, Button, IconButton, Snackbar, Alert, } from "@mui/material"
+import { TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon, Stars as StarsIcon, Assessment as AssessmentIcon, Search as SearchIcon, FilterList as FilterListIcon, Visibility as VisibilityIcon, } from "@mui/icons-material"
+import { Link } from "react-router-dom"
 import { LoadingSpinner } from "./LoadingSpinner"
 
 export const Results = () => {
   const theme = useTheme()
-  const [examenes, setExamenes] = useState([])
-  const [resultados, setResultados] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [dateFilter, setDateFilter] = useState("")
-  const [areaFilter, setAreaFilter] = useState("")
 
-  const calificacionMinima = 70 // Definir la calificación mínima para aprobar
-  const { user } = useSelector((state) => state.auth)
-  const { handleStudentResults } = useStudentStatsStore()
+  // Estados para manejar los datos y la UI
+  const [examenes, setExamenes] = useState([]) // Almacena la lista de exámenes
+  const [resultados, setResultados] = useState(null) // Almacena los resultados generales del estudiante
+  const [loading, setLoading] = useState(true) // Estado de carga
+  const [error, setError] = useState(null) // Almacena errores si ocurren
+  const [searchTerm, setSearchTerm] = useState("") // Término de búsqueda
+  const [statusFilter, setStatusFilter] = useState("all") // Filtro por estado del examen
+  const [dateFilter, setDateFilter] = useState("") // Filtro por fecha
+  const [areaFilter, setAreaFilter] = useState("") // Filtro por área de examen
 
+  const calificacionMinima = 70 // Calificación mínima para aprobar
+  const { user } = useSelector((state) => state.auth) // Obtiene los datos del usuario autenticado
+  const { handleStudentResults } = useStudentStatsStore() // Función para obtener los resultados del estudiante
+
+  // Efecto que se ejecuta cuando cambia el número de cuenta del usuario
   useEffect(() => {
-    const getResults = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        // Esperar la respuesta de la API
-        const data = await handleStudentResults(user.numero_cuenta)
-
-        if (!data.ok) {
-          throw new Error(data.msg || "Error al obtener los resultados")
-        }
-
-
-        // Guardar los datos en el estado
-        setResultados(data.resultados)
-        setExamenes(data.historialExamenes)
-        setLoading(false)
-      } catch (error) {
-        setError(error.response?.data?.msg || error.message || 'Error al cargar la pagina')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     getResults()
   }, [user.numero_cuenta])
 
+  // Función para obtener los resultados del estudiante
+  const getResults = async () => {
+    try {
+      setLoading(true) // Activa el estado de carga
+      setError(null) // Reinicia cualquier error previo
+
+      // Llama a la API o función que obtiene los resultados
+      const data = await handleStudentResults(user.numero_cuenta)
+
+      if (!data.ok) {
+        throw new Error(data || "Error al obtener los resultados")
+      }
+
+      // Guarda los resultados en el estado
+      setResultados(data.resultados)
+      setExamenes(data.historialExamenes)
+      setLoading(false)
+    } catch (error) {
+      // Captura y almacena el error
+      setError(error.response?.data?.msg || error.message || 'Error al cargar la página')
+    } finally {
+      setLoading(false) // Desactiva el estado de carga
+    }
+  }
+
+  // Muestra un spinner mientras se cargan los datos
   if (loading) return <LoadingSpinner />
+  // Muestra un mensaje de error si ocurre un problema
   if (error) return <Typography color="error">{error}</Typography>
 
-  // Calcular estadísticas
+  // Calcula estadísticas del usuario
   const totalIntentos = resultados?.totalIntentos || "N/A"
-  // Formatear calificaciones a dos decimales
+
+  // Formatea la calificación a dos decimales
   const formatCalificacion = (calificacion) => {
     return calificacion ? Number.parseFloat(calificacion).toFixed(2) : 0
   }
 
-  // Calcular estadísticas con formato correcto
+  // Calcula estadísticas con formato correcto
   const promedioCalificaciones = formatCalificacion(resultados?.promedioGeneral?.promedioGeneral)
   const mejorExamen = formatCalificacion(resultados?.mejorCalificacion?.calificacion)
   const peorExamen = formatCalificacion(resultados?.menorCalificacion?.calificacion)
 
-  // Definir colores personalizados
+  // Define colores personalizados para las métricas
   const customColors = {
-    promedioGeneral: "#FFC107",
-    mejorCalificacion: theme.palette.success.light,
-    menorCalificacion: "#D32F2F",
-    totalIntentos: "#3F51B5",
+    promedioGeneral: "#FFC107", // Amarillo
+    mejorCalificacion: theme.palette.success.light, // Verde claro
+    menorCalificacion: "#D32F2F", // Rojo
+    totalIntentos: "#3F51B5", // Azul
   }
 
+  // Estilos para las tarjetas de estadísticas
   const cardStyle = {
     height: "100%",
     boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
@@ -116,18 +91,22 @@ export const Results = () => {
     },
   }
 
+  // Función para cerrar el Snackbar de error
   const handleCloseSnackbar = () => {
     setError("")
   }
 
-  // Get unique areas from examenes
+  // Obtiene las áreas únicas de los exámenes para los filtros
   const uniqueAreas = [...new Set(examenes.map((examen) => examen.area))]
 
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>
+      {/* Título principal */}
       <Typography variant="h4" component="h1" sx={{ color: theme.palette.text.primary, mb: 4, fontWeight: "bold", }}>
         Mis Resultados
       </Typography>
+
+      {/* Información del usuario (carrera) */}
       <Typography variant="body2" sx={{
         color: "text.disabled",
         textTransform: "uppercase",
@@ -135,9 +114,9 @@ export const Results = () => {
         borderBottom: "2px solid rgba(0, 0, 0, 0.12)",
         paddingBottom: 1,
         mb: 2,
-        fontWeight: 600, // Aumenta el peso para que no se pierda tanto
-        fontSize: '1rem', // Tamaño más pequeño pero aún legible
-        mt: -2, // Ajusta este valor para moverlo hacia arriba
+        fontWeight: 600,
+        fontSize: '1rem',
+        mt: -2,
       }}>
         {user.carrera}
       </Typography>
@@ -160,6 +139,7 @@ export const Results = () => {
           </Card>
         </Grid>
 
+        {/* Repetición de tarjetas con distintas métricas */}
         <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ ...cardStyle, bgcolor: customColors.mejorCalificacion }}>
             <CardContent>
@@ -219,6 +199,8 @@ export const Results = () => {
       <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>
         Historial de Exámenes
       </Typography>
+
+      {/* Filtros de búsqueda */}
       <Box
         sx={{
           mb: 3,

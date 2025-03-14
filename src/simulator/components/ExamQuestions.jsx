@@ -8,93 +8,48 @@ import { useNavigate, useParams } from "react-router-dom"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useDispatch, useSelector } from "react-redux"
 import { LoadingSpinner } from "./LoadingSpinner"
-import {
-  resetCurrentOrder,
-  resetPreguntaNueva,
-  resetTotalQuestions,
-  setCurrentOrder,
-  setTotalQuestions,
-  setAnsweredQuestion,
-  resetAnsweredQuestions,
-  setRemainingTime,
-  resetRemainingTime
-} from "../../store"
+import { resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setTotalQuestions, setAnsweredQuestion, resetAnsweredQuestions, setRemainingTime, resetRemainingTime, resetCurrentAttempt, resetCurrentExam} from "../../store"
 import Swal from "sweetalert2"
 
 export const ExamQuestions = () => {
-  const { id } = useParams()
-  const dispatch = useDispatch()
+  // Obtener parámetros y hooks de navegación
+  const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const {
-    handleLoadQuestion,
-    handleLoadExam,
-    handleLoadQuestionsByExam,
-    handleResetCurrentQuestion,
-    handleLoadQuestionAndAnswer,
-    handleNewAttempt,
-    handleSaveAnswer,
-    handleUpdateAnswer,
-  } = useExamsStore()
-  const { currentExam, currentAttempt, currentOrder, currentQuestion, answeredQuestions, remainingTime } = useSelector(
-    (state) => state.exams,
-  )
-  const { user } = useSelector((state) => state.auth)
+  // Obtener estado global
+  const { currentExam, currentAttempt, currentOrder, remainingTime, answeredQuestions } = useSelector(state => state.exams);
+  const { user } = useSelector(state => state.auth);
 
-  const [question, setCurrentQuestion] = useState(1)
-  const [answers, setAnswers] = useState({})
-  const [success, setSuccess] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(true)
+  // Estado local para gestionar preguntas, respuestas y mensajes de feedback
+  const [question, setCurrentQuestion] = useState(1);
+  const [answers, setAnswers] = useState({});
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('Cargando...');
+
+  // Obtener funciones de la tienda de exámenes
+  const { handleLoadExam, handleLoadQuestionsByExam, handleNewAttempt, handleLoadQuestionAndAnswer, handleResetCurrentQuestion, handleSaveAnswer, handleUpdateAnswer, } = useExamsStore();
 
   useEffect(() => {
-    const fetchExamInfo = async () => {
-      setLoading(true)
-      try {
-        const exam = await handleLoadExam(id)
-
-        const questionsLength = await handleLoadQuestionsByExam(id)
-        dispatch(setTotalQuestions(questionsLength.length || 0))
-
-        await handleNewAttempt(user.numero_cuenta, id)
-
-        const pregunta = await handleLoadQuestionAndAnswer(id, 1, currentAttempt.id_intento)
-        if (!pregunta || pregunta.ok === false) {
-          setLoading(false)
-          throw new Error(pregunta?.msg || "Error desconocido al cargar la pregunta")
-        }
-
-        dispatch(setCurrentOrder(1))
-
-        // 📌 Solo seteamos el tiempo si `remainingTime` aún no tiene valor
-        if (exam?.duracion && remainingTime === "00:00:00") {
-          const [horas, minutos, segundos] = exam.duracion.split(":").map(Number);
-          const totalSeconds = horas * 3600 + minutos * 60 + segundos;
-          dispatch(setRemainingTime(totalSeconds));
-        }
-      } catch (error) {
-        console.error("Error al cargar el examen:", error)
-        setLoading(false)
-        setError(error.response?.data?.msg || error.message)
-      }
-      setLoading(false)
-    }
-
-    fetchExamInfo()
-  }, [])
-
-  useEffect(() => {
+    // Cargar información del examen al montar el componente
+    fetchExamInfo();
     return () => {
-      handleResetCurrentQuestion()
-      dispatch(resetCurrentOrder())
-      dispatch(resetTotalQuestions())
-      dispatch(resetPreguntaNueva())
-      dispatch(resetAnsweredQuestions())
-      dispatch(resetRemainingTime())
-    }
-  }, [])
+      // Limpiar estado al desmontar el componente
+      handleResetCurrentQuestion();
+      dispatch(resetCurrentOrder());
+      dispatch(resetTotalQuestions());
+      dispatch(resetPreguntaNueva());
+      dispatch(resetAnsweredQuestions());
+      dispatch(resetRemainingTime());
+      dispatch(resetCurrentAttempt());
+      dispatch(resetCurrentExam());
+    };
+  }, []);
+  
 
-  // Countdown timer effect
+  // Temporizador de cuenta regresiva
   useEffect(() => {
     let timer;
     if (remainingTime > 0) {
@@ -126,87 +81,103 @@ export const ExamQuestions = () => {
     return () => clearInterval(timer);
   }, [remainingTime, id]);
 
-  const handleQuestionSelect = async (orden) => {
-    if (!Number.isInteger(orden) || orden < 1) {
-      setError("Orden de pregunta no válido")
-      return
-    }
-
-    setLoading(true)
-    setError(null) // Limpiar errores previos
-
+  //Obtener info del examen
+  const fetchExamInfo = async () => {
+    setLoading(true);
     try {
-      const pregunta = await handleLoadQuestionAndAnswer(id, orden, currentAttempt.id_intento)
+      const exam = await handleLoadExam(id); // Carga la información del examen
+      const questionsLength = await handleLoadQuestionsByExam(id); // Obtiene el número total de preguntas
+      dispatch(setTotalQuestions(questionsLength.length || 0)); // Almacena el total de preguntas en el estado global
 
+      await handleNewAttempt(user.numero_cuenta, id); // Registra un nuevo intento para el usuario
+      const pregunta = await handleLoadQuestionAndAnswer(id, 1, currentAttempt.id_intento); // Carga la primera pregunta
+
+      if (!pregunta || pregunta.ok === false) {
+        setLoading(false)
+        throw new Error(pregunta?.msg || "Error desconocido al cargar la pregunta")
+      }
+
+      dispatch(setCurrentOrder(1)); // Establece el número de orden de la pregunta actual en 1
+
+      // Inicializa el tiempo restante solo si aún no ha sido definido
+      if (exam?.duracion && remainingTime === "00:00:00") {
+        const [horas, minutos, segundos] = exam.duracion.split(":").map(Number);
+        dispatch(setRemainingTime(horas * 3600 + minutos * 60 + segundos)); // Convierte la duración en segundos y la almacena
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cambiar de pregunta
+  const handleQuestionSelect = async (orden) => {
+    handleCloseSnackbar();
+    if (!Number.isInteger(orden) || orden < 1) return setError("Orden de pregunta no válido");
+    setLoading(true);
+    try {
+      const pregunta = await handleLoadQuestionAndAnswer(id, orden, currentAttempt.id_intento);
       if (!pregunta || pregunta.ok === false) {
         throw new Error(pregunta?.msg || "Error al cargar la pregunta")
       }
-
-      dispatch(setCurrentOrder(orden))
+      dispatch(setCurrentOrder(orden));
     } catch (error) {
-      setError(error?.response?.data?.msg || error.message || "Error desconocido")
+      setError(error.message);
     } finally {
-      setLoading(false) // Se ejecuta siempre, evitando duplicación
+      setLoading(false);
     }
-  }
+  };
 
+  // Manejar cambio de respuesta
   const handleAnswerChange = (answer) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [question]: answer,
-    }))
-  }
+    setAnswers((prev) => ({ ...prev, [question]: answer }));
+  };
 
   const saveAnswer = async () => {
+    setLoading(true) // Indica que la operación está en curso
+    setLoadingMessage('Guardando respuesta...')
     try {
       if (!answeredQuestions.includes(currentOrder)) {
-        setLoading(true)
-
-        await handleSaveAnswer(currentAttempt.id_intento, answers[question])
-
-        await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento)
-
-        dispatch(setAnsweredQuestion(currentOrder))
-
-        setLoading(false)
+        await handleSaveAnswer(currentAttempt.id_intento, answers[question]) // Guarda la respuesta
+        await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento) // Recarga la pregunta
+        dispatch(setAnsweredQuestion(currentOrder)) // Marca la pregunta como respondida
         setSuccess("Respuesta guardada exitosamente")
       } else {
-        setLoading(true)
-
-        const pregunta = await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento)
-
-        const answeredOption = pregunta?.opcion?.find((opt) => opt.respuesta && opt.respuesta.length > 0)
-        const answeredId = answeredOption?.respuesta[0]?.id_respuesta
-
-        await handleUpdateAnswer(answeredId, answers[question])
-
-        await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento)
-        dispatch(setAnsweredQuestion(currentOrder))
-
-        setLoading(false)
+        const pregunta = await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento) // Obtiene la pregunta y respuestas
+        const answeredOption = pregunta?.opcion?.find((opt) => opt.respuesta?.length > 0) // Busca la respuesta guardada
+        const answeredId = answeredOption?.respuesta[0]?.id_respuesta // Obtiene el ID de la respuesta
+        await handleUpdateAnswer(answeredId, answers[question]) // Actualiza la respuesta existente
+        await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento) // Recarga la pregunta
+        dispatch(setAnsweredQuestion(currentOrder)) // Marca la pregunta como respondida
         setSuccess("Respuesta actualizada exitosamente")
       }
     } catch (error) {
-      console.error("Error al guardar la respuesta:", error)
-      setError(error.response?.data?.msg || error.message)
+      setError(error.response?.data?.msg || error.message) // Muestra el mensaje de error
+    } finally {
+      setLoading(false)
+      setLoadingMessage('Cargando...')
     }
   }
 
-  const handleCloseSnackbar = () => {
-    setError("")
-    setSuccess("")
-  }
 
+  // Cerrar mensajes emergentes
+  const handleCloseSnackbar = () => {
+    setError("");
+    setSuccess("");
+  };
+
+  // Formatear el tiempo restante a formato hh:mm:ss
   const formatTime = (totalSeconds) => {
-    if (totalSeconds == null) return "00:00:00"
-    const horas = Math.floor(totalSeconds / 3600)
-    const minutos = Math.floor((totalSeconds % 3600) / 60)
-    const segundos = totalSeconds % 60
-    return `${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}:${String(segundos).padStart(2, "0")}`
-  }
+    if (!totalSeconds) return "00:00:00";
+    const horas = Math.floor(totalSeconds / 3600);
+    const minutos = Math.floor((totalSeconds % 3600) / 60);
+    const segundos = totalSeconds % 60;
+    return `${String(horas).padStart(2, "0")}:${String(minutos).padStart(2, "0")}:${String(segundos).padStart(2, "0")}`;
+  };
 
   if (loading || !currentExam) {
-    return <LoadingSpinner />
+    return <LoadingSpinner message={loadingMessage} />
   }
 
   return (

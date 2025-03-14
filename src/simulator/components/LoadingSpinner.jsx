@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
-export const LoadingSpinner = () => {
+export const LoadingSpinner = ({message = 'Cargando...'}) => {
   return (
     <Box
       display="flex"
@@ -12,7 +12,7 @@ export const LoadingSpinner = () => {
     >
       <CircularProgress size={60} thickness={4} />
       <Typography variant="h6" style={{ marginTop: '20px' }}>
-        Cargando...
+        {message}
       </Typography>
     </Box>
   );

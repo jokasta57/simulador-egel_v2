@@ -1,59 +1,63 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Box, Typography, Card, CardContent, Button, Grid, LinearProgress, Paper } from "@mui/material"
+import { useCallback, useEffect, useState } from "react"
+import { Box, Typography, Card, CardContent, Button, Grid, LinearProgress, Paper, Snackbar, Alert } from "@mui/material"
 import { CheckCircle, XCircle, AlertCircle, ArrowLeft } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useDispatch, useSelector } from "react-redux"
 import { LoadingSpinner } from "./LoadingSpinner"
 import { resetCurrentAttempt } from "../../store"
+import { clearErrorMessage, setError } from "../../store/auth/authSlice"; // Importamos la acción para limpiar el error
 
 export const ExamResult = () => {
-  const { id } = useParams();
-  const [mostrarDetalles, setMostrarDetalles] = useState(false);
-  const [examData, setExamData] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const { id } = useParams(); // Obtiene el parámetro "id" desde la URL
+  const [examData, setExamData] = useState({}); // Almacena los datos del examen
+  const [isLoading, setIsLoading] = useState(false); // Indica si los datos están cargando
+  const navigate = useNavigate(); // Hook para navegación
+  const dispatch = useDispatch(); // Hook para manejar acciones de Redux
 
-  const { currentAttempt } = useSelector((state) => state.exams)
-  const { handleGetResultsAttempt } = useExamsStore();
+  const { currentAttempt, error } = useSelector((state) => state.exams); // Obtiene el intento actual del estado global
+  const { handleGetResultsAttempt } = useExamsStore(); // Función para obtener los resultados del intento
 
-
+  // 🔹 Manejo del botón de retroceso del navegador para evitar que el usuario regrese
   useEffect(() => {
-    // 🔹 Redirigir a /student/home si el usuario intenta regresar
     const handleBackButton = () => {
-      navigate("/student/home", { replace: true });
+      navigate("/student/home", { replace: true }); // Redirige a la página de inicio del estudiante
     };
 
-    window.history.pushState(null, "", window.location.href);
-    window.addEventListener("popstate", handleBackButton);
+    window.history.pushState(null, "", window.location.href); // Agrega un nuevo estado en el historial
+    window.addEventListener("popstate", handleBackButton); // Escucha el evento de retroceso
 
     return () => {
-      window.removeEventListener("popstate", handleBackButton);
+      window.removeEventListener("popstate", handleBackButton); // Limpia el evento al desmontar
     };
   }, [navigate]);
 
+  // 🔹 Obtiene los resultados del intento actual al cargar el componente
   useEffect(() => {
     getResults(currentAttempt.id_intento);
+
     return () => {
-      dispatch(resetCurrentAttempt())
-    }
-  }, [])
+      dispatch(resetCurrentAttempt()); // Resetea el intento actual al desmontar el componente
+    };
+  }, []);
 
+  // 🔹 Función para obtener los resultados del examen
   const getResults = async (currentAttempt) => {
-    setIsLoading(true);
-    try {
-      const data = await handleGetResultsAttempt(currentAttempt);
+    setIsLoading(true); // Activa el estado de carga
 
-      setExamData(prevData => ({
+    try {
+      const data = await handleGetResultsAttempt(currentAttempt); // Obtiene los resultados desde el backend
+
+      // Actualiza el estado con los datos obtenidos
+      setExamData((prevData) => ({
         ...prevData,
         id_intento: data.examen?.id_intento || 0,
-        numero_cuenta: Number(data.examen?.numero_cuenta) || 0, // Convertir a número o asignar 0 si es undefined
+        numero_cuenta: Number(data.examen?.numero_cuenta) || 0, // Convierte a número o asigna 0 si es undefined
         id_examen: data.examen?.id_examen || 0,
         fecha_aplicacion: data.examen?.fecha_aplicacion || "",
-        calificacion: data.respuestas?.calificacionFinal || 0, // Convertir a número
+        calificacion: data.respuestas?.calificacionFinal || 0, // Convierte a número
         nombre: data.examen?.examen?.nombre || "Desconocido",
         carrera: data.examen?.examen?.carrera || "No especificado",
         area: data.examen?.examen?.area || "No especificado",
@@ -61,20 +65,25 @@ export const ExamResult = () => {
         totalPreguntas: data.respuestas?.totalPreguntas || 0,
         respuestasCorrectas: data.respuestas?.correctas || 0,
         respuestasIncorrectas: data.respuestas?.incorrectas || 0,
-        mensaje: data.respuestas?.mensaje || ""
+        mensaje: data.respuestas?.mensaje || "",
       }));
-
     } catch (error) {
-      console.log(error);
+      setError("No se pudieron obtener los resultados del examen.")
     } finally {
-      setIsLoading(false)
+      setIsLoading(false); // Finaliza el estado de carga
     }
-  }
+  };
 
+  // 🔹 Calcula el porcentaje de respuestas correctas
   const porcentajeCorrectas = (examData.respuestasCorrectas / examData.totalPreguntas) * 100;
 
+  const handleCloseSnackbar = useCallback(() => {
+    setError("")
+  }, [])
+
+  // 🔹 Muestra un spinner si los datos aún están cargando
   if (isLoading || !examData) {
-    return <LoadingSpinner />
+    return <LoadingSpinner message="Obteniendo resultados del examen..."/>;
   }
 
   return (
@@ -171,6 +180,17 @@ export const ExamResult = () => {
           Volver a Exámenes de Práctica
         </Button>
       </Box>
+      {/* ✅ Snackbar para errores y éxito en el mismo formato */}
+      <Snackbar
+        open={Boolean(error)}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" variant="filled">
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

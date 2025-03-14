@@ -10,89 +10,92 @@ import { LoadingSpinner } from "./LoadingSpinner"
 import { resetCurrentAttempt } from "../../store"
 
 export const ExamReview = () => {
-  const { id } = useParams()
-  const navigate = useNavigate()
+  // Obtiene el ID de los parámetros de la URL
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // Estados locales para manejar la información del examen y su revisión
   const [examData, setExamData] = useState(null);
   const [panelQuestions, setPanelQuestions] = useState(null);
-  const [error, setError] = useState('')
+  const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoadingState] = useState(true);
   const rowsPerPage = 5;
   const scrollRef = useRef(null);
-  const { handleReviewAttempt, handlePanelQuestions } = useExamsStore();
-  const { currentAttempt } = useSelector((state) => state.exams)
-  const dispatch = useDispatch();
 
+  // Obtiene el intento actual desde Redux y las funciones del store
+  const { currentAttempt } = useSelector((state) => state.exams);
+  const { handleReviewAttempt, handlePanelQuestions } = useExamsStore();
+
+  // Función para obtener los datos de la revisión del examen
   const fetchReviewData = useCallback(async () => {
-    if (!currentAttempt || !id) return; // ✅ Espera hasta que currentAttempt esté disponible
     setIsLoadingState(true);
     try {
+      // Si no hay intento actual o ID, detiene la ejecución
+      if (!currentAttempt || !id) return;
+      
+      // Obtiene la revisión desde el backend
       const data = await handleReviewAttempt(currentAttempt.id_intento || id, currentPage, rowsPerPage);
       setExamData(data);
-
     } catch (error) {
-      // console.error("Error al obtener revisión:", error);
-      setError(error.response?.data?.msg || error.message || 'Error al obtener revisión')
+      // Captura errores y los almacena en el estado
+      setError(error.response?.data?.msg || error.message || "Error al obtener revisión");
     } finally {
       setIsLoadingState(false);
     }
   }, [currentAttempt, currentPage, rowsPerPage]);
 
+  // Función para obtener las preguntas del panel de revisión
   const getPanelQuestions = useCallback(async () => {
-    if (!currentAttempt || !id) return; // ✅ Espera hasta que currentAttempt esté disponible
+    if (!currentAttempt || !id) return;
     setIsLoadingState(true);
     try {
+      // Obtiene las preguntas desde el backend
       const data = await handlePanelQuestions(currentAttempt.id_intento || id);
       setPanelQuestions(data);
-
     } catch (error) {
-      // console.error("Error al obtener revisión:", error);
-      setError(error.response?.data?.msg || error.message || 'Error al obtener revisión')
+      setError(error.response?.data?.msg || error.message || "Error al obtener revisión");
     } finally {
       setIsLoadingState(false);
     }
   }, [currentAttempt]);
 
-
-
+  // Efecto para cargar la revisión del examen cuando haya un intento actual
   useEffect(() => {
     if (currentAttempt) {
       fetchReviewData();
     }
   }, [currentAttempt, currentPage]);
 
+  // Efecto para cargar las preguntas del panel y limpiar el intento al desmontar
   useEffect(() => {
     if (currentAttempt) {
       getPanelQuestions();
     }
     return () => {
-      dispatch(resetCurrentAttempt())
-    }
-  }, [])
+      dispatch(resetCurrentAttempt());
+    };
+  }, []);
 
-
-
-  const handlePageChange = (event, value) => {
-    setIsLoadingState(true);
-    setCurrentPage(value)
-    setIsLoadingState(false);
-  }
-
+  // Función para desplazar el scroll lateralmente
   const handleScroll = (direction) => {
     if (scrollRef.current) {
-      const scrollAmount = 150
-      scrollRef.current.scrollBy({ left: direction === "left" ? -scrollAmount : scrollAmount, behavior: "smooth" })
+      const scrollAmount = 150;
+      scrollRef.current.scrollBy({ left: direction === "left" ? -scrollAmount : scrollAmount, behavior: "smooth" });
     }
-  }
+  };
 
+  // Cierra el Snackbar de error
   const handleCloseSnackbar = () => {
-    setError("")
-  }
+    setError("");
+  };
 
+  // Mientras se cargan los datos, muestra un spinner y un snackbar si hay error
   if (isLoading || !examData) {
     return (
       <>
-        <LoadingSpinner />
+        <LoadingSpinner message="Cargando revisión..." />
         <Snackbar
           open={Boolean(error)}
           autoHideDuration={6000}
@@ -100,10 +103,7 @@ export const ExamReview = () => {
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         >
           <Alert onClose={handleCloseSnackbar} severity="error" variant="filled">
-            {typeof error === "string"
-              ? error
-              : JSON.stringify(error)
-            }
+            {typeof error === "string" ? error : JSON.stringify(error)}
           </Alert>
         </Snackbar>
       </>
@@ -139,7 +139,7 @@ export const ExamReview = () => {
           <Grid item xs={6} display="flex" alignItems="center">
             <CheckCircle size={20} color="#4caf50" style={{ marginRight: 8 }} />
             <Typography variant="body1">
-              <strong>Calificación:</strong> {examData.intento.calificacion} %
+              <strong>Calificación:</strong> {examData.intento.calificacion || 0} %
             </Typography>
           </Grid>
           <Grid item xs={6} display="flex" alignItems="center">

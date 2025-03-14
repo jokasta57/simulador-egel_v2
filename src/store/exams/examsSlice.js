@@ -163,6 +163,9 @@ export const examsSlice = createSlice({
         resetCurrentAttempt: (state) => {
             state.currentAttempt = {};
         },
+        resetCurrentExam: (state) => {
+            state.currentExam = {};
+        },
         resetExams: (state) => {
             state.exams = [];
         },
@@ -210,5 +213,6 @@ export const {
     resetRemainingTime,
     setRemainingTime,
     resetCurrentAttempt,
+    resetCurrentExam,
     resetExams
 } = examsSlice.actions;  

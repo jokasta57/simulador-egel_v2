@@ -32,7 +32,7 @@ export const useExamsStore = () => {
     const handleLoadExams = useCallback(async (carrera) => {
         dispatch(loadExamsStart());
         try {
-            const response = await adminApi.get(`/exams?carrera=${carrera}`);
+            const response = await adminApi.get(`/exams?carreras=${carrera}`);
             dispatch(loadExams(response.data.examenes));
             return response.data;
         } catch (err) {
@@ -43,11 +43,11 @@ export const useExamsStore = () => {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
     }, [dispatch]);
-    
+
     const handleNewAttempt = useCallback(async (numero_cuenta, id_examen) => {
         dispatch(setIsLoading());
         try {
-            const response = await simulatorApi.post('/attempt', {numero_cuenta, id_examen});
+            const response = await simulatorApi.post('/attempt', { numero_cuenta, id_examen });
             dispatch(setCurrentAttempt(response.data.intento));
             return response.data.intento;
         } catch (error) {
@@ -70,7 +70,6 @@ export const useExamsStore = () => {
             dispatch(loadExams(response.data.examenes));
             return response.data;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
             throw error;
         } finally {
@@ -101,13 +100,13 @@ export const useExamsStore = () => {
             return response.data;
         } catch (error) {
             let errorMessage = error.response.data.msg || ''; // Si existe data.msg, se toma, si no, queda vacío
-            
+
             // Verificamos si hay errores en los campos
             if (error.response.data.errors && typeof error.response.data.errors === 'object') {
                 for (let field in error.response.data.errors) {
                     if (error.response.data.errors.hasOwnProperty(field)) {
                         const fieldError = error.response.data.errors[field];
-                        
+
                         // Si hay un mensaje en el error del campo, lo agregamos a errorMessage
                         if (fieldError && typeof fieldError === 'object' && fieldError.msg) {
                             errorMessage += ` ${fieldError.msg}`;
@@ -150,7 +149,7 @@ export const useExamsStore = () => {
         try {
             const response = await simulatorApi.get(`/questions/answers/${id_intento}`, {
                 params: {
-                    orden, 
+                    orden,
                     id_examen: examId
                 }
             });
@@ -221,11 +220,11 @@ export const useExamsStore = () => {
                 const formData = new FormData();
                 formData.append("contenido", opcion.contenido);
                 formData.append("es_correcta", opcion.es_correcta);
-            
+
                 if (opcion.imagen_url instanceof File) {
                     formData.append("imagen", opcion.imagen_url); // ✅ Si es archivo, lo agrega a FormData
                 }
-            
+
                 return adminApi.put(`/options/${opcion.id_opcion}`, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
@@ -236,11 +235,11 @@ export const useExamsStore = () => {
                 const formData = new FormData();
                 formData.append("contenido", opcion.contenido);
                 formData.append("es_correcta", opcion.es_correcta);
-            
+
                 if (opcion.imagen_url instanceof File) {
                     formData.append("imagen", opcion.imagen_url);
                 }
-            
+
                 return adminApi.post(`/options`, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                     params: {
@@ -248,7 +247,7 @@ export const useExamsStore = () => {
                     }
                 });
             });
-            
+
 
             // Esperar a que todas las opciones se actualicen o creen
             await Promise.all([...updatePromises, ...createPromises]);
@@ -318,8 +317,8 @@ export const useExamsStore = () => {
             dispatch(setError(error.response?.data.msg || 'Error al agregar pregunta'));
             throw error;
         } finally {
-        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
-    }
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
     }, [dispatch]);
 
     const handleDeleteQuestion = useCallback(async (id_pregunta) => {
@@ -327,7 +326,7 @@ export const useExamsStore = () => {
         try {
             const preguntaResp = await adminApi.get(`/questions/id/${id_pregunta}`);
 
-            const {opcion} = preguntaResp.data.pregunta;
+            const { opcion } = preguntaResp.data.pregunta;
 
             // Mapear las opciones para procesarlas individualmente
             const deleteOptions = opcion.map(async (opcionEliminar) => {
@@ -347,7 +346,7 @@ export const useExamsStore = () => {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
     }, [dispatch]);
-    
+
     const handleDeleteOption = useCallback(async (id_opcion, id_pregunta) => {
         dispatch(updateQuestionStart());
         try {
@@ -418,7 +417,7 @@ export const useExamsStore = () => {
             });
             return response.data.examen;
         } catch (error) {
-            let errorMessage = error.response?.data.msg || 'Error en el cambio de estado' 
+            let errorMessage = error.response?.data.msg || 'Error en el cambio de estado'
             dispatch(setError(error.response?.data.msg || 'Error al eliminar pregunta'));
             throw errorMessage;
         } finally {
@@ -429,7 +428,7 @@ export const useExamsStore = () => {
     const handleSaveAnswer = useCallback(async (id_intento, id_opcion) => {
         dispatch(setIsLoading());
         try {
-            const response = await simulatorApi.post(`/answers`, {id_intento, id_opcion});
+            const response = await simulatorApi.post(`/answers`, { id_intento, id_opcion });
 
             return response.data.respuesta;
         } catch (error) {
@@ -437,14 +436,14 @@ export const useExamsStore = () => {
             dispatch(setError(error.response?.data.msg || 'Error al agregar pregunta'));
             throw error;
         } finally {
-        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
-    }
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
     }, [dispatch]);
-    
+
     const handleUpdateAnswer = useCallback(async (id_respuesta, id_opcion) => {
         dispatch(setIsLoading());
         try {
-            const response = await simulatorApi.put(`/answers/${id_respuesta}`, {id_opcion});
+            const response = await simulatorApi.put(`/answers/${id_respuesta}`, { id_opcion });
 
             return response.data.respuesta;
         } catch (error) {
@@ -452,10 +451,10 @@ export const useExamsStore = () => {
             dispatch(setError(error.response?.data.msg || 'Error al agregar pregunta'));
             throw error;
         } finally {
-        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
-    }
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
     }, [dispatch]);
-    
+
     //Obteiene el resultado del examen
     const handleGetResultsAttempt = useCallback(async (id_intento) => {
         dispatch(setIsLoading());
@@ -465,14 +464,13 @@ export const useExamsStore = () => {
             return response.data;
 
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al cargar el resultado'));
             throw error;
         } finally {
-        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
-    }
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
     }, [dispatch]);
-    
+
     const handleReviewAttempt = useCallback(async (id_intento, page, limit) => {
         dispatch(setIsLoading());
         try {
@@ -485,10 +483,10 @@ export const useExamsStore = () => {
             dispatch(setError(error.response?.data.msg || 'Error al cargar la revision'));
             throw error;
         } finally {
-        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
-    }
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
     }, [dispatch]);
-    
+
     const handlePanelQuestions = useCallback(async (id_intento) => {
         dispatch(setIsLoading());
         try {
@@ -501,8 +499,8 @@ export const useExamsStore = () => {
             dispatch(setError(error.response?.data.msg || 'Error al cargar la revision'));
             throw error;
         } finally {
-        dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
-    }
+            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+        }
     }, [dispatch]);
 
     const handleClearError = useCallback(() => {
@@ -535,14 +533,14 @@ export const useExamsStore = () => {
         handleLoadQuestionsByExam,
         handleUpdateQuestion,
         handleResetCurrentQuestion,
-        handleAddNewQuestion, 
-        handleLoadExamsByCareer, 
+        handleAddNewQuestion,
+        handleLoadExamsByCareer,
         handleDeleteQuestion,
         handleSwitchState,
         handleNewAttempt,
-        handleSaveAnswer, 
+        handleSaveAnswer,
         handleLoadQuestionAndAnswer,
-        handleUpdateAnswer, 
+        handleUpdateAnswer,
         handleGetResultsAttempt,
         handleReviewAttempt,
         handlePanelQuestions,

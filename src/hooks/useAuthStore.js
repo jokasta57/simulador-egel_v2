@@ -57,10 +57,10 @@ export const useAuthStore = () => {
     };
 
 
-    const startRegisterStudent = async ({ nombre, apellido_paterno, email, numero_cuenta, carrera, semestre, grupo, ciclo_escolar, nip }) => {
+    const startRegisterStudent = async ({ nombre, apellido_paterno, apellido_materno, email, numero_cuenta, carrera, semestre, grupo, ciclo_escolar, nip }) => {
         dispatch(onChecking());
         try {
-            const { data } = await simulatorApi.post('/students', { nombre, apellido_paterno, email, numero_cuenta, carrera, semestre, grupo, ciclo_escolar, nip });
+            const { data } = await simulatorApi.post('/students', { nombre, apellido_paterno, apellido_materno, email, numero_cuenta, carrera, semestre, grupo, ciclo_escolar, nip });
             const { estudiante } = data;
             localStorage.setItem('token', data.token);
             //Esto es para hacer calculos de lo que dqeuda del token 

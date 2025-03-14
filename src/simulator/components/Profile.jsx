@@ -1,35 +1,21 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
+import { useSelector } from "react-redux"
+import { useForm, Controller } from "react-hook-form"
 import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Avatar,
-  Divider,
-  useTheme,
-  IconButton,
-  TextField,
-  Button,
-  Alert,
-  Snackbar,
-  MenuItem,
-  CircularProgress,
+  Box, Typography, Card, CardContent, Grid, Avatar, Divider,
+  useTheme, IconButton, TextField, Button, Alert, Snackbar,
+  MenuItem, CircularProgress
 } from "@mui/material"
 import {
-  School as SchoolIcon,
-  Email as EmailIcon,
-  Group as GroupIcon,
-  CalendarToday as CalendarIcon,
-  Edit as EditIcon,
+  School as SchoolIcon, Email as EmailIcon, Group as GroupIcon,
+  CalendarToday as CalendarIcon, Edit as EditIcon
 } from "@mui/icons-material"
 import { useAuthStore } from "../../hooks/useAuthStore"
-import { useSelector } from "react-redux"
 import { LoadingSpinner } from "./LoadingSpinner"
-import { useForm, Controller } from "react-hook-form"
 
+// Estado inicial del formulario
 const initialFormData = {
   nombre: "",
   apellido_paterno: "",
@@ -43,19 +29,19 @@ const initialFormData = {
 
 export const Profile = () => {
   const theme = useTheme()
-  const [isEditing, setIsEditing] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const inputRef = useRef(null)
+  const inputRef = useRef(null) // Referencia a los inputs
 
+  // Estado global del usuario
   const { user } = useSelector((state) => state.auth)
-  const [studentData, setStudentData] = useState(initialFormData)
-  
-  const { control, handleSubmit, reset } = useForm({
-    defaultValues: initialFormData
-  })
 
+  // Estados locales
+  const [isEditing, setIsEditing] = useState(false) // Modo edición
+  const [success, setSuccess] = useState(false) // Mensaje de éxito
+  const [isLoading, setIsLoading] = useState(true) // Carga de datos
+  const [error, setError] = useState(null) // Manejo de errores
+  const [studentData, setStudentData] = useState(initialFormData) // Datos del usuario
+
+  // Opciones de carrera
   const carreras = [
     "Ingeniería de Software",
     "Medicina",
@@ -63,57 +49,69 @@ export const Profile = () => {
     "Enfermería",
   ]
 
+  // Métodos personalizados para autenticación
   const { getUserInfo, updateInfoStudent } = useAuthStore()
 
+  // Configuración de react-hook-form
+  const { control, handleSubmit, reset } = useForm({
+    defaultValues: initialFormData
+  })
+
+  /** Obtiene la información del usuario al cargar el componente o cuando cambia el usuario */
   useEffect(() => {
     handleUserInfo()
   }, [user])
 
+  /** Restaura el formulario cuando cambian los datos del estudiante */
   useEffect(() => {
-    // Reset form with student data when it's loaded
     if (studentData) {
       reset(studentData)
     }
   }, [studentData, reset])
 
+  /** Función para obtener la información del usuario */
   const handleUserInfo = async () => {
     try {
       setIsLoading(true)
       setError(null)
       const data = await getUserInfo(user.numero_cuenta)
+
+      // Limpia valores nulos o indefinidos
       const sanitizedData = Object.fromEntries(
         Object.entries(data).map(([key, value]) => [key, value ?? ""])
       )
+
       setStudentData(sanitizedData)
-      reset(sanitizedData) // Reset form with the fetched data
+      reset(sanitizedData)
     } catch (error) {
-      console.error("Error al obtener la información del usuario:", error)
-      setError("No se pudo cargar la información del usuario. Por favor, intente de nuevo más tarde.")
+      setError("No se pudo cargar la información del usuario. Intente de nuevo más tarde.")
     } finally {
       setIsLoading(false)
     }
   }
 
+  /** Manejo del envío del formulario */
   const onSubmit = async (formData) => {
+    setIsLoading(true)
     try {
-      setIsLoading(true)
       await updateInfoStudent(user.numero_cuenta, formData)
       setStudentData(formData)
       setIsEditing(false)
-      setSuccess('Cambios guardados exitosamente')
+      setSuccess("Cambios guardados exitosamente")
     } catch (error) {
-      console.error("Error al actualizar la información del usuario:", error)
       setError(error)
     } finally {
       setIsLoading(false)
     }
   }
 
+  /** Cierra los mensajes de éxito o error */
   const handleCloseSnackbar = () => {
-    setSuccess('')
-    setError('')
+    setSuccess("")
+    setError("")
   }
 
+  /** Componente reutilizable para mostrar o editar información del usuario */
   const InfoField = ({ icon, label, field, value, options }) => (
     <Box sx={{ display: "flex", alignItems: "start", mb: 2 }}>
       {icon}
@@ -173,6 +171,7 @@ export const Profile = () => {
     </Box>
   )
 
+  // Muestra un spinner mientras se cargan los datos
   if (isLoading) return <LoadingSpinner />
 
   return (
@@ -363,7 +362,8 @@ export const Profile = () => {
           </Grid>
         </Grid>
       </form>
-
+      
+      {/* Notificacion de error o exito */}
       <Snackbar
         open={Boolean(error || success)}
         autoHideDuration={6000}

@@ -99,6 +99,7 @@ export const useExamsStore = () => {
             dispatch(updateExamSuccess(response.data.examen));
             return response.data;
         } catch (error) {
+            console.log(error.response);
             let errorMessage = error.response.data.msg || ''; // Si existe data.msg, se toma, si no, queda vacío
 
             // Verificamos si hay errores en los campos
@@ -115,7 +116,7 @@ export const useExamsStore = () => {
                 }
             }
             dispatch(updateExamFailure(errorMessage || 'Error al actualizar el examen'));
-            throw errorMessage;
+            throw error.response;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
@@ -186,7 +187,6 @@ export const useExamsStore = () => {
         dispatch(updateQuestionStart());
         try {
             const formData = new FormData();
-            console.log(updateData);
 
             // Añadir el contenido de la pregunta
             formData.append("contenido", updateData.contenido);
@@ -262,10 +262,15 @@ export const useExamsStore = () => {
         } catch (error) {
             let errorMessage = "Error al actualizar la pregunta";
             if (error.response?.data) {
-                errorMessage = error.response.data.msg || JSON.stringify(error.response.data);
+                errorMessage = error.response.data.msg || JSON.stringify(error.response.data.msg);
             }
-            dispatch(setError({ message: errorMessage, type: 'error' }));
-            throw error;
+            if (error.response?.data?.errors) {
+                console.log('ejej');
+                errorMessage = Object.values(error.response.data.errors)
+                .map(err => (typeof err.msg === "string" ? err.msg : JSON.stringify(err))) // 🔹 Asegurar que es string
+                .join(", ");
+              }
+            throw errorMessage;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
@@ -313,9 +318,9 @@ export const useExamsStore = () => {
 
             return response.data.preguntas;
         } catch (error) {
-            console.log(error);
-            dispatch(setError(error.response?.data.msg || 'Error al agregar pregunta'));
-            throw error;
+            let errorMessage = error.response?.data.msg || 'Error al agregar pregunta';
+            dispatch(setError(errorMessage));
+            throw errorMessage;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
@@ -516,36 +521,25 @@ export const useExamsStore = () => {
     }, [dispatch])
 
     return {
-        exams,
-        currentExam,
-        isLoading,
-        error,
-        success,
-        setError,
-        clearError,
-        resetExams,
-        handleLoadExams,
-        handleLoadExam,
-        handleUpdateExam,
-        handleClearError,
-        handleClearSuccess,
-        handleLoadQuestion,
-        handleLoadQuestionsByExam,
-        handleUpdateQuestion,
-        handleResetCurrentQuestion,
-        handleAddNewQuestion,
-        handleLoadExamsByCareer,
-        handleDeleteQuestion,
-        handleSwitchState,
-        handleNewAttempt,
-        handleSaveAnswer,
-        handleLoadQuestionAndAnswer,
-        handleUpdateAnswer,
-        handleGetResultsAttempt,
-        handleReviewAttempt,
-        handlePanelQuestions,
-        handleDeleteOption,
-        handleDeleteOptionImage,
-        handleDeleteQuestionImage
+        // Estados principales
+        exams, currentExam, isLoading, error, success,
+    
+        // Manejo de errores y estado
+        setError, clearError, resetExams, handleClearError, handleClearSuccess,
+    
+        // Gestión de exámenes
+        handleLoadExams, handleLoadExamsByCareer, handleLoadExam, handleUpdateExam, handleSwitchState,
+    
+        // Gestión de preguntas
+        handleLoadQuestion, handleLoadQuestionsByExam, handleUpdateQuestion, 
+        handleResetCurrentQuestion, handleAddNewQuestion, handleDeleteQuestion, handlePanelQuestions,
+    
+        // Gestión de respuestas e intentos
+        handleNewAttempt, handleSaveAnswer, handleLoadQuestionAndAnswer, 
+        handleUpdateAnswer, handleGetResultsAttempt, handleReviewAttempt,
+    
+        // Eliminación de opciones e imágenes
+        handleDeleteOption, handleDeleteOptionImage, handleDeleteQuestionImage
     };
+    
 };

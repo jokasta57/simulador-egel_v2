@@ -142,6 +142,7 @@ export const Statistics = () => {
   }
 
   useEffect(() => {
+
     const loadData = async () => {
       setIsLoading(true);
       try {
@@ -168,6 +169,7 @@ export const Statistics = () => {
   }, []); // Solo se ejecuta una vez al montar el componente
 
   useEffect(() => {
+    if (!selectedExam) return; // Evita ejecutar si selectedExam está vacío
     const loadPerformanceData = async () => {
       setIsLoading(true);
       try {

@@ -28,11 +28,13 @@ export const ExamList = () => {
   const { user } = useSelector((state) => state.auth)
 
   useEffect(() => {
+    if (!user) return;
+
     getExams()
     return () => {
       dispatch(resetExams())
     };
-  }, []) // Added handleLoadExams to dependencies
+  }, [user]) // Added handleLoadExams to dependencies
 
 
   const filtrarPorPeriodo = (examen) => {
@@ -97,7 +99,7 @@ export const ExamList = () => {
   const handleToggleState = async (examen) => {
     const { id_examen } = examen;
     setLoadingStates((prev) => ({ ...prev, [id_examen]: true }));
-    
+
     const nuevoEstado = examen.estado === "activo" ? "borrador" : "activo"
     try {
       // ✅ Petición al backend para actualizar estado
@@ -137,7 +139,7 @@ export const ExamList = () => {
     if (error) setError("");
   };
 
-  if (loading) return <LoadingSpinner />
+  if (loading) return <LoadingSpinner message="Cargando exámenes..." />
 
 
   return (
@@ -161,6 +163,8 @@ export const ExamList = () => {
           Exámenes EGEL de {user.carrera}
         </Typography>
         <Button
+          component={Link} // Usa Link de React Router
+          to={'/admin/crear-examen'} // Ruta destino
           variant="contained"
           startIcon={<AddIcon />}
           sx={{

@@ -38,6 +38,7 @@ import Swal from "sweetalert2"
 import QuestionPanel from "./QuestionPanel"
 import { resetNewExamInfo } from "../../store"
 import { ArrowLeft } from "lucide-react"
+import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 const generatePeriodOptions = () => {
   const currentYear = new Date().getFullYear()
@@ -58,7 +59,6 @@ export const CreateExam = () => {
   const {
     handleUpdateExam,
     handleLoadQuestion,
-    isLoading,
     handleClearError,
     handleClearSuccess,
     handleUpdateQuestion,
@@ -79,6 +79,7 @@ export const CreateExam = () => {
     estado: "borrador",
   })
 
+  
   const [isExamInfoEditable, setIsExamInfoEditable] = useState(true)
   const [isDirty, setIsDirty] = useState(false)
   const [isExamCreated, setIsExamCreated] = useState(false)
@@ -86,19 +87,26 @@ export const CreateExam = () => {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [lastSaved, setLastSaved] = useState(null)
-
-
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState("Cargando...")
+  
+  
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const { totalQuestions, currentOrder, preguntaNueva, currentQuestion } = useSelector((state) => state.exams)
+  const { totalQuestions, currentOrder, preguntaNueva, currentQuestion, currentExam } = useSelector((state) => state.exams)
   const { newExamInfo } = useSelector((state) => state.createExam)
   const { user } = useSelector(state => state.auth)
-
+  
+  useEffect(() => {
+    if(!user) return;
+    setExamInfo((prev) => ({ ...prev, carrera: user.carrera }))
+  }, [user])
+  
   const handleCloseSnackbar = () => {
     setError(null)
     setSuccess(null)
     if (isLoading) {
-      dispatch(setIsLoadingFalse())
+      setIsLoading(false)
     }
   }
 
@@ -152,9 +160,9 @@ export const CreateExam = () => {
         return
       }
 
-      dispatch(setIsLoadingFalse(true))
+      setIsLoading(true)
+      setLoadingMessage('Guardando examen...')
       try {
-        console.log(examInfo);
         let examen
         if (newExamInfo.id_examen) {
           // Si ya existe un ID de examen, actualizar con PUT
@@ -179,9 +187,11 @@ export const CreateExam = () => {
         setIsDirty(false)
       } catch (error) {
         console.error(error)
-        setError("Error al guardar la información del examen")
+        setError(error || "Error al guardar la información del examen")
       } finally {
-        dispatch(setIsLoadingFalse(false))
+        console.log('object');
+        setIsLoading(false)
+        setLoadingMessage('Cargando...')
       }
     },
     [
@@ -327,6 +337,8 @@ export const CreateExam = () => {
     }
   }
 
+    if (isLoading) return <LoadingSpinner message={loadingMessage} />
+
   return (
     <Box
       sx={{
@@ -390,15 +402,17 @@ export const CreateExam = () => {
             />
 
             <Autocomplete
-              value={user.carrera}  // El valor se obtiene de user.carrera
+              value={examInfo.carrera}  // El valor se obtiene de user.carrera
+              onChange={(event, newValue) => setExamInfo((prev) => ({ ...prev, carrera: newValue }))} // Actualiza solo "carrera"
               options={["Ingeniería de Software", "Medicina", "Licenciatura en Administración", "Enfermería"]}
               disableClearable  // No permite limpiar el campo manualmente
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="Carrera"
-                  value={user.carrera}  // Muestra el valor de user.carrera
-                  inputProps={{ ...params.inputProps, readOnly: true }} // Hace que el campo sea de solo lectura
+                  disabled={!isExamInfoEditable}
+                  // value={user.carrera}  // Muestra el valor de user.carrera
+                  inputProps={{ ...params.inputProps}} // Hace que el campo sea de solo lectura
                 />
               )}
               // disabled={true}  // Deshabilita el campo para que no sea editable por el usuario
@@ -440,7 +454,7 @@ export const CreateExam = () => {
               variant="outlined"
               color="error"
               onClick={() => setIsExamInfoEditable(false)} // Función para manejar la cancelación
-              disabled={isLoading || !isExamInfoComplete || !isExamInfoEditable}
+              disabled={isLoading || !isExamInfoEditable || (!currentExam || Object.keys(currentExam).length === 0)}
               sx={{ width: { xs: "100%", sm: "auto" } }}
             >
               Cancelar
@@ -448,7 +462,8 @@ export const CreateExam = () => {
             <Button
               type="submit"
               variant="contained"
-              disabled={isLoading || !isExamInfoComplete || !isExamInfoEditable}
+              // disabled={isLoading || !isExamInfoComplete || !isExamInfoEditable}
+              disabled={isLoading || !isExamInfoEditable}
               sx={{
                 width: { xs: "100%", sm: "auto" },
               }}

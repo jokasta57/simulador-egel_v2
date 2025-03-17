@@ -130,34 +130,35 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
       let response;
       if (localQuestion.id_pregunta) {
         // Si ya existe, actualizar con PUT
-        response = await handleUpdateQuestion(preguntaFiltrada);
+        try {
+          response = await handleUpdateQuestion(preguntaFiltrada);
+        } catch (error) {
+          setSnackbarMessage("❌ Error al actualizar la pregunta");
+        }
       } else {
         const examId = currentExam?.id_examen || newExamInfo?.id_examen;
-        // Si no, usar POST
         if (examId) {
-          response = await handleAddNewQuestion(preguntaFiltrada, examId, preguntaNueva.orden);
+          try {
+            response = await handleAddNewQuestion(preguntaFiltrada, examId, preguntaNueva.orden);
+          } catch (error) {
+            setSnackbarMessage("❌ ", error);
+          }
         } else {
-          console.error("No se pudo determinar el ID del examen.");
+          setSnackbarMessage("❌ El examen no existe o ha sido eliminado");
+          return;
         }
       }
       // await handleSaveQuestion()
+      console.log(response);
       setIsSaved(true);
       setSnackbarMessage(response?.msg || "Pregunta guardada con éxito ✅");
       setShowSnackbar(true);
       setIsDirty(false)
       // Aquí puedes manejar el éxito del guardado, por ejemplo, mostrando un mensaje
     } catch (error) {
-      console.log(error);
-      let errorMessage = "❌ Error al guardar la pregunta";
-
-      if (error.response?.data?.errors) {
-        errorMessage = Object.values(error.response.data.errors)
-          .map(err => (typeof err.msg === "string" ? err.msg : JSON.stringify(err))) // 🔹 Asegurar que es string
-          .join(", ");
-      } else if (typeof error.response?.data?.msg === "string") {
-        errorMessage = error.response.data.msg;
-      }
-      setSnackbarMessage(errorMessage);
+      let errorMessage = error || "❌ Error al guardar la pregunta";
+      console.log(errorMessage);
+      setSnackbarMessage('❌ ' + errorMessage);
       setShowSnackbar(true);
     }
   }, [localQuestion, handleUpdateQuestion])

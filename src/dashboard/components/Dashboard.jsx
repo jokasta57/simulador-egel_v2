@@ -43,6 +43,7 @@ export const Dashboard = () => {
   const { user } = useSelector(state => state.auth)
 
   useEffect(() => {
+    if(!user) return;
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -59,7 +60,7 @@ export const Dashboard = () => {
     };
 
     fetchData();
-  }, [])
+  }, [user])
 
   const getPercentagesByDate = async () => {
     try {

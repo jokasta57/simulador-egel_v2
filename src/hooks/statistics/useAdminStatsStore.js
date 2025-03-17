@@ -61,8 +61,16 @@ export const useAdminStatsStore = () => {
     }, [dispatch]);
 
     const handleSummaryAndGrades = useCallback(async (id_examen, fechaInicio, fechaFin) => {
+        // Construir la URL sin parámetros vacíos
+        let url = `/admin-dashboard/calificaciones-resumen/${id_examen}`;
+        const params = new URLSearchParams();
+
+        if (fechaInicio) params.append("fechaInicio", fechaInicio);
+        if (fechaFin) params.append("fechaFin", fechaFin);
+
+        if (params.toString()) url += `?${params.toString()}`;
         try {
-            const { data } = await adminApi.get(`/admin-dashboard/calificaciones-resumen/${id_examen}?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
+            const { data } = await adminApi.get(url);
 
             return data;
 

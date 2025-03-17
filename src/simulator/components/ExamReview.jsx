@@ -116,7 +116,7 @@ export const ExamReview = () => {
       <Button
         variant="outlined"
         startIcon={<ArrowLeft />}
-        onClick={() => navigate(-1)}
+        onClick={() => navigate('/student/resultados')}
         sx={{ mb: 3, borderRadius: "8px" }}
       >
         Regresar

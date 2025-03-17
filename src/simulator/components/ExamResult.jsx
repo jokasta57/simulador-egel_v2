@@ -11,14 +11,15 @@ import { resetCurrentAttempt } from "../../store"
 import { clearErrorMessage, setError } from "../../store/auth/authSlice"; // Importamos la acción para limpiar el error
 
 export const ExamResult = () => {
+  const { currentAttempt, error } = useSelector((state) => state.exams); // Obtiene el intento actual del estado global
+  const { handleGetResultsAttempt } = useExamsStore(); // Función para obtener los resultados del intento
   const { id } = useParams(); // Obtiene el parámetro "id" desde la URL
   const [examData, setExamData] = useState({}); // Almacena los datos del examen
   const [isLoading, setIsLoading] = useState(false); // Indica si los datos están cargando
+  const [idIntento, setIdIntento] = useState(currentAttempt.id_intento); // Indica si los datos están cargando
   const navigate = useNavigate(); // Hook para navegación
   const dispatch = useDispatch(); // Hook para manejar acciones de Redux
 
-  const { currentAttempt, error } = useSelector((state) => state.exams); // Obtiene el intento actual del estado global
-  const { handleGetResultsAttempt } = useExamsStore(); // Función para obtener los resultados del intento
 
   // 🔹 Manejo del botón de retroceso del navegador para evitar que el usuario regrese
   useEffect(() => {
@@ -36,11 +37,10 @@ export const ExamResult = () => {
 
   // 🔹 Obtiene los resultados del intento actual al cargar el componente
   useEffect(() => {
-    getResults(currentAttempt.id_intento);
-
-    return () => {
-      dispatch(resetCurrentAttempt()); // Resetea el intento actual al desmontar el componente
-    };
+    getResults(idIntento);
+    // return () => {
+    //   dispatch(resetCurrentAttempt()); // Resetea el intento actual al desmontar el componente
+    // };
   }, []);
 
   // 🔹 Función para obtener los resultados del examen
@@ -168,7 +168,7 @@ export const ExamResult = () => {
           </Paper>
 
           <Box sx={{ mt: 4 }}>
-            <Button component={Link} to={`/student/exams/${currentAttempt.id_intento}/review`} variant="contained" sx={{ backgroundColor: "#4caf50", color: "white", "&:hover": { backgroundColor: "#388e3c" } }}>
+            <Button component={Link} to={`/student/exams/${idIntento}/review`} variant="contained" sx={{ backgroundColor: "#4caf50", color: "white", "&:hover": { backgroundColor: "#388e3c" } }}>
               Ver Revisión
             </Button>
           </Box>

@@ -22,7 +22,7 @@ import EditIcon from "@mui/icons-material/Edit"
 import { QuestionCard } from "./QuestionCard"
 import { FloatingAddButton } from "./FloatingAddButton"
 import { useDispatch, useSelector } from "react-redux"
-import { addNewQuestionTemp, resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setIsLoadingFalse, setPreguntaNueva, setTotalQuestions } from "../../store/exams/examsSlice"
+import { addNewQuestionTemp, resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setIsLoadingFalse, setPreguntaNueva, setTotalQuestions, resetCurrentExam } from "../../store/exams/examsSlice"
 import Swal from "sweetalert2"
 import QuestionPanel from "./QuestionPanel"
 import { ArrowLeft } from "lucide-react"
@@ -141,6 +141,17 @@ export const ExamEdit = () => {
         }
       } catch (error) {
         console.error("Error loading exam:", error)
+        if (error?.response.status === 404) {
+          Swal.fire({
+            title: "Examen no encontrado",
+            text: "El examen que intentas acceder no existe o ha sido eliminado.",
+            icon: "error",
+            confirmButtonText: "Volver",
+            confirmButtonColor: "#d33",
+          }).then(() => {
+            navigate(-1);
+          });
+        }
       } finally {
         setIsInitialLoading(false)
         setIsExamInfoEditable(false)
@@ -158,16 +169,17 @@ export const ExamEdit = () => {
       dispatch(resetCurrentOrder())
       dispatch(resetTotalQuestions())
       dispatch(resetPreguntaNueva())
+      dispatch(resetCurrentExam())
     }
   }, [handleResetCurrentQuestion])
 
 
 
   useEffect(() => {
-    if (!currentQuestion || !currentQuestion?.opcion || currentQuestion.opcion.length === 0){
+    if (!currentQuestion || !currentQuestion?.opcion || currentQuestion.opcion.length === 0) {
       setHasCorrectOption(false);
       return;
-    } 
+    }
 
     const correctOptionExists = currentQuestion.opcion.some(opcion => opcion.es_correcta);
 
@@ -225,8 +237,6 @@ export const ExamEdit = () => {
 
   const onSubmit = async (data) => {
     // if (!isExamInfoComplete) return
-
-    console.log(data, 'info');
     try {
       await handleUpdateExam(id, data)
       setIsExamInfoEditable(false)
@@ -234,8 +244,17 @@ export const ExamEdit = () => {
         await handleLoadQuestion(id, currentOrder) // Recargar la pregunta actual después de guardar el examen
       }
     } catch (error) {
-      console.log('error');
-      console.error(error)
+      if (error?.status === 404) {
+        Swal.fire({
+          title: "Examen no encontrado",
+          text: "El examen que intentas acceder no existe o ha sido eliminado.",
+          icon: "error",
+          confirmButtonText: "Volver",
+          confirmButtonColor: "#d33",
+        }).then(() => {
+          navigate(-1);
+        });
+      }
     }
   }
 
@@ -324,7 +343,7 @@ export const ExamEdit = () => {
 
   if (isInitialLoading) return <LoadingSpinner />
 
-  
+
   return (
     <Box
       sx={{
@@ -382,7 +401,7 @@ export const ExamEdit = () => {
                     onChange(newValue)
                   }}
                   options={generatePeriodOptions()}
-                  renderInput={(params) => <TextField {...params} label="Periodo"/>}
+                  renderInput={(params) => <TextField {...params} label="Periodo" />}
                   disabled={!isExamInfoEditable}
                 />
               )}

@@ -170,8 +170,8 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
                   bgcolor: "white",
                   boxShadow: 24,
                   p: 2,
-                  maxWidth: "90vw",
-                  maxHeight: "90vh",
+                  maxWidth: "95vw",
+                  maxHeight: "95vh",
                   overflow: "hidden",
                   display: "flex",
                   justifyContent: "center",
@@ -193,6 +193,9 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
                     maxWidth: "100%",
                     maxHeight: "80vh",
                     objectFit: "contain",
+                    width: "auto", // No limitar el ancho
+                    height: "auto", // Mantener proporciones
+                    objectFit: "contain", // Evitar recortes
                   }}
                 />
               </Box>
@@ -218,14 +221,25 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
           >
             <RadioGroup value={selectedValue} onChange={handleRadioChange}>
               {currentQuestion.opcion.map((option) => (
-                <Box key={option.id_opcion} display="flex" alignItems="center" mb={2}>
+                <Box
+                  key={option.id_opcion}
+                  display="flex"
+                  alignItems="center"
+                  mb={2}  // Aumentar margen entre opciones
+                >
                   <FormControlLabel
                     value={option.id_opcion.toString()}
                     control={<Radio />}
                     label=""
                     sx={{ marginRight: "8px" }}
                   />
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 350, fontSize: "1rem", lineHeight: 1.4, wordBreak: "break-word" }}
+                    >
+                      {option.contenido}
+                    </Typography>
                     {option.imagen_url && (
                       <img
                         src={option.imagen_url || "/placeholder.svg"}
@@ -240,13 +254,9 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
                         onClick={() => handleOpenOptionImage(option.imagen_url)}
                       />
                     )}
-                    <Typography variant="subtitle1" sx={{ fontWeight: 350, fontSize: "1rem" }}>
-                      {option.contenido}
-                    </Typography>
                   </Box>
                 </Box>
               ))}
-
               {/* Modal de opciones */}
               <Modal open={openOptionModal} onClose={handleCloseModals}>
                 <Box
@@ -283,6 +293,8 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
                 </Box>
               </Modal>
             </RadioGroup>
+
+
           </Box>
         </Box>
       </Box>

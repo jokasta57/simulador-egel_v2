@@ -30,9 +30,9 @@ export const useCreateExamStore = () => {
 
             return response.data.examen;
         } catch (err) {
-            console.log(err);
-            dispatch(saveExamInfoFailure(err.response?.data || 'Error al guardar la información del examen'));
-            throw err;
+            let errorMessage = err.response?.data.msg || 'Error al guardar la información del examen';
+            dispatch(saveExamInfoFailure(errorMessage));
+            throw errorMessage;
         }
     }, [dispatch]);
 

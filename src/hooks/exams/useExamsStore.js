@@ -257,19 +257,14 @@ export const useExamsStore = () => {
             const response = await adminApi.get(`/questions/id/${updateData.id_pregunta}`);
             dispatch(updateQuestion(response.data.pregunta))
 
-
-            return response.data.preguntas;
+            return response.data;
         } catch (error) {
-            let errorMessage = "Error al actualizar la pregunta";
-            if (error.response?.data) {
-                errorMessage = error.response.data.msg || JSON.stringify(error.response.data.msg);
-            }
+            let errorMessage = error?.response?.data.msg || JSON.stringify(error.response.data.msg) || "Error al actualizar la pregunta";
             if (error.response?.data?.errors) {
-                console.log('ejej');
                 errorMessage = Object.values(error.response.data.errors)
-                .map(err => (typeof err.msg === "string" ? err.msg : JSON.stringify(err))) // 🔹 Asegurar que es string
-                .join(", ");
-              }
+                    .map(err => (typeof err.msg === "string" ? err.msg : JSON.stringify(err))) // 🔹 Asegurar que es string
+                    .join(", ");
+            }
             throw errorMessage;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
@@ -279,52 +274,89 @@ export const useExamsStore = () => {
     const handleAddNewQuestion = useCallback(async (data, examId, orden) => {
         dispatch(addNewQuestionStart());
         try {
-            const questionData = await adminApi.post(`/questions`, data, {
+            // Crear FormData para la pregunta
+            const formData = new FormData();
+            formData.append("contenido", data.contenido);
+
+            // Si la pregunta tiene imagen y es un archivo, agregarla
+            if (data.imagen instanceof File) {
+                formData.append("imagen", data.imagen);
+            }
+
+            const questionData = await adminApi.post(`/questions`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
                 params: {
                     id_examen: examId,
                     orden,
-                }
+                },
             });
 
             const { pregunta } = questionData.data;
 
+            // Filtrar opciones válidas: deben tener texto o imagen
+            const opcionesValidas = data.opcion.filter(op =>
+                (op.contenido && op.contenido.trim() !== "") || op.imagen_url
+            );
+
+            if (opcionesValidas.length < 2) {
+                throw new Error("Debe haber al menos 2 opciones válidas con texto o imagen.");
+            }
+
             // Mapear las opciones para procesarlas individualmente
-            const newOptions = data.opcion.map(async (opcion) => {
-                await adminApi.post(`/options`, opcion, {
+            const newOptions = opcionesValidas.map(async (opcion) => {
+                const optionFormData = new FormData();
+                optionFormData.append("contenido", opcion.contenido ?? '');
+                optionFormData.append("es_correcta", opcion.es_correcta);
+
+                // Si la opción tiene imagen y es un archivo, agregarla
+                if (opcion.imagen_url instanceof File) {
+                    optionFormData.append("imagen", opcion.imagen_url);
+                }
+
+                // Convertir FormData a un objeto imprimible
+                const formDataObject = {};
+                optionFormData.forEach((value, key) => {
+                    formDataObject[key] = value;
+                });
+
+                // Imprimir en la consola
+                console.log("FormData como objeto:", formDataObject);
+
+
+                return adminApi.post(`/options`, optionFormData, {
                     headers: {
-                        "Content-Type": "application/json",
+                        "Content-Type": "multipart/form-data",
                     },
                     params: {
-                        id_pregunta: pregunta.id_pregunta
-                    }
+                        id_pregunta: pregunta.id_pregunta,
+                    },
                 });
             });
 
-            // Esperar a que todas las opciones se actualicen
+            // Esperar a que todas las opciones se agreguen
             await Promise.all(newOptions);
 
             const response = await adminApi.get(`/questions/orden`, {
                 params: {
                     orden,
                     id_examen: examId,
-                }
+                },
             });
 
             dispatch(addNewQuestion(response.data.pregunta));
-
-
             return response.data.preguntas;
         } catch (error) {
-            let errorMessage = error.response?.data.msg || 'Error al agregar pregunta';
+            console.log(error);
+            let errorMessage = error.response?.data.msg || error.message || "Error al agregar pregunta";
             dispatch(setError(errorMessage));
             throw errorMessage;
         } finally {
             dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
         }
     }, [dispatch]);
+
 
     const handleDeleteQuestion = useCallback(async (id_pregunta) => {
         dispatch(updateQuestionStart());
@@ -523,23 +555,23 @@ export const useExamsStore = () => {
     return {
         // Estados principales
         exams, currentExam, isLoading, error, success,
-    
+
         // Manejo de errores y estado
         setError, clearError, resetExams, handleClearError, handleClearSuccess,
-    
+
         // Gestión de exámenes
         handleLoadExams, handleLoadExamsByCareer, handleLoadExam, handleUpdateExam, handleSwitchState,
-    
+
         // Gestión de preguntas
-        handleLoadQuestion, handleLoadQuestionsByExam, handleUpdateQuestion, 
+        handleLoadQuestion, handleLoadQuestionsByExam, handleUpdateQuestion,
         handleResetCurrentQuestion, handleAddNewQuestion, handleDeleteQuestion, handlePanelQuestions,
-    
+
         // Gestión de respuestas e intentos
-        handleNewAttempt, handleSaveAnswer, handleLoadQuestionAndAnswer, 
+        handleNewAttempt, handleSaveAnswer, handleLoadQuestionAndAnswer,
         handleUpdateAnswer, handleGetResultsAttempt, handleReviewAttempt,
-    
+
         // Eliminación de opciones e imágenes
         handleDeleteOption, handleDeleteOptionImage, handleDeleteQuestionImage
     };
-    
+
 };

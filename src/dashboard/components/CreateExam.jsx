@@ -79,29 +79,27 @@ export const CreateExam = () => {
     estado: "borrador",
   })
 
-  
+
   const [isExamInfoEditable, setIsExamInfoEditable] = useState(true)
   const [isDirty, setIsDirty] = useState(false)
   const [isExamCreated, setIsExamCreated] = useState(false)
-  const [isExamInfoSaved, setIsExamInfoSaved] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
-  const [lastSaved, setLastSaved] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState("Cargando...")
-  
-  
+
+
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { totalQuestions, currentOrder, preguntaNueva, currentQuestion, currentExam } = useSelector((state) => state.exams)
   const { newExamInfo } = useSelector((state) => state.createExam)
   const { user } = useSelector(state => state.auth)
-  
+
   useEffect(() => {
-    if(!user) return;
+    if (!user) return;
     setExamInfo((prev) => ({ ...prev, carrera: user.carrera }))
   }, [user])
-  
+
   const handleCloseSnackbar = () => {
     setError(null)
     setSuccess(null)
@@ -163,10 +161,11 @@ export const CreateExam = () => {
       setIsLoading(true)
       setLoadingMessage('Guardando examen...')
       try {
-        let examen
+        let examen;
+
         if (newExamInfo.id_examen) {
           // Si ya existe un ID de examen, actualizar con PUT
-          examen = await handleUpdateExam(newExamInfo.id_examen, examInfo)
+          examen = await handleUpdateExam(newExamInfo.id_examen, examInfo);
         } else {
           // Si no existe un ID de examen, crear nuevo con POST
           examen = await handleSaveExamInfo(
@@ -174,22 +173,20 @@ export const CreateExam = () => {
             examInfo.duracion,
             examInfo.carrera,
             examInfo.periodo,
-            examInfo.area,
-          )
+            examInfo.area
+          );
         }
 
-        setIsExamInfoSaved(true)
-        setIsExamInfoEditable(false)
-        setIsExamCreated(true)
-        setSuccess("Información del examen guardada exitosamente")
-        setLastSaved(new Date())
-        // await handleLoadExam(newExamInfo.id_examen)
-        setIsDirty(false)
+        // Si la operación fue exitosa y tenemos un examen válido
+        if (examen) {
+          setIsExamCreated(true);  // Se marca como creado solo si el examen es válido
+          setIsExamInfoEditable(false); // Bloquea la edición después de guardar
+          setSuccess("Información del examen guardada exitosamente");
+          setIsDirty(false); // Marca que no hay cambios pendientes
+        }
       } catch (error) {
-        console.error(error)
         setError(error || "Error al guardar la información del examen")
       } finally {
-        console.log('object');
         setIsLoading(false)
         setLoadingMessage('Cargando...')
       }
@@ -247,7 +244,7 @@ export const CreateExam = () => {
   }, [currentOrder, examInfo.id_examen, preguntaNueva, totalQuestions, dispatch, handleLoadQuestion])
 
   const handleQuestionSelect = async (orden) => {
-    if (preguntaNueva && orden === preguntaNueva.orden) return
+    // if (preguntaNueva && orden === preguntaNueva.orden) return
     try {
       const examId = newExamInfo.id_examen
       if (!examId) throw new Error("No se pudo determinar el ID del examen.")
@@ -337,7 +334,7 @@ export const CreateExam = () => {
     }
   }
 
-    if (isLoading) return <LoadingSpinner message={loadingMessage} />
+  if (isLoading) return <LoadingSpinner message={loadingMessage} />
 
   return (
     <Box
@@ -412,10 +409,10 @@ export const CreateExam = () => {
                   label="Carrera"
                   disabled={!isExamInfoEditable}
                   // value={user.carrera}  // Muestra el valor de user.carrera
-                  inputProps={{ ...params.inputProps}} // Hace que el campo sea de solo lectura
+                  inputProps={{ ...params.inputProps }} // Hace que el campo sea de solo lectura
                 />
               )}
-              // disabled={true}  // Deshabilita el campo para que no sea editable por el usuario
+            // disabled={true}  // Deshabilita el campo para que no sea editable por el usuario
             />
 
             <TextField
@@ -509,6 +506,7 @@ export const CreateExam = () => {
             </Box>
           ) : currentOrder && currentQuestion ? (
             <Box>
+              {currentQuestion.id}
               <QuestionCard
                 key={currentQuestion.id}
                 index={currentOrder - 1}

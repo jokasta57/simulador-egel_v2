@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState, useEffect } from "react"
+import React, { memo, useCallback, useState, useEffect, useRef } from "react"
 import { Card, CardContent, Typography, TextField, Button, Box, CircularProgress, Snackbar, Alert } from "@mui/material"
 import { Delete as DeleteIcon, Save as SaveIcon } from "@mui/icons-material"
 import { OptionList } from "./OptionList"
@@ -18,11 +18,14 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
 
-  const opcionesValidas = localQuestion.opcion?.filter(op =>
-    (op.contenido?.trim() !== "" || op.imagen_url !== null)
-  ) || [];
+
+  // const opcionesValidas = localQuestion.opcion?.filter(op =>
+  //   (op.contenido?.trim() !== "" || op.imagen_url !== null)
+  // ) || [];
 
   const questionToShow = preguntaNueva || currentQuestion;
 
@@ -32,14 +35,21 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
 
   useEffect(() => {
     if (currentQuestion) {
-      setLocalQuestion({
+      setLocalQuestion(prev => ({
         ...currentQuestion,
         imagen_url: currentQuestion.imagen_url || null,
-      });
-      setIsSaved(false); // 🔹 Resetear estado de guardado al cambiar de pregunta
-      setHasAttemptedSave(false); // 🔹 Reiniciar validaciones
+        opcion: currentQuestion.opcion?.length > 0
+          ? currentQuestion.opcion.map(op => ({
+            contenido: op.contenido || "",
+            imagen_url: op.imagen_url || null
+          }))
+          : prev.opcion // No sobrescribir opciones vacías si ya estaban en localQuestion
+      }));
+      setIsSaved(false);
+      setHasAttemptedSave(false);
     }
   }, [currentQuestion]);
+
 
   useEffect(() => {
     return () => {
@@ -58,32 +68,35 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
   const handleImageUpload = useCallback((imageFile) => {
     setLocalQuestion((prev) => ({
       ...prev,
-      imagen_url: imageFile, // ✅ Almacenar correctamente la imagen nueva
+      imagen: imageFile, // ✅ Almacenar correctamente la imagen nueva
     }));
+    console.log(localQuestion);
   }, []);
 
   const handleOptionUpdate = useCallback((opcionIndex, campo, valor) => {
-    setIsDirty(true)
+    setIsDirty(true); // Marcar el formulario como modificado
+
     setLocalQuestion((prev) => {
-      const nuevasOpciones = [...(prev.opcion || [])]
+      const nuevasOpciones = [...(prev.opcion || [])];
+
       if (campo === "add") {
-        nuevasOpciones.push(valor)
+        nuevasOpciones.push(valor);
       } else if (campo === "delete") {
-        nuevasOpciones.splice(opcionIndex, 1)
+        nuevasOpciones.splice(opcionIndex, 1);
       } else if (campo === "update_all") {
-        setIsDirty(false)
-        return { ...prev, opcion: valor }
+        return { ...prev, opcion: valor };
       } else {
-        setIsDirty(false)
-        nuevasOpciones[opcionIndex] = { ...nuevasOpciones[opcionIndex], [campo]: valor }
-        // Si el campo actualizado es previewUrl, mantener isDirty en true
-        if (campo === "previewUrl") {
-          setIsDirty(true);
-        }
+        nuevasOpciones[opcionIndex] = { ...nuevasOpciones[opcionIndex], [campo]: valor };
       }
-      return { ...prev, opcion: nuevasOpciones }
-    })
-  }, [])
+
+      return { ...prev, opcion: nuevasOpciones };
+    });
+
+    // Asegurar que setIsDirty(false) solo se llame después de actualizar el estado
+    if (campo === "update_all" || (campo !== "previewUrl" && campo !== "add" && campo !== "delete")) {
+      setTimeout(() => setIsDirty(false), 0);
+    }
+  }, []);
 
   const handleCorrectAnswerChange = useCallback((opcionIndex) => {
     setIsSaved(false)
@@ -97,26 +110,23 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
 
     // Filtrar opciones para eliminar las vacías antes de enviarlas
     const opcionesNoVacias = localQuestion.opcion?.filter(op =>
-      (op.contenido?.trim() !== "" || op.imagen_url !== null)
+      (op.contenido?.trim() !== "" || op.imagen_url !== null || op.imagen !== null)
     ) || [];
 
     // Validar pregunta y opciones
     if (!localQuestion.contenido || localQuestion.contenido.trim() === "") {
-      setSnackbarMessage("❌ La pregunta no puede estar vacía");
-      setShowSnackbar(true);
+      setError("La pregunta no puede estar vacía");
       return;
     }
 
     if (opcionesNoVacias.length < 2) {
-      setSnackbarMessage("❌ Debes agregar al menos 2 opciones con texto o imagen.");
-      setShowSnackbar(true);
+      setError("Debes agregar al menos 2 opciones con texto o imagen.");
       return;
     }
     // **Verificar si alguna opción está marcada como correcta**
     const tieneOpcionCorrecta = opcionesNoVacias.some(op => op.es_correcta === true);
     if (!tieneOpcionCorrecta) {
-      setSnackbarMessage("❌ Debes seleccionar una opción como respuesta correcta.");
-      setShowSnackbar(true);
+      setError("Debes seleccionar una opción como respuesta correcta.");
       return;
     }
 
@@ -132,40 +142,45 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
         // Si ya existe, actualizar con PUT
         try {
           response = await handleUpdateQuestion(preguntaFiltrada);
+          setIsSaved(true);
+          setIsDirty(false)
         } catch (error) {
-          setSnackbarMessage("❌ Error al actualizar la pregunta");
+          setError(error);
         }
       } else {
         const examId = currentExam?.id_examen || newExamInfo?.id_examen;
         if (examId) {
           try {
+            console.log(preguntaFiltrada);
             response = await handleAddNewQuestion(preguntaFiltrada, examId, preguntaNueva.orden);
+            setSnackbarMessage(response?.msg || "Pregunta guardada con éxito ✅");
+            setIsSaved(true);
+            setIsDirty(false)
           } catch (error) {
-            setSnackbarMessage("❌ ", error);
+            setError(error);
           }
         } else {
-          setSnackbarMessage("❌ El examen no existe o ha sido eliminado");
+          setError("El examen no existe o ha sido eliminado");
           return;
         }
       }
       // await handleSaveQuestion()
-      console.log(response);
-      setIsSaved(true);
-      setSnackbarMessage(response?.msg || "Pregunta guardada con éxito ✅");
-      setShowSnackbar(true);
-      setIsDirty(false)
+      // console.log(response);
+      // setShowSnackbar(true);
       // Aquí puedes manejar el éxito del guardado, por ejemplo, mostrando un mensaje
     } catch (error) {
-      let errorMessage = error || "❌ Error al guardar la pregunta";
-      console.log(errorMessage);
-      setSnackbarMessage('❌ ' + errorMessage);
-      setShowSnackbar(true);
+      setError(error || "❌ Error al guardar la pregunta");
     }
   }, [localQuestion, handleUpdateQuestion])
 
   if (!localQuestion) {
     return null
   }
+
+  const handleCloseSnackbar = useCallback(() => {
+    setError("")
+    setSuccess("")
+  }, [])
 
   if (isLoading) {
     return (
@@ -254,7 +269,7 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
         </Box>
       </CardContent>
       {/* Snackbar para notificaciones */}
-      <Snackbar
+      {/* <Snackbar
         open={showSnackbar}
         autoHideDuration={3000}
         onClose={() => setShowSnackbar(false)}
@@ -265,6 +280,16 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
           variant="filled"
         >
           {snackbarMessage}
+        </Alert>
+      </Snackbar> */}
+      <Snackbar
+        open={Boolean(error || success)}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={error ? "error" : "success"} variant="filled">
+          {error || success}
         </Alert>
       </Snackbar>
     </Card>

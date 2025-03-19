@@ -195,7 +195,7 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
                     objectFit: "contain",
                     width: "auto", // No limitar el ancho
                     height: "auto", // Mantener proporciones
-                    objectFit: "contain", // Evitar recortes
+                    // objectFit: "contain", // Evitar recortes
                   }}
                 />
               </Box>

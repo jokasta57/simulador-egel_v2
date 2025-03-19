@@ -14,7 +14,7 @@ export const FloatingAddButton = ({ onClick, disabled, isDirty }) => {
         zIndex: 1100,
       }}
     >
-      <Tooltip title={disabled ? "Complete la información del examen" : "Agregar Pregunta"} placement="left">
+      <Tooltip title={(disabled || isDirty) ? "Debe guardar la información del examen" : "Agregar Pregunta"} placement="left">
         <span>
           <Fab
             color="primary"

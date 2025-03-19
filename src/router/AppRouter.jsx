@@ -12,7 +12,6 @@ import { StudentRoutes } from '../simulator/routes/StudentRoutes';
 
 export const AppRouter = () => {
     const { isAuthenticated, checkAuthToken, isLoading, user } = useAuthStore();
-    const isExamFinished = false;
 
     useEffect(() => {
         checkAuthToken();

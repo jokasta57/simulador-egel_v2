@@ -26,32 +26,54 @@ export const OptionList = ({
   const { handleDeleteOption, handleDeleteOptionImage } = useExamsStore()
 
   useEffect(() => {
-    setOptions(prevOptions =>
-      opciones.map((opt, index) => {
-        let prevOption = prevOptions[index];
+    if (respuestaCorrecta == null) {
+      return;
+    }
+  }, [])
+
+  useEffect(() => {
+    setOptions(prevOptions => {
+      const nuevasOpciones = opciones.map((opt, index) => {
+        let prevOption = prevOptions[index] || defaultOptions[index] || {
+          contenido: "",
+          imagen_url: null,
+          es_correcta: false,
+          public_id_imagen: null,
+        };
 
         let previewUrl =
           prevOption?.id_opcion === opt.id_opcion
             ? prevOption?.previewUrl ?? opt.imagen_url ?? ""
-            : ""; // Si el ID cambia, se vacía previewUrl
+            : "";
 
-        // Convertir a cadena de manera segura
         if (typeof previewUrl !== "string") {
           previewUrl = "";
         }
 
-        // Si previewUrl comienza con "https", lo vaciamos
         if (previewUrl.startsWith("https")) {
           previewUrl = "";
         }
 
-        return {
-          ...opt,
-          previewUrl
-        };
-      })
-    );
-  }, [opciones]); // Solo ejecuta si `opciones` cambia
+        return { ...opt, previewUrl };
+      });
+
+      // ⚡ Si ya hay opciones enviadas, no agregar opciones vacías
+      if (nuevasOpciones.length === 0) {
+        while (nuevasOpciones.length < 4) {
+          nuevasOpciones.push({
+            contenido: "",
+            imagen_url: null,
+            es_correcta: false,
+            public_id_imagen: null,
+            previewUrl: "",
+          });
+        }
+      }
+
+      return nuevasOpciones;
+    });
+  }, [opciones]);
+
 
 
 
@@ -65,21 +87,43 @@ export const OptionList = ({
     onOptionUpdate(-1, "update_all", newOptions);
   };
 
+  // const handleOptionImageUpload = (event, index) => {
+  //   const file = event.target.files[0];
+  //   if (!file) return;
+
+  //   // Crear URL temporal para la vista previa
+  //   const objectUrl = URL.createObjectURL(file);
+
+  //   // Actualizar solo la opción correspondiente
+  //   setOptions(prevOptions =>
+  //     prevOptions.map((opt, i) =>
+  //       i === index ? { ...opt, previewUrl: objectUrl } : opt
+  //     )
+  //   );
+
+  //   // Actualizar valores en el estado principal
+  //   onOptionUpdate(index, "imagen_url", file);
+  //   onOptionUpdate(index, "previewUrl", objectUrl);
+  // };
+
   const handleOptionImageUpload = (event, index) => {
     const file = event.target.files[0];
     if (!file) return;
-
-    // Crear URL temporal para la vista previa
     const objectUrl = URL.createObjectURL(file);
 
-    // Actualizar solo la opción correspondiente
-    setOptions(prevOptions =>
-      prevOptions.map((opt, i) =>
-        i === index ? { ...opt, previewUrl: objectUrl } : opt
-      )
-    );
+    setOptions(prevOptions => {
+      const newOptions = prevOptions.map((opt, i) =>
+        i === index ? { ...opt, previewUrl: objectUrl, imagen_url: file } : opt
+      );
 
-    // Actualizar valores en el estado principal
+      // Si hay menos de 4 opciones después de la actualización, agregamos las vacías
+      while (newOptions.length < 4) {
+        newOptions.push({ contenido: "", imagen_url: null, es_correcta: false, public_id_imagen: null, previewUrl: "" });
+      }
+
+      return newOptions;
+    });
+
     onOptionUpdate(index, "imagen_url", file);
     onOptionUpdate(index, "previewUrl", objectUrl);
   };
@@ -162,7 +206,7 @@ export const OptionList = ({
           onOptionUpdate(index, "previewUrl", null);
           if (id_opcion !== undefined && id_pregunta !== undefined) {
             await handleDeleteOptionImage(id_opcion, id_pregunta);
-          }          
+          }
         }
       });
     } catch (error) {
@@ -184,7 +228,7 @@ export const OptionList = ({
         overflowY: "auto",  // Permite el desplazamiento en pantallas grandes
         paddingBottom: "20px", // Para evitar que los elementos se salgan de la vista
       }}>
-        <RadioGroup value={respuestaCorrecta} onChange={(e) => onCorrectAnswerChange(Number(e.target.value))}>
+        <RadioGroup value={respuestaCorrecta ?? ''} onChange={(e) => onCorrectAnswerChange(Number(e.target.value))}>
           <Stack spacing={1.5}>
             {options.map((opcion, index) => (
               <Box key={index} sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2 }}>

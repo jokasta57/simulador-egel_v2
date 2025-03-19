@@ -138,7 +138,10 @@ export const AdminProfile = () => {
                                     </Typography>
                                     <Typography variant="body1" color="text.secondary">
                                         {user.role === 'superAdmin' ? 'Super Administrador' : 'Administrador'}
+                                        {user.carrera ? ` de ${user.carrera}` : ''}
                                     </Typography>
+
+
                                 </Box>
                             </Box>
 
@@ -257,16 +260,16 @@ export const AdminProfile = () => {
                     </Card>
                 </Grid>
             </Grid>
-            <Snackbar 
-                open={showSuccess} 
-                autoHideDuration={6000} 
-                onClose={handleCloseSnackbar}         
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} 
+            <Snackbar
+                open={showSuccess}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
                 <Alert onClose={handleCloseSnackbar} severity="success" variant="filled">
                     {success || "NIP actualizado exitosamente"}
                 </Alert>
-            </Snackbar>                    
+            </Snackbar>
         </Box>
     )
 }

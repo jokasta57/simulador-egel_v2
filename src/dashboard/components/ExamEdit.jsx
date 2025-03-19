@@ -64,6 +64,8 @@ export const ExamEdit = () => {
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [isExamInfoEditable, setIsExamInfoEditable] = useState(false)
+  const [localError, setLocalError] = useState("")
+  const [localSuccess, setLocalSuccess] = useState("")
 
   const [isDirty, setIsDirty] = useState(false); // Estado para saber si hay cambios sin guardar
   const [prevTotalQuestions, setPrevTotalQuestions] = useState(0); // ✅ Guardar estado previo
@@ -83,6 +85,8 @@ export const ExamEdit = () => {
 
     if (error) handleClearError();
     if (success) handleClearSuccess();
+    if(localError) setLocalError('')
+    if(localSuccess) setLocalSuccess('')
     if (isLoading) {
       dispatch(setIsLoadingFalse())
     };
@@ -207,7 +211,7 @@ export const ExamEdit = () => {
 
 
   const handleQuestionSelect = async (orden) => {
-    if (preguntaNueva && orden === preguntaNueva.orden) return; // Evita sobrescribir la nueva pregunta
+    // if (preguntaNueva && orden === preguntaNueva.orden) return; // Evita sobrescribir la nueva pregunta
     try {
       const pregunta = await handleLoadQuestion(id, orden)
       dispatch(setCurrentOrder(orden))
@@ -309,7 +313,7 @@ export const ExamEdit = () => {
           // 🔹 Si la pregunta tiene ID, la eliminamos del backend
           dispatch(setTotalQuestions(totalQuestions - 1));
           handleDeleteQuestion(preguntaId);
-
+          setLocalSuccess("Pregunta eliminada correctamente")
           if (totalQuestions > 1) {
             const newOrder = Math.max(1, currentOrder - 1);
             dispatch(setCurrentOrder(newOrder));
@@ -318,6 +322,7 @@ export const ExamEdit = () => {
             dispatch(setCurrentOrder(null));
           }
         } catch (error) {
+          setLocalError(error)
           console.error("Error deleting question:", error);
         }
       }
@@ -327,8 +332,8 @@ export const ExamEdit = () => {
   const actualizarPregunta = (preguntaId, campo, valor) => {
     if (!currentQuestion) return
     const updatedQuestion = { ...currentQuestion, [campo]: valor }
-    console.log(updatedQuestion);
     handleUpdateQuestion(preguntaId, updatedQuestion)
+    setLocalSuccess("Pregunta actualizada correctamente")
   }
 
   const guardarPregunta = async (preguntaId) => {
@@ -568,18 +573,18 @@ export const ExamEdit = () => {
       <FloatingAddButton onClick={iniciarNuevaPregunta} disabled={isExamInfoEditable} isDirty={isDirty} />
 
       <Snackbar
-        open={Boolean(error || success)}
+        open={Boolean(error || success || localError || localSuccess)}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
           onClose={handleCloseSnackbar}
-          severity={error ? 'error' : 'success'}
+          severity={(error || localError) ? 'error' : 'success'}
           variant="filled"
         >
-          {error ? (typeof error === 'string' ? error : JSON.stringify(error)) :
-            (typeof success === 'string' ? success : JSON.stringify(success))}
+          {(error || localError) ? (typeof error === 'string' ? (error || localError) : JSON.stringify((error || localError))) :
+            (typeof success === 'string' ? (success || localSuccess) : JSON.stringify((success || localSuccess)))}
         </Alert>
       </Snackbar>
     </Box>

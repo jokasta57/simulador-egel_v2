@@ -37,56 +37,8 @@ export const OptionList = ({
     }
   }, [])
 
-  // useEffect(() => {
-  //   setOptions(prevOptions => {
-  //     const nuevasOpciones = opciones.map((opt, index) => {
-  //       let prevOption = prevOptions[index] || defaultOptions[index] || {
-  //         contenido: "",
-  //         imagen_url: null,
-  //         es_correcta: false,
-  //         public_id_imagen: null,
-  //       };
-
-  //       let previewUrl =
-  //         prevOption?.id_opcion === opt.id_opcion
-  //           ? prevOption?.previewUrl ?? opt.imagen_url ?? ""
-  //           : "";
-
-  //       if (typeof previewUrl !== "string") {
-  //         previewUrl = "";
-  //       }
-
-  //       if (previewUrl.startsWith("https")) {
-  //         previewUrl = "";
-  //       }
-
-  //       return {
-  //         ...prevOption,
-  //         ...opt,
-  //         previewUrl
-  //       };
-  //     });
-
-  //     // ⚡ Si ya hay opciones enviadas, no agregar opciones vacías
-  //     if (nuevasOpciones.length === 0) {
-  //       while (nuevasOpciones.length < 4) {
-  //         nuevasOpciones.push({
-  //           contenido: "",
-  //           imagen_url: null,
-  //           es_correcta: false,
-  //           public_id_imagen: null,
-  //           previewUrl: "",
-  //         });
-  //       }
-  //     }
-
-  //     return nuevasOpciones;
-  //   });
-  // }, [opciones ]);
-
   useEffect(() => {
-    console.log(opciones);
-    setOptions(prevOptions => {
+   setOptions(prevOptions => {
       const nuevasOpciones = opciones.map((opt, index) => {
         let prevOption = prevOptions[index] || {
           contenido: "",
@@ -111,19 +63,6 @@ export const OptionList = ({
           previewUrl
         };
       });
-
-      // ⚡ Asegurar que siempre haya 4 opciones
-      while (nuevasOpciones.length < 4) {
-        nuevasOpciones.push({
-          contenido: "",
-          imagen_url: null,
-          es_correcta: false,
-          public_id_imagen: null,
-          previewUrl: "",
-        });
-      }
-
-      console.log(nuevasOpciones);
       return nuevasOpciones;
     });
   }, [opciones, currentQuestion]);
@@ -216,7 +155,8 @@ export const OptionList = ({
   }
 
   const handleRemoveOptionImage = async (index, { id_opcion, id_pregunta }) => {
-    try {
+  try {
+      console.log(id_opcion, id_pregunta);
       Swal.fire({
         title: "¿Eliminar imagen?",
         text: "La imagen de esta opción se eliminará permanentemente.",
@@ -305,7 +245,7 @@ export const OptionList = ({
                         marginBottom: 1,
                       }}
                     >
-                      Opción {index + 1} {opcion.contenido}
+                      Opción {index + 1}
                     </Typography>
                     <TextField
                       fullWidth

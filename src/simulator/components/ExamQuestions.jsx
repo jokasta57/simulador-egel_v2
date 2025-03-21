@@ -10,8 +10,10 @@ import { useDispatch, useSelector } from "react-redux"
 import { LoadingSpinner } from "./LoadingSpinner"
 import { resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setTotalQuestions, setAnsweredQuestion, resetAnsweredQuestions, setRemainingTime, resetRemainingTime, resetCurrentAttempt, resetCurrentExam} from "../../store"
 import Swal from "sweetalert2"
+import { useDrawer } from "../../context/DrawerContext"
 
 export const ExamQuestions = () => {
+  const { open, setOpen } = useDrawer();
   // Obtener parámetros y hooks de navegación
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,6 +37,7 @@ export const ExamQuestions = () => {
   useEffect(() => {
     // Cargar información del examen al montar el componente
     fetchExamInfo();
+    setOpen(false);
     return () => {
       // Limpiar estado al desmontar el componente
       handleResetCurrentQuestion();

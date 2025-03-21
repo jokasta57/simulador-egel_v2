@@ -218,10 +218,12 @@ export const useExamsStore = () => {
 
                 if (opcion.imagen instanceof File) {
                     formData.append("imagen", opcion.imagen);
+                } else if (opcion.imagen_url instanceof File) {
+                    formData.append("imagen", opcion.imagen_url);
                 } else if (typeof opcion.imagen_url === "string") {
                     formData.append("imagen_url", opcion.imagen_url);
                 }
-                
+
 
                 return adminApi.put(`/options/${opcion.id_opcion}`, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
@@ -234,8 +236,12 @@ export const useExamsStore = () => {
                 formData.append("contenido", opcion.contenido);
                 formData.append("es_correcta", opcion.es_correcta);
 
-                if (opcion.imagen_url instanceof File) {
+                if (opcion.imagen instanceof File) {
+                    formData.append("imagen", opcion.imagen);
+                } else if (opcion.imagen_url instanceof File) {
                     formData.append("imagen", opcion.imagen_url);
+                } else if (typeof opcion.imagen_url === "string") {
+                    formData.append("imagen_url", opcion.imagen_url);
                 }
 
                 return adminApi.post(`/options`, formData, {
@@ -250,7 +256,10 @@ export const useExamsStore = () => {
             // 4️⃣ **Actualizar la pregunta**
             const formData = new FormData();
             formData.append("contenido", updateData.contenido);
-            if (updateData.imagen_url) {
+
+            if (updateData.imagen instanceof File) {
+                formData.append("imagen", updateData.imagen);
+            } else if (updateData.imagen_url instanceof File) {
                 formData.append("imagen", updateData.imagen_url);
             }
 
@@ -264,18 +273,6 @@ export const useExamsStore = () => {
 
             return response.data;
         } catch (error) {
-            const formData = error.config.data;
-
-            if (formData instanceof FormData) {
-                console.log("FormData contenido:");
-                formData.forEach((value, key) => {
-                    console.log(`${key}:`, value);
-                });
-            } else {
-                console.log("No es una instancia de FormData:", formData);
-            }
-
-
             let errorMessage = error?.response?.data?.msg || "Error al actualizar la pregunta";
 
             if (error.response?.data?.errors) {
@@ -302,8 +299,9 @@ export const useExamsStore = () => {
                     });
 
                     await Promise.all(rollbackPromises);
+
                 } catch (rollbackError) {
-                    errorMessage += " (Error en el rollback de opciones)";
+                    errorMessage += " No se pudieron restaurar algunas opciones.";
                 }
             }
 
@@ -316,29 +314,25 @@ export const useExamsStore = () => {
 
     const handleAddNewQuestion = useCallback(async (data, examId, orden) => {
         dispatch(addNewQuestionStart());
+        let createdQuestion = null; // Guardará la pregunta creada para rollback
+
         try {
             // Crear FormData para la pregunta
             const formData = new FormData();
             formData.append("contenido", data.contenido);
 
-            // Si la pregunta tiene imagen y es un archivo, agregarla
             if (data.imagen instanceof File) {
                 formData.append("imagen", data.imagen);
             }
 
-            const questionData = await adminApi.post(`/questions`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-                params: {
-                    id_examen: examId,
-                    orden,
-                },
+            // 1️⃣ **Crear la pregunta**
+            const questionResponse = await adminApi.post(`/questions`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+                params: { id_examen: examId, orden },
             });
 
-            const { pregunta } = questionData.data;
+            createdQuestion = questionResponse.data.pregunta; // Guardamos la pregunta creada
 
-            // Filtrar opciones válidas: deben tener texto o imagen
             const opcionesValidas = data.opcion.filter(op =>
                 (op.contenido && op.contenido.trim() !== "") || op.imagen_url
             );
@@ -347,58 +341,53 @@ export const useExamsStore = () => {
                 throw new Error("Debe haber al menos 2 opciones válidas con texto o imagen.");
             }
 
-            // Mapear las opciones para procesarlas individualmente
-            const newOptions = opcionesValidas.map(async (opcion) => {
+            // 2️⃣ **Crear opciones**
+            const newOptionsPromises = opcionesValidas.map(async (opcion) => {
                 const optionFormData = new FormData();
                 optionFormData.append("contenido", opcion.contenido ?? '');
                 optionFormData.append("es_correcta", opcion.es_correcta);
 
-                // Si la opción tiene imagen y es un archivo, agregarla
                 if (opcion.imagen_url instanceof File) {
                     optionFormData.append("imagen", opcion.imagen_url);
                 }
 
-                // Convertir FormData a un objeto imprimible
-                const formDataObject = {};
-                optionFormData.forEach((value, key) => {
-                    formDataObject[key] = value;
-                });
-
-                // Imprimir en la consola
-                console.log("FormData como objeto:", formDataObject);
-
-
                 return adminApi.post(`/options`, optionFormData, {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
-                    params: {
-                        id_pregunta: pregunta.id_pregunta,
-                    },
+                    headers: { "Content-Type": "multipart/form-data" },
+                    params: { id_pregunta: createdQuestion.id_pregunta },
                 });
             });
 
-            // Esperar a que todas las opciones se agreguen
-            await Promise.all(newOptions);
+            await Promise.all(newOptionsPromises); // Esperar la creación de todas las opciones
 
+            // 3️⃣ **Obtener la pregunta con opciones actualizadas**
             const response = await adminApi.get(`/questions/orden`, {
-                params: {
-                    orden,
-                    id_examen: examId,
-                },
+                params: { orden, id_examen: examId },
             });
 
             dispatch(addNewQuestion(response.data.pregunta));
             return response.data.preguntas;
+
         } catch (error) {
-            console.log(error);
-            let errorMessage = error.response?.data.msg || error.message || "Error al agregar pregunta";
+            let errorMessage = error.response?.data?.msg || error.message || "Error al agregar pregunta";
+
+            // **🔄 Rollback: Si falló la creación de opciones, eliminar la pregunta**
+            if (createdQuestion) {
+                try {
+                    await adminApi.delete(`/questions/${createdQuestion.id_pregunta}`);
+                    errorMessage += " (Rollback: Hubo un problema y la pregunta no se guardó)";
+                } catch (rollbackError) {
+                    errorMessage += " (Hubo un problema y la pregunta no se guardó por completo)";
+                }
+            }
+
             dispatch(setError(errorMessage));
             throw errorMessage;
+
         } finally {
-            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+            dispatch(setIsLoadingFalse());
         }
     }, [dispatch]);
+
 
 
     const handleDeleteQuestion = useCallback(async (id_pregunta) => {
@@ -454,7 +443,7 @@ export const useExamsStore = () => {
 
             const response = await adminApi.get(`/questions/id/${id_pregunta}`);
 
-            dispatch(updateQuestion(response.data.pregunta))
+            // dispatch(updateQuestion(response.data.pregunta))
             dispatch(setSuccess('Imagen eliminada correctamente'))
 
             return response.data.pregunta;

@@ -9,8 +9,10 @@ import { useDispatch, useSelector } from "react-redux"
 import { LoadingSpinner } from "./LoadingSpinner"
 import { resetCurrentAttempt } from "../../store"
 import { clearErrorMessage, setError } from "../../store/auth/authSlice"; // Importamos la acción para limpiar el error
+import { useDrawer } from "../../context/DrawerContext"
 
 export const ExamResult = () => {
+    const { open, setOpen } = useDrawer();
   const { currentAttempt, error } = useSelector((state) => state.exams); // Obtiene el intento actual del estado global
   const { handleGetResultsAttempt } = useExamsStore(); // Función para obtener los resultados del intento
   const { id } = useParams(); // Obtiene el parámetro "id" desde la URL
@@ -38,9 +40,7 @@ export const ExamResult = () => {
   // 🔹 Obtiene los resultados del intento actual al cargar el componente
   useEffect(() => {
     getResults(idIntento);
-    // return () => {
-    //   dispatch(resetCurrentAttempt()); // Resetea el intento actual al desmontar el componente
-    // };
+    setOpen(true)
   }, []);
 
   // 🔹 Función para obtener los resultados del examen

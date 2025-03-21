@@ -298,12 +298,13 @@ export const ExamEdit = () => {
       cancelButtonText: "Cancelar",
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
         setIsDirty(false);
 
-        if (!preguntaId || preguntaNueva) {
+        if (preguntaId == null || Boolean(preguntaNueva)) {
           // 🔹 Si es una pregunta nueva, solo la eliminamos de Redux
+          setLocalSuccess("Pregunta eliminada correctamente")
           dispatch(resetPreguntaNueva());
           dispatch(setTotalQuestions(Math.max(0, totalQuestions - 1)));
           dispatch(setCurrentOrder(currentOrder - 1)); // ✅ Evita que el `useEffect` cargue una pregunta eliminada
@@ -312,8 +313,8 @@ export const ExamEdit = () => {
 
         try {
           // 🔹 Si la pregunta tiene ID, la eliminamos del backend
+          await handleDeleteQuestion(preguntaId);
           dispatch(setTotalQuestions(totalQuestions - 1));
-          handleDeleteQuestion(preguntaId);
           setLocalSuccess("Pregunta eliminada correctamente")
           if (totalQuestions > 1) {
             const newOrder = Math.max(1, currentOrder - 1);
@@ -324,7 +325,6 @@ export const ExamEdit = () => {
           }
         } catch (error) {
           setLocalError(error)
-          console.error("Error deleting question:", error);
         }
       }
     });

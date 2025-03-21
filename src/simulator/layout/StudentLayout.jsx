@@ -28,6 +28,7 @@ import {
 import { useSelector } from "react-redux"
 import { useAuthStore } from "../../hooks/useAuthStore"
 import { Link, useLocation, useNavigate } from "react-router-dom"
+import { DrawerContext } from "../../context/DrawerContext"
 
 const drawerWidth = 240
 
@@ -107,91 +108,94 @@ export const StudentLayout = ({ children }) => {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          zIndex: theme.zIndex.drawer + 1,
-          backgroundColor: "#B91116",
-          boxShadow: "none",
-          width: "100%",
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="toggle drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Panel Estudiantil
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography variant="body1" sx={{ color: "white", mr: 1 }}>
-              Hola, {user.nombre}!
-            </Typography>
-            <IconButton onClick={handleMenuClick} sx={{ padding: 0.5, border: "2px solid white" }}>
-              <Avatar
-                sx={{ bgcolor: theme.palette.secondary.main }}
-              >
-                {user.nombre?.[0] ?? ""}
-              </Avatar>
+      <DrawerContext.Provider value={{ open, setOpen }}>
+
+        <AppBar
+          position="fixed"
+          sx={{
+            zIndex: theme.zIndex.drawer + 1,
+            backgroundColor: "#B91116",
+            boxShadow: "none",
+            width: "100%",
+          }}
+        >
+          <Toolbar>
+            <IconButton
+              color="inherit"
+              aria-label="toggle drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
             </IconButton>
-          </Box>
-          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} sx={{ mt: 1 }}>
-            <MenuItem onClick={handleProfileClick}>
-              <ListItemIcon>
-                <PersonOutline fontSize="small" />
-              </ListItemIcon>
-              Perfil
-            </MenuItem>
-            <MenuItem onClick={handleLogOut}>
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" />
-              </ListItemIcon>
-              Cerrar Sesión
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
+            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+              Panel Estudiantil
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Typography variant="body1" sx={{ color: "white", mr: 1 }}>
+                Hola, {user.nombre}!
+              </Typography>
+              <IconButton onClick={handleMenuClick} sx={{ padding: 0.5, border: "2px solid white" }}>
+                <Avatar
+                  sx={{ bgcolor: theme.palette.secondary.main }}
+                >
+                  {user.nombre?.[0] ?? ""}
+                </Avatar>
+              </IconButton>
+            </Box>
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} sx={{ mt: 1 }}>
+              <MenuItem onClick={handleProfileClick}>
+                <ListItemIcon>
+                  <PersonOutline fontSize="small" />
+                </ListItemIcon>
+                Perfil
+              </MenuItem>
+              <MenuItem onClick={handleLogOut}>
+                <ListItemIcon>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                Cerrar Sesión
+              </MenuItem>
+            </Menu>
+          </Toolbar>
+        </AppBar>
 
-      <Drawer
-        variant={isMobile ? "temporary" : "permanent"}
-        open={open}
-        onClose={handleDrawerToggle}
-        sx={{
-          width: open ? drawerWidth : 0,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            boxSizing: "border-box",
-            transform: open ? "none" : `translateX(-${drawerWidth}px)`,
-            transition: theme.transitions.create(["transform"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-          },
-        }}
-      >
-        {drawer}
-      </Drawer>
+        <Drawer
+          variant={isMobile ? "temporary" : "permanent"}
+          open={open}
+          onClose={handleDrawerToggle}
+          sx={{
+            width: open ? drawerWidth : 0,
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              width: drawerWidth,
+              boxSizing: "border-box",
+              transform: open ? "none" : `translateX(-${drawerWidth}px)`,
+              transition: theme.transitions.create(["transform"], {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+            },
+          }}
+        >
+          {drawer}
+        </Drawer>
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          minWidth: 0,
-          width: open ? `calc(100% - ${drawerWidth}px)` : "100%",
-          px: 4,
-          py: 3,
-        }}
-      >
-        <Toolbar />
-        <Box sx={{ width: "100%" }}>{children}</Box>
-      </Box>
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            minWidth: 0,
+            width: open ? `calc(100% - ${drawerWidth}px)` : "100%",
+            px: 4,
+            py: 3,
+          }}
+        >
+          <Toolbar />
+          <Box sx={{ width: "100%" }}>{children}</Box>
+        </Box>
+      </DrawerContext.Provider>
     </Box>
   )
 }

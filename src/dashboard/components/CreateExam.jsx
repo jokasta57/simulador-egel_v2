@@ -290,21 +290,22 @@ export const CreateExam = () => {
       cancelButtonText: "Cancelar",
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
         setIsDirty(false)
 
-        if (!preguntaId || preguntaNueva) {
+        if (preguntaId == null || Boolean(preguntaNueva)) {
+          setSuccess("Pregunta eliminada correctamente")
           dispatch(resetPreguntaNueva())
           dispatch(setTotalQuestions(Math.max(0, totalQuestions - 1)))
           dispatch(setCurrentOrder(currentOrder - 1))
           return
         }
-
+        
         try {
+          await handleDeleteQuestion(preguntaId)
           dispatch(setTotalQuestions(totalQuestions - 1))
-          handleDeleteQuestion(preguntaId)
-
+          setSuccess("Pregunta eliminada correctamente")
           if (totalQuestions > 1) {
             const newOrder = Math.max(1, currentOrder - 1)
             dispatch(setCurrentOrder(newOrder))
@@ -313,7 +314,7 @@ export const CreateExam = () => {
             dispatch(setCurrentOrder(null))
           }
         } catch (error) {
-          console.error("Error deleting question:", error)
+          setError(error)
         }
       }
     })
@@ -479,7 +480,7 @@ export const CreateExam = () => {
         </form>
 
         {!isExamInfoEditable && (
-          <IconButton onClick={toggleExamInfoEdit} sx={{ position: "absolute", top: 0, right: 0 }}>
+          <IconButton disabled={isLoading} onClick={toggleExamInfoEdit} sx={{ position: "absolute", top: 0, right: 0 }}>
             <EditIcon />
           </IconButton>
         )}

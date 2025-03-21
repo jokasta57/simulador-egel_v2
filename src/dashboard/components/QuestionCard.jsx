@@ -34,24 +34,34 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
   }
 
   useEffect(() => {
-    console.log(currentQuestion);
-    if (currentQuestion) {
-      setLocalQuestion(prev => ({
+    // if (currentQuestion.id_pregunta) {
+    setLocalQuestion(prev => {
+      const esPreguntaNueva = !currentQuestion?.id_pregunta;
+
+      return {
         ...currentQuestion,
         imagen_url: currentQuestion.imagen_url || null,
-        opcion: currentQuestion.opcion?.length > 0
-        ? currentQuestion.opcion.map(op => ({
-          id_opcion: op.id_opcion, 
-          es_correcta: op.es_correcta,
-          contenido: op.contenido || "",
-          imagen_url: op.imagen_url || null
-        }))
-        : prev.opcion // No sobrescribir opciones vacías si ya estaban en localQuestion
-      }));
-      console.log('fainllll',currentQuestion);
-      setIsSaved(false);
-      setHasAttemptedSave(false);
-    }
+        opcion: esPreguntaNueva
+          ? Array(4).fill({
+            contenido: "",
+            imagen_url: null,
+            es_correcta: false,
+            public_id_imagen: null
+          })
+          : currentQuestion.opcion?.length > 0
+            ? currentQuestion.opcion.map(op => ({
+              id_pregunta: op.id_pregunta,
+              id_opcion: op.id_opcion,
+              es_correcta: op.es_correcta,
+              contenido: op.contenido || "",
+              imagen_url: op.imagen_url || null
+            }))
+            : prev.opcion // No sobrescribir opciones vacías si ya estaban en localQuestion
+      }
+    });
+    setIsSaved(false);
+    setHasAttemptedSave(false);
+
   }, [currentQuestion]);
 
 
@@ -74,7 +84,6 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
       ...prev,
       imagen: imageFile, // ✅ Almacenar correctamente la imagen nueva
     }));
-    console.log(localQuestion);
   }, []);
 
   const handleOptionUpdate = useCallback((opcionIndex, campo, valor) => {
@@ -128,11 +137,19 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
       return;
     }
     // **Verificar si alguna opción está marcada como correcta**
-    const tieneOpcionCorrecta = opcionesNoVacias.some(op => op.es_correcta === true);
-    if (!tieneOpcionCorrecta) {
-      setError("Debes seleccionar una opción como respuesta correcta.");
+    const opcionCorrectaValida = opcionesNoVacias.find(op => op.es_correcta === true);
+    const tieneOpcionCorrecta = opcionesNoVacias.some(op => op.es_correcta === true && (op.contenido !== '' || op.imagen_url !== null));
+
+    if (!opcionCorrectaValida) {
+      setError("Debes seleccionar al menos una opción como respuesta correcta.");
       return;
     }
+
+    if (opcionCorrectaValida.contenido === '' && opcionCorrectaValida.imagen_url === null) {
+      setError("La opción marcada como correcta debe tener texto o una imagen.");
+      return;
+    }
+
 
     try {
       // ✅ Actualizar `localQuestion` antes de enviarlo al backend
@@ -157,7 +174,6 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
         const examId = currentExam?.id_examen || newExamInfo?.id_examen;
         if (examId) {
           try {
-            console.log(preguntaFiltrada);
             response = await handleAddNewQuestion(preguntaFiltrada, examId, preguntaNueva.orden);
             setSuccess(response?.msg || "Pregunta guardada correctamente");
             setIsSaved(true);

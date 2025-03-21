@@ -1,7 +1,7 @@
-import { Box, Button, Typography, Paper, Container, Grid, useTheme, useMediaQuery } from "@mui/material"
+import { Box, Button, Typography, Paper, Container, Grid, useTheme, useMediaQuery, Stack } from "@mui/material"
 import { School as SchoolIcon, AdminPanelSettings as AdminIcon } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
-import {Footer} from "../components"
+import { Footer } from "../components"
 
 export const HomePage = () => {
   const theme = useTheme()
@@ -44,7 +44,7 @@ export const HomePage = () => {
                 fontWeight: "medium",
               }}
             >
-              Escuela Superior de Tlahuelilpan - Ingeniería de Software
+              Escuela Superior de Tlahuelilpan
             </Typography>
             <Typography
               variant="h3"

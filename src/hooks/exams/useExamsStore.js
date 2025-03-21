@@ -185,52 +185,50 @@ export const useExamsStore = () => {
 
     const handleUpdateQuestion = useCallback(async (updateData) => {
         dispatch(updateQuestionStart());
+        let backupOpciones = []; // Almacena el estado original de las opciones
+
         try {
-            const formData = new FormData();
-
-            // Añadir el contenido de la pregunta
-            formData.append("contenido", updateData.contenido);
-
-            // Verificar si hay un archivo de imagen y añadirlo
-            if (updateData.imagen_url) {
-                formData.append("imagen", updateData.imagen_url);
-            }
-
-            await adminApi.put(`/questions/${updateData.id_pregunta}`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                }
-            });
-
-            // Filtrar opciones válidas: deben tener texto o imagen
+            console.log(updateData.opcion);
+            // Filtrar opciones válidas
             const opcionesValidas = updateData.opcion.filter(op =>
-                (op.contenido && op.contenido.trim() !== "") || op.imagen_url // ✅ Opción válida si tiene contenido o imagen
+                (op.contenido && op.contenido.trim() !== "") || op.imagen_url
             );
 
-            if (opcionesValidas.length < 2) {
-                throw new Error("Debe haber al menos 2 opciones válidas con texto o imagen."); // ✅ Evitar menos de 2 opciones
-            }
+            // if (opcionesValidas.length < 2) {
+            //     throw new Error("Debe haber al menos 2 opciones válidas con texto o imagen.");
+            // }
 
-            // Filtrar opciones existentes y nuevas
-            const opcionesExistentes = updateData.opcion.filter(op => op.id_opcion); // Opciones con ID
-            const opcionesNuevas = updateData.opcion.filter(op => !op.id_opcion); // Opciones sin ID
+            // Separar opciones nuevas y existentes
+            const opcionesExistentes = updateData.opcion.filter(op => op.id_opcion);
+            const opcionesNuevas = updateData.opcion.filter(op => !op.id_opcion);
 
-            // Procesar opciones existentes con PUT
+            // 1️⃣ **Guardar copia de seguridad de las opciones existentes**
+            const opcionesBackupPromises = opcionesExistentes.map(async (opcion) => {
+                const response = await adminApi.get(`/options/${opcion.id_opcion}`);
+                return response.data.opcion; // Guardamos la opción original
+            });
+
+            backupOpciones = await Promise.all(opcionesBackupPromises);
+
+            // 2️⃣ **Actualizar opciones existentes con PUT**
             const updatePromises = opcionesExistentes.map(async (opcion) => {
                 const formData = new FormData();
                 formData.append("contenido", opcion.contenido);
                 formData.append("es_correcta", opcion.es_correcta);
 
-                if (opcion.imagen_url instanceof File) {
-                    formData.append("imagen", opcion.imagen_url); // ✅ Si es archivo, lo agrega a FormData
+                if (opcion.imagen instanceof File) {
+                    formData.append("imagen", opcion.imagen);
+                } else if (typeof opcion.imagen_url === "string") {
+                    formData.append("imagen_url", opcion.imagen_url);
                 }
+                
 
                 return adminApi.put(`/options/${opcion.id_opcion}`, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
             });
 
-            // Procesar opciones nuevas con POST
+            // 3️⃣ **Crear opciones nuevas con POST**
             const createPromises = opcionesNuevas.map(async (opcion) => {
                 const formData = new FormData();
                 formData.append("contenido", opcion.contenido);
@@ -242,34 +240,79 @@ export const useExamsStore = () => {
 
                 return adminApi.post(`/options`, formData, {
                     headers: { "Content-Type": "multipart/form-data" },
-                    params: {
-                        id_pregunta: updateData.id_pregunta
-                    }
+                    params: { id_pregunta: updateData.id_pregunta }
                 });
             });
 
-
-            // Esperar a que todas las opciones se actualicen o creen
+            // Esperar que TODAS las opciones se procesen antes de actualizar la pregunta
             await Promise.all([...updatePromises, ...createPromises]);
 
+            // 4️⃣ **Actualizar la pregunta**
+            const formData = new FormData();
+            formData.append("contenido", updateData.contenido);
+            if (updateData.imagen_url) {
+                formData.append("imagen", updateData.imagen_url);
+            }
 
+            await adminApi.put(`/questions/${updateData.id_pregunta}`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
 
+            // 5️⃣ **Obtener la pregunta actualizada**
             const response = await adminApi.get(`/questions/id/${updateData.id_pregunta}`);
-            dispatch(updateQuestion(response.data.pregunta))
+            dispatch(updateQuestion(response.data.pregunta));
 
             return response.data;
         } catch (error) {
-            let errorMessage = error?.response?.data.msg || JSON.stringify(error.response.data.msg) || "Error al actualizar la pregunta";
+            const formData = error.config.data;
+
+            if (formData instanceof FormData) {
+                console.log("FormData contenido:");
+                formData.forEach((value, key) => {
+                    console.log(`${key}:`, value);
+                });
+            } else {
+                console.log("No es una instancia de FormData:", formData);
+            }
+
+
+            let errorMessage = error?.response?.data?.msg || "Error al actualizar la pregunta";
+
             if (error.response?.data?.errors) {
                 errorMessage = Object.values(error.response.data.errors)
-                    .map(err => (typeof err.msg === "string" ? err.msg : JSON.stringify(err))) // 🔹 Asegurar que es string
+                    .map(err => (typeof err.msg === "string" ? err.msg : JSON.stringify(err)))
                     .join(", ");
             }
+
+            // **🔄 Rollback de las opciones si la pregunta falla**
+            if (backupOpciones.length > 0) {
+                try {
+                    const rollbackPromises = backupOpciones.map(async (opcionOriginal) => {
+                        const formData = new FormData();
+                        formData.append("contenido", opcionOriginal.contenido);
+                        formData.append("es_correcta", opcionOriginal.es_correcta);
+
+                        if (opcionOriginal.imagen_url) {
+                            formData.append("imagen_url", opcionOriginal.imagen_url);
+                        }
+
+                        return adminApi.put(`/options/${opcionOriginal.id_opcion}`, formData, {
+                            headers: { "Content-Type": "multipart/form-data" },
+                        });
+                    });
+
+                    await Promise.all(rollbackPromises);
+                } catch (rollbackError) {
+                    errorMessage += " (Error en el rollback de opciones)";
+                }
+            }
+
             throw errorMessage;
         } finally {
-            dispatch(setIsLoadingFalse()); // ✅ Asegura que isLoading siempre vuelva a false
+            dispatch(setIsLoadingFalse());
         }
     }, [dispatch]);
+
 
     const handleAddNewQuestion = useCallback(async (data, examId, orden) => {
         dispatch(addNewQuestionStart());

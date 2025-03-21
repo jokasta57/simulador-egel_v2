@@ -34,17 +34,21 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
   }
 
   useEffect(() => {
+    console.log(currentQuestion);
     if (currentQuestion) {
       setLocalQuestion(prev => ({
         ...currentQuestion,
         imagen_url: currentQuestion.imagen_url || null,
         opcion: currentQuestion.opcion?.length > 0
-          ? currentQuestion.opcion.map(op => ({
-            contenido: op.contenido || "",
-            imagen_url: op.imagen_url || null
-          }))
-          : prev.opcion // No sobrescribir opciones vacías si ya estaban en localQuestion
+        ? currentQuestion.opcion.map(op => ({
+          id_opcion: op.id_opcion, 
+          es_correcta: op.es_correcta,
+          contenido: op.contenido || "",
+          imagen_url: op.imagen_url || null
+        }))
+        : prev.opcion // No sobrescribir opciones vacías si ya estaban en localQuestion
       }));
+      console.log('fainllll',currentQuestion);
       setIsSaved(false);
       setHasAttemptedSave(false);
     }
@@ -93,9 +97,9 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
     });
 
     // Asegurar que setIsDirty(false) solo se llame después de actualizar el estado
-    if (campo === "update_all" || (campo !== "previewUrl" && campo !== "add" && campo !== "delete")) {
-      setTimeout(() => setIsDirty(false), 0);
-    }
+    // if (campo === "update_all" || (campo !== "previewUrl" && campo !== "add" && campo !== "delete")) {
+    //   setTimeout(() => setIsDirty(false), 0);
+    // }
   }, []);
 
   const handleCorrectAnswerChange = useCallback((opcionIndex) => {
@@ -142,6 +146,8 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
         // Si ya existe, actualizar con PUT
         try {
           response = await handleUpdateQuestion(preguntaFiltrada);
+          setSuccess("Pregunta actualizada correctamente")
+          console.log(success);
           setIsSaved(true);
           setIsDirty(false)
         } catch (error) {
@@ -153,7 +159,7 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
           try {
             console.log(preguntaFiltrada);
             response = await handleAddNewQuestion(preguntaFiltrada, examId, preguntaNueva.orden);
-            setSnackbarMessage(response?.msg || "Pregunta guardada con éxito ✅");
+            setSuccess(response?.msg || "Pregunta guardada correctamente");
             setIsSaved(true);
             setIsDirty(false)
           } catch (error) {
@@ -164,12 +170,8 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
           return;
         }
       }
-      // await handleSaveQuestion()
-      // console.log(response);
-      // setShowSnackbar(true);
-      // Aquí puedes manejar el éxito del guardado, por ejemplo, mostrando un mensaje
     } catch (error) {
-      setError(error || "❌ Error al guardar la pregunta");
+      setError(error || "Error al guardar la pregunta");
     }
   }, [localQuestion, handleUpdateQuestion])
 
@@ -231,6 +233,7 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
             helperText={hasAttemptedSave && (!localQuestion.contenido || localQuestion.contenido.trim() === "") ? "La pregunta no puede estar vacía" : ""}
             required
           />
+          {JSON.stringify(localQuestion.es_correcta)}
 
           <ImageUpload
             currentImage={localQuestion.imagen_url}
@@ -253,35 +256,26 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
           onCorrectAnswerChange={handleCorrectAnswerChange}
           isSaved={isSaved}
           setIsSaved={setIsSaved}
+          setIsDirty={setIsDirty}
           hasAttemptedSave={hasAttemptedSave}
+          setError={setError}
+          setSuccess={setSuccess}
         />
 
         <Box sx={{ mt: { xs: 2, sm: 3 } }}>
           <Button
             variant="contained"
-            color={isSaved ? "success" : "primary"}
+            color={"primary"}
             startIcon={<SaveIcon />}
             onClick={handleSave}
+            disabled={isLoading}
             sx={{ width: { xs: "100%", sm: "auto" } }}
           >
-            {isLoading ? <CircularProgress size={24} color="inherit" /> : (isSaved ? "Guardado" : "Guardar Pregunta")}
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : "Guardar Pregunta"}
           </Button>
         </Box>
       </CardContent>
       {/* Snackbar para notificaciones */}
-      {/* <Snackbar
-        open={showSnackbar}
-        autoHideDuration={3000}
-        onClose={() => setShowSnackbar(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          severity={snackbarMessage.includes("❌") ? "error" : "success"}
-          variant="filled"
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar> */}
       <Snackbar
         open={Boolean(error || success)}
         autoHideDuration={6000}

@@ -10,8 +10,6 @@ const QuestionPanel = ({ onQuestionSelect, isDirty, setIsDirty, hasCorrectOption
   )
 
   const handleQuestionClick = (orden) => {
-    console.log(orden);
-    console.log(totalQuestions);
     if ((!remainingTime || remainingTime === "00:00:00") && Object.keys(currentQuestion).length > 0 && !hasCorrectOption) {
       Swal.fire({
         title: "Atención",

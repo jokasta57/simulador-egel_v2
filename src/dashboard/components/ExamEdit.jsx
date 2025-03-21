@@ -247,6 +247,7 @@ export const ExamEdit = () => {
       if (currentOrder) {
         await handleLoadQuestion(id, currentOrder) // Recargar la pregunta actual después de guardar el examen
       }
+      setLocalSuccess('Pregunta actualizada correctamente')
     } catch (error) {
       if (error?.status === 404) {
         Swal.fire({

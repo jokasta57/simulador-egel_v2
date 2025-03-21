@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { RadioGroup, FormControlLabel, Radio, TextField, IconButton, Box, Button, Stack, Tooltip, Typography } from "@mui/material"
 import { Delete as DeleteIcon, Add as AddIcon, Image as ImageIcon, HideImage } from "@mui/icons-material"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import Swal from "sweetalert2"
+import { useSelector } from "react-redux"
 
 const defaultOptions = [
   { contenido: "", imagen_url: null, es_correcta: false, public_id_imagen: null },
@@ -19,10 +20,15 @@ export const OptionList = ({
   onCorrectAnswerChange,
   isSaved,
   setIsSaved,
-  hasAttemptedSave
+  setIsDirty,
+  hasAttemptedSave,
+  setError,
+  setSuccess
 }) => {
 
   const [options, setOptions] = useState([]);
+  const { currentQuestion } = useSelector((state) => state.exams)
+  const fileInputsRef = useRef([]);
   const { handleDeleteOption, handleDeleteOptionImage } = useExamsStore()
 
   useEffect(() => {
@@ -31,55 +37,100 @@ export const OptionList = ({
     }
   }, [])
 
+  // useEffect(() => {
+  //   setOptions(prevOptions => {
+  //     const nuevasOpciones = opciones.map((opt, index) => {
+  //       let prevOption = prevOptions[index] || defaultOptions[index] || {
+  //         contenido: "",
+  //         imagen_url: null,
+  //         es_correcta: false,
+  //         public_id_imagen: null,
+  //       };
+
+  //       let previewUrl =
+  //         prevOption?.id_opcion === opt.id_opcion
+  //           ? prevOption?.previewUrl ?? opt.imagen_url ?? ""
+  //           : "";
+
+  //       if (typeof previewUrl !== "string") {
+  //         previewUrl = "";
+  //       }
+
+  //       if (previewUrl.startsWith("https")) {
+  //         previewUrl = "";
+  //       }
+
+  //       return {
+  //         ...prevOption,
+  //         ...opt,
+  //         previewUrl
+  //       };
+  //     });
+
+  //     // ⚡ Si ya hay opciones enviadas, no agregar opciones vacías
+  //     if (nuevasOpciones.length === 0) {
+  //       while (nuevasOpciones.length < 4) {
+  //         nuevasOpciones.push({
+  //           contenido: "",
+  //           imagen_url: null,
+  //           es_correcta: false,
+  //           public_id_imagen: null,
+  //           previewUrl: "",
+  //         });
+  //       }
+  //     }
+
+  //     return nuevasOpciones;
+  //   });
+  // }, [opciones ]);
+
   useEffect(() => {
+    console.log(opciones);
     setOptions(prevOptions => {
       const nuevasOpciones = opciones.map((opt, index) => {
-        let prevOption = prevOptions[index] || defaultOptions[index] || {
+        let prevOption = prevOptions[index] || {
           contenido: "",
           imagen_url: null,
           es_correcta: false,
           public_id_imagen: null,
+          previewUrl: "",
         };
 
-        let previewUrl =
-          prevOption?.id_opcion === opt.id_opcion
-            ? prevOption?.previewUrl ?? opt.imagen_url ?? ""
-            : "";
+        // ⚡ Si la opción cambia, limpiamos previewUrl
+        let previewUrl = "";
+        if (prevOption?.id_opcion === opt.id_opcion) {
+          previewUrl = prevOption?.previewUrl ?? opt.imagen_url ?? "";
+        }
 
-        if (typeof previewUrl !== "string") {
+        if (typeof previewUrl !== "string" || previewUrl.startsWith("https")) {
           previewUrl = "";
         }
 
-        if (previewUrl.startsWith("https")) {
-          previewUrl = "";
-        }
-
-        return { ...opt, previewUrl };
+        return {
+          ...opt,
+          previewUrl
+        };
       });
 
-      // ⚡ Si ya hay opciones enviadas, no agregar opciones vacías
-      if (nuevasOpciones.length === 0) {
-        while (nuevasOpciones.length < 4) {
-          nuevasOpciones.push({
-            contenido: "",
-            imagen_url: null,
-            es_correcta: false,
-            public_id_imagen: null,
-            previewUrl: "",
-          });
-        }
+      // ⚡ Asegurar que siempre haya 4 opciones
+      while (nuevasOpciones.length < 4) {
+        nuevasOpciones.push({
+          contenido: "",
+          imagen_url: null,
+          es_correcta: false,
+          public_id_imagen: null,
+          previewUrl: "",
+        });
       }
 
+      console.log(nuevasOpciones);
       return nuevasOpciones;
     });
-  }, [opciones]);
-
-
-
-
+  }, [opciones, currentQuestion]);
 
   const handleOptionTextChange = (index, value) => {
     setIsSaved(false);
+    setIsDirty(true)
 
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], contenido: value };
@@ -87,28 +138,10 @@ export const OptionList = ({
     onOptionUpdate(-1, "update_all", newOptions);
   };
 
-  // const handleOptionImageUpload = (event, index) => {
-  //   const file = event.target.files[0];
-  //   if (!file) return;
-
-  //   // Crear URL temporal para la vista previa
-  //   const objectUrl = URL.createObjectURL(file);
-
-  //   // Actualizar solo la opción correspondiente
-  //   setOptions(prevOptions =>
-  //     prevOptions.map((opt, i) =>
-  //       i === index ? { ...opt, previewUrl: objectUrl } : opt
-  //     )
-  //   );
-
-  //   // Actualizar valores en el estado principal
-  //   onOptionUpdate(index, "imagen_url", file);
-  //   onOptionUpdate(index, "previewUrl", objectUrl);
-  // };
-
   const handleOptionImageUpload = (event, index) => {
     const file = event.target.files[0];
     if (!file) return;
+    setIsDirty(true)
     const objectUrl = URL.createObjectURL(file);
 
     setOptions(prevOptions => {
@@ -173,12 +206,12 @@ export const OptionList = ({
         const newOptions = options.filter((_, i) => i !== index)
         onOptionUpdate(-1, "update_all", newOptions)
       }
-
-      await handleDeleteOption(opcion.id_opcion, opcion.id_pregunta);
+      if (opcion.id_opcion) {
+        await handleDeleteOption(opcion.id_opcion, opcion.id_pregunta);
+      }
 
     } catch (error) {
       console.error(error);
-
     }
   }
 
@@ -204,9 +237,16 @@ export const OptionList = ({
           });
           onOptionUpdate(index, "imagen_url", null);
           onOptionUpdate(index, "previewUrl", null);
+
+          // 🔹 Resetear el input file para permitir volver a seleccionar la misma imagen
+          if (fileInputsRef.current[index]) {
+            fileInputsRef.current[index].value = "";
+          }
+
           if (id_opcion !== undefined && id_pregunta !== undefined) {
             await handleDeleteOptionImage(id_opcion, id_pregunta);
           }
+          setSuccess('Imagen eliminada correctamente')
         }
       });
     } catch (error) {
@@ -228,7 +268,7 @@ export const OptionList = ({
         overflowY: "auto",  // Permite el desplazamiento en pantallas grandes
         paddingBottom: "20px", // Para evitar que los elementos se salgan de la vista
       }}>
-        <RadioGroup value={respuestaCorrecta ?? ''} onChange={(e) => onCorrectAnswerChange(Number(e.target.value))}>
+        <RadioGroup onChange={(e) => onCorrectAnswerChange(Number(e.target.value))}>
           <Stack spacing={1.5}>
             {options.map((opcion, index) => (
               <Box key={index} sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2 }}>
@@ -265,7 +305,7 @@ export const OptionList = ({
                         marginBottom: 1,
                       }}
                     >
-                      Opción {index + 1}
+                      Opción {index + 1} {opcion.contenido}
                     </Typography>
                     <TextField
                       fullWidth
@@ -355,7 +395,13 @@ export const OptionList = ({
                         size="small"
                         sx={{ color: "action.active", "&:hover": { color: "#d32f2f" } }}
                       >
-                        <input type="file" hidden accept="image/*" onChange={(e) => handleOptionImageUpload(e, index)} />
+                        <input
+                          type="file"
+                          hidden
+                          accept="image/*"
+                          ref={(el) => (fileInputsRef.current[index] = el)} // 🔹 Guardar la referencia
+                          onChange={(e) => handleOptionImageUpload(e, index)}
+                        />
                         {!opcion.imagen_url && <ImageIcon fontSize="small" />}
                       </IconButton>
                     </Tooltip>

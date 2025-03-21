@@ -34,7 +34,7 @@ export const ExamReview = () => {
     try {
       // Si no hay intento actual o ID, detiene la ejecución
       if (!currentAttempt || !id) return;
-      
+
       // Obtiene la revisión desde el backend
       const data = await handleReviewAttempt(currentAttempt.id_intento || id, currentPage, rowsPerPage);
       setExamData(data);
@@ -236,7 +236,7 @@ export const ExamReview = () => {
             <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#333" }}>
               {`Pregunta ${p.orden}`}
             </Typography>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold", color: "#333" }}>
+            <Typography variant="subtitle1" sx={{ color: "text.primary", fontWeight: 400, mb: 2, whiteSpace: "pre-line" }}>
               {p.contenido}
             </Typography>
             {p.imagen_url && (
@@ -259,7 +259,10 @@ export const ExamReview = () => {
               <Typography variant="subtitle2" sx={{ fontWeight: "bold", color: "#333" }}>
                 Opción Escogida
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: "bold", color: "#555" }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: 350, fontSize: "1rem", lineHeight: 1.4, wordBreak: "break-word" }}
+              >
                 {p.opcion_escogida ? p.opcion_escogida : "No se ha seleccionado una respuesta"}
               </Typography>
               {p.opcion_escogida_imagen && (
@@ -283,7 +286,10 @@ export const ExamReview = () => {
               <Typography variant="subtitle2" sx={{ fontWeight: "bold", color: "#333" }}>
                 Opción Correcta
               </Typography>
-              <Typography variant="body1" sx={{ fontWeight: "bold", color: "#555" }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: 350, fontSize: "1rem", lineHeight: 1.4, wordBreak: "break-word" }}
+              >
                 {p.opcion_correcta}
                 {p.opcion_correcta_imagen && (
                   <Box sx={{ textAlign: "center", mb: 2 }}>

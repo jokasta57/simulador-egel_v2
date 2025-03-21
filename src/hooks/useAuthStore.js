@@ -23,6 +23,7 @@ export const useAuthStore = () => {
 
             dispatch(onLoginSuccess({ nombre: admin.nombre, apellido_paterno: admin.apellido_paterno, apellido_materno: admin.apellido_materno, id: admin.id_admin, token: data.token, role: role, numero_identificacion: admin.numero_identificacion, carrera: admin.carrera }));
         } catch (error) {
+            console.log(error);
             let errorMessage = error.response.data.msg;
             dispatch(onLoginFailure(errorMessage || 'Error al iniciar sesión'));
             setTimeout(() => dispatch(clearErrorMessage()), 5000); // Ahora espera 5 segundos antes de limpiar

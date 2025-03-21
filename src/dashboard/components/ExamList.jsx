@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Box, Typography, Card, CardContent, IconButton, Stack, useTheme, TextField, InputAdornment, MenuItem, FormControl, Select, InputLabel, Button, Switch, Snackbar, Alert, CircularProgress, } from "@mui/material"
-import { Edit as EditIcon, DeleteOutline as DeleteIcon, Search as SearchIcon, Add as AddIcon, } from "@mui/icons-material"
+import { Edit as EditIcon, DeleteOutline as DeleteIcon, Search as SearchIcon, Add as AddIcon, ChevronLeft, ChevronRight, } from "@mui/icons-material"
 import { Link } from "react-router-dom"
 import Swal from "sweetalert2"
 import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
@@ -13,29 +13,23 @@ const periodosFiltro = ["Todos", "Último mes", "Últimos 3 meses", "Último añ
 
 export const ExamList = () => {
   const theme = useTheme()
-  const [searchTerm, setSearchTerm] = useState("")
-  const [periodoFilter, setPeriodoFilter] = useState("Todos")
-  const [stateFilter, setStateFilter] = useState("Todos")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
   const [loadingStates, setLoadingStates] = useState({});
+  const [loading, setLoading] = useState(false)
+
+  // Estados para filtros y búsqueda
+  const [searchTerm, setSearchTerm] = useState("");
+  const [periodoFilter, setPeriodoFilter] = useState("Todos");
+  const [stateFilter, setStateFilter] = useState("Todos");
+  const [error, setError] = useState(null);
+
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const examsPerPage = 5;
+
   const { handleLoadExams, handleSwitchState, resetExams } = useExamsStore()
-
-
-
   const dispatch = useDispatch();
   const { exams } = useSelector((state) => state.exams)
   const { user } = useSelector((state) => state.auth)
-
-  useEffect(() => {
-    if (!user) return;
-
-    getExams()
-    return () => {
-      dispatch(resetExams())
-    };
-  }, [user]) // Added handleLoadExams to dependencies
-
 
   const filtrarPorPeriodo = (examen) => {
     const hoy = new Date()
@@ -53,7 +47,6 @@ export const ExamList = () => {
         return true
     }
   }
-
   // Filtrar exámenes basado en búsqueda y filtro de periodo
   const filteredExams =
     exams?.filter((examen) => {
@@ -62,6 +55,25 @@ export const ExamList = () => {
       const matchesState = stateFilter === "Todos" || examen.estado === stateFilter
       return matchesSearch && matchesPeriodo && matchesState
     }) || []
+
+  // Total de páginas calculadas
+  const totalPages = Math.ceil(filteredExams.length / examsPerPage);
+
+  // Obtener exámenes paginados
+  const startIndex = (currentPage - 1) * examsPerPage;
+  const endIndex = startIndex + examsPerPage;
+  const paginatedExams = filteredExams.slice(startIndex, endIndex);
+
+
+
+  useEffect(() => {
+    if (!user) return;
+
+    getExams()
+    return () => {
+      dispatch(resetExams())
+    };
+  }, [user]) // Added handleLoadExams to dependencies
 
   const getExams = async () => {
     setLoading(true)
@@ -222,8 +234,8 @@ export const ExamList = () => {
 
       <Stack spacing={2}>
 
-        {filteredExams.length > 0 ? (
-          filteredExams.map((examen) => (
+        {paginatedExams.length > 0 ? (
+          paginatedExams.map((examen) => (
             <Card
               key={examen.id_examen}
               sx={{
@@ -364,6 +376,41 @@ export const ExamList = () => {
           </Box>
         )}
       </Stack>
+      {/* Controles de paginación */}
+      {/* <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mt: 3 }}>
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          variant="outlined"
+          startIcon={<ChevronLeft />}
+        >
+          Anterior
+        </Button>
+
+        <Typography sx={{ mx: 2 }}>Página {currentPage} de {totalPages}</Typography>
+
+        <Button
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+          variant="outlined"
+          endIcon={<ChevronRight />}
+        >
+          Siguiente
+        </Button>
+      </Box> */}
+      {/* Controles de paginación */}
+      {totalPages > 1 && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+          <Button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} variant="outlined" startIcon={<ChevronLeft />}>
+            Anterior
+          </Button>
+          <Typography sx={{ mx: 2 }}>Página {currentPage} de {totalPages}</Typography>
+          <Button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} variant="outlined" endIcon={<ChevronRight />}>
+            Siguiente
+          </Button>
+        </Box>
+      )}
+
       <Snackbar
         open={Boolean(error)}
         autoHideDuration={6000}

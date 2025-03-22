@@ -13,6 +13,8 @@ const periodosFiltro = ["Todos", "Último mes", "Últimos 3 meses", "Último añ
 
 export const ExamList = () => {
   const theme = useTheme()
+
+  // Estados para controlar la carga de exámenes  
   const [loadingStates, setLoadingStates] = useState({});
   const [loading, setLoading] = useState(false)
 
@@ -26,11 +28,15 @@ export const ExamList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const examsPerPage = 5;
 
+  // Obtiene funciones del store para manejar exámenes  
   const { handleLoadExams, handleSwitchState, resetExams } = useExamsStore()
   const dispatch = useDispatch();
+
+  // Obtiene exámenes y usuario desde Redux  
   const { exams } = useSelector((state) => state.exams)
   const { user } = useSelector((state) => state.auth)
 
+  // Función para filtrar exámenes según el período seleccionado  
   const filtrarPorPeriodo = (examen) => {
     const hoy = new Date()
     const fechaActualizacion = new Date(examen.fecha_modificacion)
@@ -64,17 +70,16 @@ export const ExamList = () => {
   const endIndex = startIndex + examsPerPage;
   const paginatedExams = filteredExams.slice(startIndex, endIndex);
 
-
-
+  // Efecto para cargar exámenes al montar el componente o cambiar el usuario  
   useEffect(() => {
     if (!user) return;
-
     getExams()
     return () => {
       dispatch(resetExams())
     };
   }, [user]) // Added handleLoadExams to dependencies
 
+  // Función para cargar los exámenes del usuario  
   const getExams = async () => {
     setLoading(true)
     try {
@@ -108,6 +113,7 @@ export const ExamList = () => {
   //   })
   // }
 
+  // Función para alternar el estado de un examen  
   const handleToggleState = async (examen) => {
     const { id_examen } = examen;
     setLoadingStates((prev) => ({ ...prev, [id_examen]: true }));
@@ -116,10 +122,13 @@ export const ExamList = () => {
     try {
       // ✅ Petición al backend para actualizar estado
       await handleSwitchState(nuevoEstado, id_examen)
+      // Verifica si el usuario tiene una carrera asociada  
       if (!user?.carrera) {
         setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
         return;
       }
+
+      // Recarga la lista de exámenes después de actualizar el estado  
       await handleLoadExams(user.carrera)
     } catch (error) {
       Swal.fire("Error", error, "error")
@@ -134,6 +143,7 @@ export const ExamList = () => {
     return Number.parseInt(hours) * 60 + Number.parseInt(minutes)
   }
 
+  // Función para obtener el estilo de color según el estado del examen  
   const getStateStyle = (state) => {
     switch (state.toLowerCase()) {
       case "activo":
@@ -146,7 +156,7 @@ export const ExamList = () => {
         return { color: theme.palette.text.secondary }
     }
   }
-
+  // Función para cerrar la notificación de error  
   const handleCloseSnackbar = () => {
     if (error) setError("");
   };

@@ -51,7 +51,6 @@ export const useExamsStore = () => {
             dispatch(setCurrentAttempt(response.data.intento));
             return response.data.intento;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al cargar examenes'));
             throw error;
         } finally {
@@ -84,7 +83,6 @@ export const useExamsStore = () => {
             dispatch(setCurrentExam(response.data.examen));
             return response.data.examen;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al cargar el examen'));
             throw error;
         } finally {
@@ -99,7 +97,6 @@ export const useExamsStore = () => {
             dispatch(updateExamSuccess(response.data.examen));
             return response.data;
         } catch (error) {
-            console.log(error.response);
             let errorMessage = error.response.data.msg || ''; // Si existe data.msg, se toma, si no, queda vacío
 
             // Verificamos si hay errores en los campos
@@ -138,7 +135,6 @@ export const useExamsStore = () => {
             dispatch(setCurrentQuestion(response.data.pregunta))
             return response.data.pregunta;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al cargar la pregunta'));
             throw error;
         } finally {
@@ -162,7 +158,6 @@ export const useExamsStore = () => {
             dispatch(setCurrentQuestion(response.data.pregunta))
             return response.data.pregunta;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al cargar la pregunta'));
             throw error;
         } finally {
@@ -175,7 +170,6 @@ export const useExamsStore = () => {
             const response = await adminApi.get(`/questions/exam/${examId}`);
             return response.data.preguntas;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al cargar las preguntas'));
             throw error;
         } finally {
@@ -188,7 +182,6 @@ export const useExamsStore = () => {
         let backupOpciones = []; // Almacena el estado original de las opciones
 
         try {
-            console.log(updateData.opcion);
             // Filtrar opciones válidas
             const opcionesValidas = updateData.opcion.filter(op =>
                 (op.contenido && op.contenido.trim() !== "") || op.imagen_url
@@ -408,7 +401,6 @@ export const useExamsStore = () => {
             const response = await adminApi.delete(`/questions/${id_pregunta}`);
             return response.data.preguntas;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al eliminar pregunta'));
             throw error;
         } finally {
@@ -428,7 +420,6 @@ export const useExamsStore = () => {
 
             return response.data.pregunta;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al eliminar opcion'));
             throw error;
         } finally {
@@ -448,7 +439,6 @@ export const useExamsStore = () => {
 
             return response.data.pregunta;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al eliminar imagen'));
             throw error;
         } finally {
@@ -468,7 +458,6 @@ export const useExamsStore = () => {
 
             return response.data.pregunta;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al eliminar imagen'));
             throw error;
         } finally {
@@ -501,7 +490,6 @@ export const useExamsStore = () => {
 
             return response.data.respuesta;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al agregar pregunta'));
             throw error;
         } finally {
@@ -516,7 +504,6 @@ export const useExamsStore = () => {
 
             return response.data.respuesta;
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al agregar pregunta'));
             throw error;
         } finally {
@@ -548,7 +535,6 @@ export const useExamsStore = () => {
             return response.data;
 
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al cargar la revision'));
             throw error;
         } finally {
@@ -564,7 +550,6 @@ export const useExamsStore = () => {
             return response.data;
 
         } catch (error) {
-            console.log(error);
             dispatch(setError(error.response?.data.msg || 'Error al cargar la revision'));
             throw error;
         } finally {

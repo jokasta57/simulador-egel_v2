@@ -1,21 +1,26 @@
-import React from "react"
-import { Paper, Typography, TextField, FormControl, InputLabel, Select, MenuItem, Box, Stack } from "@mui/material"
+import React from "react"  
+import { Paper, Typography, TextField, FormControl, InputLabel, Select, MenuItem, Box, Stack } from "@mui/material"  
 
-const periodos = ["2024-1", "2024-2", "2025-1", "2025-2"]
+// Lista de periodos disponibles para el examen  
+const periodos = ["2024-1", "2024-2", "2025-1", "2025-2"]  
 
-const carreras = [
-  "Ingeniería en Software",
-  "Ingeniería en Sistemas Computacionales",
-  "Ingeniería en Tecnologías de la Información",
-]
+// Lista de carreras disponibles para asociar el examen  
+const carreras = [  
+  "Ingeniería en Software",  
+  "Ingeniería en Sistemas Computacionales",  
+  "Ingeniería en Tecnologías de la Información",  
+]  
 
-const areas = ["Programación", "Base de Datos", "Redes", "Sistemas Operativos", "Inteligencia Artificial"]
+// Lista de áreas de conocimiento relacionadas con el examen  
+const areas = ["Programación", "Base de Datos", "Redes", "Sistemas Operativos", "Inteligencia Artificial"]  
 
-export const ExamInfo = ({ examInfo, onExamInfoChange }) => {
-  const handleChange = (event) => {
-    const { name, value } = event.target
-    onExamInfoChange({ ...examInfo, [name]: value })
-  }
+// Componente para la información general del examen  
+export const ExamInfo = ({ examInfo, onExamInfoChange }) => {  
+  // Maneja los cambios en los campos del formulario  
+  const handleChange = (event) => {  
+    const { name, value } = event.target  
+    onExamInfoChange({ ...examInfo, [name]: value })  
+  }  
 
   return (
     <Paper sx={{ p: 3, mb: 4 }}>

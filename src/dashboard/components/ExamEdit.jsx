@@ -1,31 +1,16 @@
 import React, { useState, useMemo, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Stack,
-  CircularProgress,
-  Alert,
-  FormControlLabel,
-  Switch,
-  Autocomplete,
-  IconButton,
-  Chip,
-  Snackbar,
-  Grid,
-} from "@mui/material"
+import { Box, Typography, TextField, Button, Stack, CircularProgress, Alert, FormControlLabel, Switch, Autocomplete, IconButton, Chip, Snackbar, Grid, } from "@mui/material"
 import { useForm, Controller } from "react-hook-form"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
-import EditIcon from "@mui/icons-material/Edit"
-import { QuestionCard } from "./QuestionCard"
-import { FloatingAddButton } from "./FloatingAddButton"
 import { useDispatch, useSelector } from "react-redux"
 import { addNewQuestionTemp, resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setIsLoadingFalse, setPreguntaNueva, setTotalQuestions, resetCurrentExam } from "../../store/exams/examsSlice"
 import Swal from "sweetalert2"
-import QuestionPanel from "./QuestionPanel"
+import EditIcon from "@mui/icons-material/Edit"
 import { ArrowLeft } from "lucide-react"
+import { QuestionCard } from "./QuestionCard"
+import { FloatingAddButton } from "./FloatingAddButton"
+import QuestionPanel from "./QuestionPanel"
 import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 const generatePeriodOptions = () => {
@@ -44,55 +29,24 @@ const generatePeriodOptions = () => {
 }
 
 export const ExamEdit = () => {
-  const { id } = useParams()
-  const {
-    handleLoadExam,
-    handleUpdateExam,
-    handleLoadQuestion,
-    currentExam,
-    isLoading,
-    // error,
-    // success,
-    handleClearError,
-    handleClearSuccess,
-    handleLoadQuestionsByExam,
-    handleUpdateQuestion,
-    handleResetCurrentQuestion,
-    handleAddNewQuestion,
-    handleDeleteQuestion
-  } = useExamsStore()
-
-  const [isInitialLoading, setIsInitialLoading] = useState(true)
-  const [isExamInfoEditable, setIsExamInfoEditable] = useState(false)
-  const [localError, setLocalError] = useState("")
-  const [localSuccess, setLocalSuccess] = useState("")
-
-  const [isDirty, setIsDirty] = useState(false); // Estado para saber si hay cambios sin guardar
-  const [prevTotalQuestions, setPrevTotalQuestions] = useState(0); // ✅ Guardar estado previo
-
-  const [hasCorrectOption, setHasCorrectOption] = useState(false); // Nuevo estado
-
-
+  const { id } = useParams();
   const navigate = useNavigate();
-
-
-
-
   const dispatch = useDispatch();
-  const { error, success, totalQuestions, currentOrder, preguntaNueva, currentQuestion, resetCurrentQuestion } = useSelector((state) => state.exams);
 
-  const handleCloseSnackbar = () => {
+  // Estados del store
+  const { handleLoadExam, handleUpdateExam, handleLoadQuestion, handleClearError, handleClearSuccess, handleLoadQuestionsByExam, handleUpdateQuestion, handleResetCurrentQuestion, handleAddNewQuestion, handleDeleteQuestion, currentExam, isLoading } = useExamsStore();
 
-    if (error) handleClearError();
-    if (success) handleClearSuccess();
-    if(localError) setLocalError('')
-    if(localSuccess) setLocalSuccess('')
-    if (isLoading) {
-      dispatch(setIsLoadingFalse())
-    };
-  };
+  const { error, success, totalQuestions, currentOrder, preguntaNueva, currentQuestion } = useSelector(state => state.exams);
 
+  // Estados locales
+  const [isInitialLoading, setIsInitialLoading] = useState(true); // Carga inicial
+  const [isExamInfoEditable, setIsExamInfoEditable] = useState(false); // Permite editar la info del examen
+  const [localError, setLocalError] = useState(""); // Error local
+  const [localSuccess, setLocalSuccess] = useState(""); // Éxito local
+  const [isDirty, setIsDirty] = useState(false); // Indica si hay cambios sin guardar
+  const [hasCorrectOption, setHasCorrectOption] = useState(false); // Verifica si hay una opción correcta en la pregunta
 
+  // useForm para manejar los datos del examen
   const { control, handleSubmit, reset, watch } = useForm({
     defaultValues: {
       nombre: "",
@@ -102,33 +56,49 @@ export const ExamEdit = () => {
       area: "",
       estado: "activo",
     },
-  })
+  });
 
+  // Observar cambios en la información del examen
+  const examInfo = watch();
 
+  // Verifica si todos los campos del examen están completos
+  const isExamInfoComplete = useMemo(() => {
+    return Object.values(examInfo).every(value => value !== "");
+  }, [examInfo]);
+
+  // Manejo de alertas y estado de carga
+  const handleCloseSnackbar = () => {
+    if (error) handleClearError();
+    if (success) handleClearSuccess();
+    if (localError) setLocalError("");
+    if (localSuccess) setLocalSuccess("");
+    if (isLoading) {
+      dispatch(setIsLoadingFalse());
+    }
+  };
+
+  // Agrega una nueva pregunta temporal
   const iniciarNuevaPregunta = () => {
     dispatch(addNewQuestionTemp());
   };
 
-
-  const examInfo = watch()
-
-  const isExamInfoComplete = useMemo(() => {
-    return Object.values(examInfo).every((value) => value !== "")
-  }, [examInfo])
-
+  // Marca que hay cambios sin guardar si se detecta una nueva pregunta
   useEffect(() => {
     if (preguntaNueva) {
-      setIsDirty(true); // Marca que hay cambios sin guardar
+      setIsDirty(true);
     }
   }, [preguntaNueva]);
 
-
+  // Carga inicial del examen y sus preguntas
   useEffect(() => {
     const loadExam = async () => {
-      setIsInitialLoading(true)
+      setIsInitialLoading(true);
       try {
-        const exam = await handleLoadExam(id)
-        const questionsLength = await handleLoadQuestionsByExam(id)
+        // Carga la información del examen
+        const exam = await handleLoadExam(id);
+        const questionsLength = await handleLoadQuestionsByExam(id);
+
+        // Establece los valores en el formulario
         reset({
           nombre: exam.nombre || "",
           periodo: exam.periodo || "",
@@ -136,16 +106,20 @@ export const ExamEdit = () => {
           carrera: exam.carrera || "",
           area: exam.area || "",
           estado: exam.estado || "activo",
-        })
-        dispatch(setTotalQuestions(questionsLength.length || 0))
-        // Removemos la carga automática de la primera pregunta
-        // Si hay una pregunta seleccionada, asegurarnos de que se mantenga
+        });
+
+        // Actualiza la cantidad total de preguntas
+        dispatch(setTotalQuestions(questionsLength.length || 0));
+
+        // Carga la pregunta actual si hay una seleccionada
         if (currentOrder) {
-          await handleLoadQuestion(id, currentOrder)
+          await handleLoadQuestion(id, currentOrder);
         }
       } catch (error) {
-        console.error("Error loading exam:", error)
-        if (error?.response.status === 404) {
+        console.error("Error loading exam:", error);
+
+        // Manejo de error si el examen no existe
+        if (error?.response?.status === 404) {
           Swal.fire({
             title: "Examen no encontrado",
             text: "El examen que intentas acceder no existe o ha sido eliminado.",
@@ -157,52 +131,51 @@ export const ExamEdit = () => {
           });
         }
       } finally {
-        setIsInitialLoading(false)
-        setIsExamInfoEditable(false)
+        setIsInitialLoading(false);
+        setIsExamInfoEditable(false);
       }
-    }
+    };
 
     if (id) {
-      loadExam()
+      loadExam();
     }
-  }, [id, handleLoadExam, handleLoadQuestionsByExam, reset])
+  }, [id, handleLoadExam, handleLoadQuestionsByExam, reset]);
 
+  // Cleanup: Reinicia los estados cuando el componente se desmonta
   useEffect(() => {
     return () => {
-      handleResetCurrentQuestion()
-      dispatch(resetCurrentOrder())
-      dispatch(resetTotalQuestions())
-      dispatch(resetPreguntaNueva())
-      dispatch(resetCurrentExam())
-    }
-  }, [handleResetCurrentQuestion])
+      handleResetCurrentQuestion(); // Reinicia la pregunta actual
+      dispatch(resetCurrentOrder()); // Reinicia el número de orden de la pregunta
+      dispatch(resetTotalQuestions()); // Reinicia el total de preguntas
+      dispatch(resetPreguntaNueva()); // Reinicia el estado de nueva pregunta
+      dispatch(resetCurrentExam()); // Reinicia el examen actual
+    };
+  }, [handleResetCurrentQuestion]);
 
-
-
+  // Verifica si la pregunta actual tiene al menos una opción marcada como correcta
   useEffect(() => {
-    if (!currentQuestion || !currentQuestion?.opcion || currentQuestion.opcion.length === 0) {
+    if (!currentQuestion || !currentQuestion.opcion || currentQuestion.opcion.length === 0) {
       setHasCorrectOption(false);
       return;
     }
 
     const correctOptionExists = currentQuestion.opcion.some(opcion => opcion.es_correcta);
-
-    setHasCorrectOption(correctOptionExists); // Actualiza el estado según si hay una respuesta correcta
-
+    setHasCorrectOption(correctOptionExists);
   }, [currentQuestion]);
 
+  // Manejo de `currentOrder`: Evita que apunte a una pregunta eliminada y carga la pregunta con un pequeño delay
   useEffect(() => {
     if (currentOrder && !preguntaNueva && totalQuestions > 0) {
-      // ✅ Verificamos que `currentOrder` no apunte a una pregunta eliminada
+      // Si `currentOrder` apunta a una pregunta inexistente, lo ajustamos
       if (currentOrder > totalQuestions) {
         console.warn("La pregunta seleccionada no existe, actualizando currentOrder...");
-        dispatch(setCurrentOrder(totalQuestions > 0 ? totalQuestions : null)); // 🔹 Si no hay preguntas, currentOrder debe ser null
+        dispatch(setCurrentOrder(totalQuestions > 0 ? totalQuestions : null));
         return;
       }
 
-      // ✅ Si todo está bien, cargar la pregunta con un delay para evitar errores de estado
+      // Cargar la pregunta con un delay para evitar errores de estado
       setTimeout(() => {
-        handleLoadQuestion(id, currentOrder).catch((error) => {
+        handleLoadQuestion(id, currentOrder).catch(error => {
           console.error("Error al cargar la pregunta:", error);
         });
       }, 100);
@@ -210,8 +183,8 @@ export const ExamEdit = () => {
   }, [currentOrder, id, preguntaNueva, totalQuestions]);
 
 
+  //Seleccion de pregunta por orden
   const handleQuestionSelect = async (orden) => {
-    // if (preguntaNueva && orden === preguntaNueva.orden) return; // Evita sobrescribir la nueva pregunta
     try {
       const pregunta = await handleLoadQuestion(id, orden)
       dispatch(setCurrentOrder(orden))
@@ -221,33 +194,32 @@ export const ExamEdit = () => {
   }
 
   const formatDuration = (value) => {
-    let cleanValue = value.replace(/[^0-9]/g, "") // Remove non-digit characters
-
-    // Ensure only up to 6 digits (HHMMSS)
+    let cleanValue = value.replace(/[^0-9]/g, ""); // Elimina caracteres no numéricos
+  
+    // Asegura que solo haya hasta 6 dígitos (HHMMSS)
     if (cleanValue.length > 6) {
-      cleanValue = cleanValue.slice(0, 6)
+      cleanValue = cleanValue.slice(0, 6);
     }
-
-    // Automatically insert ":" after every two digits
-    let formatted = cleanValue.replace(/(\d{2})(?=\d)/g, "$1:")
-
-    // If the user deletes everything, leave it empty
-    if (cleanValue.length === 0) {
-      formatted = ""
-    }
-
-    return formatted
-  }
+  
+    // Inserta ":" automáticamente cada dos dígitos
+    let formatted = cleanValue.replace(/(\d{2})(?=\d)/g, "$1:");
+  
+    // Si el usuario borra todo, deja vacío
+    return cleanValue.length === 0 ? "" : formatted;
+  };
+  
 
   const onSubmit = async (data) => {
-    // if (!isExamInfoComplete) return
     try {
-      await handleUpdateExam(id, data)
-      setIsExamInfoEditable(false)
+      await handleUpdateExam(id, data);
+      setIsExamInfoEditable(false);
+      
+      // Recargar la pregunta actual si existe
       if (currentOrder) {
-        await handleLoadQuestion(id, currentOrder) // Recargar la pregunta actual después de guardar el examen
+        await handleLoadQuestion(id, currentOrder);
       }
-      setLocalSuccess('Pregunta actualizada correctamente')
+  
+      setLocalSuccess("Examen actualizado correctamente");
     } catch (error) {
       if (error?.status === 404) {
         Swal.fire({
@@ -256,12 +228,11 @@ export const ExamEdit = () => {
           icon: "error",
           confirmButtonText: "Volver",
           confirmButtonColor: "#d33",
-        }).then(() => {
-          navigate(-1);
-        });
+        }).then(() => navigate(-1));
       }
     }
-  }
+  };
+  
 
   const toggleExamInfoEdit = () => {
     if (isDirty) {
@@ -348,7 +319,6 @@ export const ExamEdit = () => {
 
 
   if (isInitialLoading) return <LoadingSpinner />
-
 
   return (
     <Box

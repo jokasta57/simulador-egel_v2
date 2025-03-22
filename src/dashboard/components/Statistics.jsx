@@ -1,50 +1,10 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import {
-  Box,
-  Typography,
-  Grid,
-  Paper,
-  useTheme,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Chip,
-  IconButton,
-  FormHelperText,
-  Alert,
-  Button,
-  CircularProgress,
-  Snackbar,
-} from "@mui/material"
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts"
+import { Box, Typography, Grid, Paper, useTheme, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Chip, IconButton, FormHelperText, Alert, Button, CircularProgress, Snackbar, } from "@mui/material"
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, } from "recharts"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
-import Swal from "sweetalert2"
-import DeleteIcon from "@mui/icons-material/Delete"
 import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
 import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
@@ -137,23 +97,27 @@ export const Statistics = () => {
     return data;
   });
 
+  // Maneja el cambio en el campo de búsqueda
   const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value)
-  }
+    setSearchTerm(event.target.value);
+  };
 
   useEffect(() => {
-
+    // Función asíncrona para cargar los datos al montar el componente
     const loadData = async () => {
       setIsLoading(true);
       try {
+        // Verifica si el usuario tiene una carrera asignada
         if (!user?.carrera) {
           setError("No se pudo obtener la información del usuario. Por favor, vuelve a iniciar sesión.");
         }
+        // Carga los exámenes y el último intento de examen en paralelo
         await Promise.all([
           handleLoadExams(user.carrera),
           getLastExamAttempt()
         ]);
       } catch (error) {
+        // Manejo de errores: si el usuario no tiene carrera, mostramos el mismo mensaje de error
         if (!user?.carrera) {
           setError("No se pudo obtener la información del usuario. Por favor, vuelve a iniciar sesión.");
         } else {
@@ -170,6 +134,7 @@ export const Statistics = () => {
 
   useEffect(() => {
     if (!selectedExam) return; // Evita ejecutar si selectedExam está vacío
+    // Función para cargar los datos de rendimiento
     const loadPerformanceData = async () => {
       setIsLoading(true);
       try {
@@ -187,6 +152,7 @@ export const Statistics = () => {
     loadPerformanceData();
   }, [selectedExam, startDate, endDate]); // Se ejecuta cuando cambian estos valores
 
+  // Obtiene el rendimiento por pregunta
   const getPerformancePerQuestion = async () => {
     try {
       const data = await handlePerformancePerQuestion(selectedExam, startDate, endDate);
@@ -196,8 +162,10 @@ export const Statistics = () => {
     }
   }
 
+  // Obtiene el último intento de examen del usuario
   const getLastExamAttempt = async () => {
     try {
+      // Si no se puede obtener la carrera del usuario, mostramos un mensaje de error
       if (!user?.carrera) {
         setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
         return;
@@ -208,10 +176,12 @@ export const Statistics = () => {
 
     } catch (error) {
       setError(error)
+      // Si no hay exámenes disponibles, marcamos que no hay exámenes disponibles
       exams.length === 0 ? setIsExamAvailable(false) : setIsExamAvailable(true)
     }
   }
 
+  // Obtiene el resumen y las calificaciones del examen
   const getSummaryAndGrades = async () => {
     try {
       const data = await handleSummaryAndGrades(selectedExam, startDate, endDate);
@@ -224,11 +194,14 @@ export const Statistics = () => {
     }
   }
 
+  // Filtra a los estudiantes en función del término de búsqueda y el estado de aprobación
   const filteredStudents = useMemo(() => {
     return calificaciones.filter((student) => {
+      // Verifica si el término de búsqueda coincide con algún valor dentro del objeto del estudiante
       const matchesSearch = Object.values(student).some((value) =>
         value.toString().toLowerCase().includes(searchTerm.toLowerCase()),
       )
+      // Filtra por estado de aprobación
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "passed" && student.calificacion >= 70) ||

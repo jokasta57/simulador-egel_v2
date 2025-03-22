@@ -3,6 +3,7 @@ import { Fab, Tooltip, Box, CircularProgress } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useExamsStore } from '../../hooks/exams/useExamsStore';
 
+// Botón flotante para agregar preguntas
 export const FloatingAddButton = ({ onClick, disabled, isDirty }) => {
   const { isLoading } = useExamsStore();
   return (
@@ -14,8 +15,10 @@ export const FloatingAddButton = ({ onClick, disabled, isDirty }) => {
         zIndex: 1100,
       }}
     >
+      {/* Tooltip con mensaje según estado */}
       <Tooltip title={(disabled || isDirty) ? "Debe guardar la información del examen" : "Agregar Pregunta"} placement="left">
         <span>
+          {/* Botón flotante con icono de agregar */}
           <Fab
             color="primary"
             onClick={onClick}

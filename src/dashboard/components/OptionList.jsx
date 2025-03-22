@@ -5,6 +5,7 @@ import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import Swal from "sweetalert2"
 import { useSelector } from "react-redux"
 
+// Opciones predeterminadas para las respuestas de una pregunta
 const defaultOptions = [
   { contenido: "", imagen_url: null, es_correcta: false, public_id_imagen: null },
   { contenido: "", imagen_url: null, es_correcta: false, public_id_imagen: null },
@@ -26,19 +27,28 @@ export const OptionList = ({
   setSuccess
 }) => {
 
+  // Estado local para almacenar las opciones
   const [options, setOptions] = useState([]);
-  const { currentQuestion } = useSelector((state) => state.exams)
-  const fileInputsRef = useRef([]);
-  const { handleDeleteOption, handleDeleteOptionImage } = useExamsStore()
 
+  // Acceder al estado global de `exams`
+  const { currentQuestion } = useSelector((state) => state.exams);
+
+  // Referencias a los inputs de archivos para manejar imágenes de las opciones
+  const fileInputsRef = useRef([]);
+
+  // Funciones del store para eliminar opciones e imágenes
+  const { handleDeleteOption, handleDeleteOptionImage } = useExamsStore();
+
+  //useEffect para manejar la respuesta correcta (aunque no hace nada actualmente)
   useEffect(() => {
     if (respuestaCorrecta == null) {
       return;
     }
   }, [])
 
+  //useEffect para actualizar el estado `options` cuando cambian las opciones o la pregunta actual.
   useEffect(() => {
-   setOptions(prevOptions => {
+    setOptions(prevOptions => {
       const nuevasOpciones = opciones.map((opt, index) => {
         let prevOption = prevOptions[index] || {
           contenido: "",
@@ -48,12 +58,13 @@ export const OptionList = ({
           previewUrl: "",
         };
 
-        // ⚡ Si la opción cambia, limpiamos previewUrl
+        //Si la opción cambia, limpiamos previewUrl
         let previewUrl = "";
         if (prevOption?.id_opcion === opt.id_opcion) {
           previewUrl = prevOption?.previewUrl ?? opt.imagen_url ?? "";
         }
 
+        // Si `previewUrl` no es una cadena válida o es una URL externa, la limpiamos
         if (typeof previewUrl !== "string" || previewUrl.startsWith("https")) {
           previewUrl = "";
         }
@@ -67,20 +78,27 @@ export const OptionList = ({
     });
   }, [opciones, currentQuestion]);
 
+  //Maneja el cambio de texto en una opción específica.
   const handleOptionTextChange = (index, value) => {
-    setIsSaved(false);
-    setIsDirty(true)
+    setIsSaved(false); //  Marcar como no guardado
+    setIsDirty(true); // Indicar que hay cambios pendientes
 
+    // Clonamos el estado actual de opciones y modificamos la opción específica
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], contenido: value };
 
+    // Llamamos a `onOptionUpdate` para actualizar todas las opciones
     onOptionUpdate(-1, "update_all", newOptions);
   };
 
+  //Maneja la carga de una imagen en una opción de respuesta.
   const handleOptionImageUpload = (event, index) => {
     const file = event.target.files[0];
     if (!file) return;
+    // Marcar cambios pendientes
     setIsDirty(true)
+
+    // Crear una URL temporal para la vista previa de la imagen
     const objectUrl = URL.createObjectURL(file);
 
     setOptions(prevOptions => {
@@ -95,11 +113,12 @@ export const OptionList = ({
 
       return newOptions;
     });
-
+    // Actualizar las opciones en el estado global
     onOptionUpdate(index, "imagen_url", file);
     onOptionUpdate(index, "previewUrl", objectUrl);
   };
 
+  // Agrega una nueva opción a la lista de respuestas si el límite no ha sido alcanzado.
   const handleAddOption = () => {
     if (options.length < 6) {
       const newOption = {
@@ -110,24 +129,28 @@ export const OptionList = ({
       };
 
       const updatedOptions = [...options, newOption];
+
+      // Actualizar el estado global con las nuevas opciones
       onOptionUpdate(-1, "update_all", updatedOptions);
 
-      // ✅ Deshabilitar el botón si la nueva opción es vacía
+      // Indicar que los cambios aún no han sido guardados
       setIsSaved(false);
     }
   };
 
+  //Elimina una opción de respuesta después de una confirmación por parte del usuario.
   const deleteOption = async (index, opcion) => {
     try {
       let message = "¿Estás seguro de que quieres eliminar esta opción?";
       let title = "Confirmar eliminación";
 
+      // Advertir si la opción a eliminar es la respuesta correcta
       if (opcion.es_correcta) {
         title = "⚠️ ¡Cuidado! Opción correcta";
         message = `<strong style="color: red;">Esta opción es la respuesta correcta.</strong> <br><br> 
              Si la eliminas, <strong>deberás seleccionar otra como correcta</strong>.`;
       }
-
+      // Mostrar alerta de confirmación antes de eliminar la opción
       const result = await Swal.fire({
         title: title,
         html: message, // Usa 'html' en lugar de 'text' para personalizar el mensaje
@@ -141,10 +164,13 @@ export const OptionList = ({
 
       if (!result.isConfirmed) return; // Si el usuario cancela, salir
 
+      // Eliminar la opción si hay más de dos disponibles
       if (options.length > 2) {
         const newOptions = options.filter((_, i) => i !== index)
         onOptionUpdate(-1, "update_all", newOptions)
       }
+
+      // Si la opción tiene un ID en la base de datos, eliminarla también allí
       if (opcion.id_opcion) {
         await handleDeleteOption(opcion.id_opcion, opcion.id_pregunta);
       }
@@ -154,9 +180,10 @@ export const OptionList = ({
     }
   }
 
+  //Elimina la imagen asociada a una opción de respuesta después de la confirmación del usuario.
   const handleRemoveOptionImage = async (index, { id_opcion, id_pregunta }) => {
-  try {
-      console.log(id_opcion, id_pregunta);
+    try {
+      // Mostrar confirmación antes de eliminar la imagen
       Swal.fire({
         title: "¿Eliminar imagen?",
         text: "La imagen de esta opción se eliminará permanentemente.",
@@ -175,14 +202,15 @@ export const OptionList = ({
             );
             return [...updatedOptions]; // Devuelve un nuevo array para forzar la re-renderización
           });
+          // Notificar al estado global sobre la eliminación de la imagen
           onOptionUpdate(index, "imagen_url", null);
           onOptionUpdate(index, "previewUrl", null);
 
-          // 🔹 Resetear el input file para permitir volver a seleccionar la misma imagen
+          // Resetear el input de archivo para permitir seleccionar la misma imagen nuevamente
           if (fileInputsRef.current[index]) {
             fileInputsRef.current[index].value = "";
           }
-
+          // Si la imagen está almacenada en el servidor, eliminarla también allí
           if (id_opcion !== undefined && id_pregunta !== undefined) {
             await handleDeleteOptionImage(id_opcion, id_pregunta);
           }
@@ -196,8 +224,6 @@ export const OptionList = ({
 
   return (
     <Box sx={{
-      // maxHeight: "auto", 
-      // overflowY: "auto",
       display: 'flex',
       flexDirection: 'column',
       height: '100%',

@@ -5,65 +5,79 @@ import Swal from 'sweetalert2';
 import { useExamsStore } from '../../hooks/exams/useExamsStore';
 
 export const ImageUpload = ({ currentImage, currentQuestion, setCurrentQuestion, onImageUpload, label, isSaved, setIsSaved, setIsDirty }) => {
-  const [previewUrl, setPreviewUrl] = useState(currentImage)
-  const { handleDeleteQuestionImage } = useExamsStore()
+  // Estado para la vista previa de la imagen
+  const [previewUrl, setPreviewUrl] = useState(currentImage);
+  const { handleDeleteQuestionImage } = useExamsStore();
 
-
+  // Actualiza la vista previa de la imagen cuando cambia `currentImage`
   useEffect(() => {
     if (currentImage instanceof File) {
-      setPreviewUrl(URL.createObjectURL(currentImage)); // ✅ Solo crea URL si es un File
+      setPreviewUrl(URL.createObjectURL(currentImage)); // ✅ Si es un archivo, crea una URL temporal
     } else if (typeof currentImage === "string") {
       setPreviewUrl(currentImage); // ✅ Si es una URL, úsala directamente
     } else {
-      setPreviewUrl(null); // ✅ Si es null o undefined, no mostrar imagen
+      setPreviewUrl(null); // ✅ Si es null o undefined, limpia la vista previa
     }
   }, [currentImage]);
 
-
-
+  /**
+   * Maneja la subida de una nueva imagen
+   */
   const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // Crear una URL temporal para la vista previa
-      const objectUrl = URL.createObjectURL(file)
-      setPreviewUrl(objectUrl)
-      // Enviar el archivo original al componente padre
-      onImageUpload(file)
+    const file = event.target.files[0]; // Obtiene el archivo seleccionado
 
-      // Marcar como no guardado
-      setIsDirty(true)
-      setIsSaved(false)
+    if (file) {
+      // Crea una URL temporal para la vista previa de la imagen
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+
+      // Envía el archivo al componente padre
+      onImageUpload(file);
+
+      // Marcar la imagen como "no guardada" y "modificada"
+      setIsDirty(true);
+      setIsSaved(false);
+
       // Limpiar el valor del input para permitir volver a subir la misma imagen
       event.target.value = "";
     }
   };
 
+  /**
+   * Maneja la eliminación de la imagen asociada a la pregunta
+   */
   const handleDeleteImage = () => {
     try {
+      // Muestra una alerta de confirmación antes de eliminar la imagen
       Swal.fire({
         title: "¿Eliminar imagen?",
         text: "La imagen de esta pregunta se eliminará permanentemente.",
         icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: "#d32f2f",
-        cancelButtonColor: "#6c757d",
+        confirmButtonColor: "#d32f2f", // Color rojo para la acción de eliminar
+        cancelButtonColor: "#6c757d", // Color gris para la acción de cancelar
         confirmButtonText: "Sí, eliminar",
-        cancelButtonText: "Cancelar"
+        cancelButtonText: "Cancelar",
       }).then(async (result) => {
         if (result.isConfirmed) {
-          setPreviewUrl(null)
+          // Limpiar la vista previa y eliminar la imagen
+          setPreviewUrl(null);
           onImageUpload(null);
+
+          // Actualizar el estado de la pregunta para reflejar que ya no tiene imagen
           setCurrentQuestion((prev) => ({
             ...prev,
-            imagen_url: null, // ✅ Almacenar correctamente la imagen nueva
+            imagen_url: null, // ✅ Se asegura de eliminar correctamente la imagen
           }));
+
+          // Si la pregunta ya está en la base de datos, eliminar la imagen de manera persistente
           if (currentQuestion.id_pregunta !== undefined) {
             await handleDeleteQuestionImage(currentQuestion.id_pregunta);
           }
         }
       });
     } catch (error) {
-      console.log(error);
+      console.log(error); // Captura errores en la eliminación de la imagen
     }
   };
 

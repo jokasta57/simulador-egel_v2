@@ -11,14 +11,17 @@ import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 
 export const GestionAdministradores = () => {
-  const [administrators, setAdministrators] = useState([])
-  const [showForm, setShowForm] = useState(false)
-  const [editingAdmin, setEditingAdmin] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
-  const formRef = useRef(null)
-  const [reload, setReload] = useState(false);
+  // Estados del componente
+  const [administrators, setAdministrators] = useState([]) // Lista de administradores
+  const [showForm, setShowForm] = useState(false) // Estado para mostrar/ocultar formulario
+  const [editingAdmin, setEditingAdmin] = useState(null) // Estado para edición de admin
+  const [isLoading, setIsLoading] = useState(false) // Indicador de carga
+  const [error, setError] = useState("") // Estado para errores
+  const [success, setSuccess] = useState("") // Estado para éxito
+  const formRef = useRef(null) // Referencia al formulario
+  const [reload, setReload] = useState(false) // Estado para forzar recarga de datos
+
+  // Estado para datos del nuevo administrador
   const [newAdmin, setNewAdmin] = useState({
     nombre: "",
     apellido_paterno: "",
@@ -28,30 +31,36 @@ export const GestionAdministradores = () => {
     nip: "",
     confirmarNip: "", // Nuevo campo para confirmar NIP
   })
-  const [errors, setErrors] = useState({})
 
-  const { handleGetAdmins, handleAddNewAdmin, handleUpdateAdmin, handleDeleteAdmin } = useAdminStore();
+  const [errors, setErrors] = useState({}) // Estado para errores en formulario
+
+  // Hooks personalizados para manejar administradores
+  const { handleGetAdmins, handleAddNewAdmin, handleUpdateAdmin, handleDeleteAdmin } = useAdminStore()
 
   const theme = useTheme()
 
+  // Efecto para cargar la lista de administradores al iniciar y cuando se edita un admin
   useEffect(() => {
-    getAdmins();
+    getAdmins()
   }, [editingAdmin, reload])
 
+  // Manejo de cambios en inputs
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setNewAdmin((prev) => ({ ...prev, [name]: value }))
+
     // Limpiar error cuando el usuario empieza a escribir
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }))
     }
   }
 
+  // Función para obtener los administradores
   const getAdmins = async () => {
     setIsLoading(true)
     try {
-      const data = await handleGetAdmins();
-      setAdministrators(data.administradores);
+      const data = await handleGetAdmins()
+      setAdministrators(data.administradores)
     } catch (error) {
       setError(error)
     } finally {
@@ -59,27 +68,32 @@ export const GestionAdministradores = () => {
     }
   }
 
+  // Cerrar el Snackbar de error o éxito
   const handleCloseSnackbar = () => {
-    if (error) setError("");
-    if (success) setSuccess("");
-  };
+    if (error) setError("")
+    if (success) setSuccess("")
+  }
 
+  // Agregar o actualizar administrador
   const handleAddOrUpdateAdmin = async (e) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      let message = "";
+      let message = ""
 
       if (editingAdmin) {
-        await handleUpdateAdmin(editingAdmin.id_admin, newAdmin);
-        message = "Los datos del administrador han sido actualizados correctamente.";
-        setEditingAdmin(null);
+        // Actualizar administrador
+        await handleUpdateAdmin(editingAdmin.id_admin, newAdmin)
+        message = "Los datos del administrador han sido actualizados correctamente."
+        setEditingAdmin(null)
       } else {
-        await handleAddNewAdmin(newAdmin);
-        message = "El nuevo administrador ha sido registrado correctamente.";
+        // Crear nuevo administrador
+        await handleAddNewAdmin(newAdmin)
+        message = "El nuevo administrador ha sido registrado correctamente."
       }
 
+      // Resetear formulario
       setNewAdmin({
         nombre: "",
         apellido_paterno: "",
@@ -91,8 +105,9 @@ export const GestionAdministradores = () => {
 
       setShowForm(false)
       setIsLoading(false)
-      setReload((prev) => !prev); // 🔄 Forzar recarga de datos
+      setReload((prev) => !prev) // 🔄 Forzar recarga de datos
 
+      // Mostrar mensaje de éxito con SweetAlert
       Swal.fire({
         title: editingAdmin ? "Administrador actualizado" : "Administrador creado",
         text: message,
@@ -108,17 +123,17 @@ export const GestionAdministradores = () => {
           title: "swal-custom-title",
           confirmButton: "swal-custom-button",
         },
-      });
+      })
 
     } catch (error) {
-      setError(error);
+      setError(error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-
   }
 
   const deleteAdmin = async (id, nombre) => {
+    // Muestra un cuadro de diálogo de confirmación con un campo de texto para escribir "eliminar"
     Swal.fire({
       title: `¿Estás seguro de eliminar al administrador "${nombre}"?`,
       text: "Esta acción no se puede deshacer. Para confirmar, escribe 'eliminar'.",
@@ -128,8 +143,8 @@ export const GestionAdministradores = () => {
       showCancelButton: true,
       confirmButtonText: "Eliminar",
       cancelButtonText: "Cancelar",
-      confirmButtonColor: theme.palette.error.main,
-      cancelButtonColor: theme.palette.grey[500],
+      confirmButtonColor: theme.palette.error.main, // Color rojo para resaltar la acción peligrosa
+      cancelButtonColor: theme.palette.grey[500], // Color gris para el botón de cancelar
       icon: "warning",
       inputValidator: (value) => {
         if (value !== 'eliminar') {
@@ -137,18 +152,19 @@ export const GestionAdministradores = () => {
         }
       },
     }).then(async (result) => {
-      if (result.isConfirmed) {
+      if (result.isConfirmed) { // Si el usuario confirma la eliminación
         try {
-          await handleDeleteAdmin(id);
-          setReload((prev) => !prev); // 🔄 Forzar recarga de datos
+          await handleDeleteAdmin(id); // Llama a la función para eliminar el administrador en el backend
+          setReload((prev) => !prev); // 🔄 Fuerza la recarga de datos para actualizar la lista
           Swal.fire({
             title: "Administrador eliminado",
             text: `El administrador "${nombre}" ha sido eliminado correctamente.`,
             icon: "success",
-            timer: 2000, // ⏳ Se cerrará automáticamente
+            timer: 2000, // ⏳ Se cerrará automáticamente en 2 segundos
             showConfirmButton: false,
           });
         } catch (error) {
+          // Muestra un mensaje de error si algo falla en la eliminación
           Swal.fire({
             title: "Error",
             text: error,
@@ -158,27 +174,34 @@ export const GestionAdministradores = () => {
         }
       }
     });
-
-  }
+  };
 
   const handleEditAdmin = (admin) => {
-    setEditingAdmin(admin)
+    // Guarda el administrador que se está editando
+    setEditingAdmin(admin);
+
+    // Llena el formulario con los datos del administrador seleccionado
     setNewAdmin({
       nombre: admin.nombre,
       apellido_paterno: admin.apellido_paterno,
       apellido_materno: admin.apellido_materno,
-      carrera: admin.carrera || "",
+      carrera: admin.carrera || "", // Si no tiene carrera, establece un string vacío
       numero_identificacion: admin.numero_identificacion,
-      nip: "",
-      confirmarNip: "",
-    })
-    setShowForm(true)
-    if (formRef.current) {
-      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
-    }
-  }
+      nip: "", // No se carga el NIP por seguridad, se debe ingresar nuevamente
+      confirmarNip: "", // Campo para confirmar el NIP
+    });
 
-  if (isLoading) return <LoadingSpinner />
+    // Muestra el formulario de edición
+    setShowForm(true);
+
+    // Si el formulario existe, hace scroll automático hacia él para mejor experiencia de usuario
+    if (formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // Muestra un spinner de carga mientras los datos se están cargando
+  if (isLoading) return <LoadingSpinner />;
 
   return (
     <Box sx={{ maxWidth: 1200, margin: "0 auto", p: 3 }}>

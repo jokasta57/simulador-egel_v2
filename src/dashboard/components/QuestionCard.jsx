@@ -8,33 +8,30 @@ import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 
 export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
-  const { currentQuestion, preguntaNueva, currentOrder, currentExam } = useSelector((state) => state.exams)
-  const { handleUpdateQuestion, handleSaveQuestion, handleResetCurrentQuestion, isLoading, handleAddNewQuestion } = useExamsStore()
-  const { newExamInfo } = useSelector((state) => state.createExam)
+  // Obtener datos del estado global de Redux
+  const { currentQuestion, preguntaNueva, currentOrder, currentExam } = useSelector((state) => state.exams);
+  const { newExamInfo } = useSelector((state) => state.createExam);
 
+  // Hook personalizado para manejar preguntas
+  const { handleUpdateQuestion, handleResetCurrentQuestion, isLoading, handleAddNewQuestion } = useExamsStore();
 
-  const [isSaved, setIsSaved] = useState(false)
-  const [localQuestion, setLocalQuestion] = useState(currentQuestion || {})
-  const [showSnackbar, setShowSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  // Estados locales
+  const [isSaved, setIsSaved] = useState(false);
+  const [localQuestion, setLocalQuestion] = useState(currentQuestion || {}); // Estado local de la pregunta
   const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-
-
-  // const opcionesValidas = localQuestion.opcion?.filter(op =>
-  //   (op.contenido?.trim() !== "" || op.imagen_url !== null)
-  // ) || [];
-
+  // Determinar la pregunta a mostrar (pregunta nueva o existente)
   const questionToShow = preguntaNueva || currentQuestion;
 
+  // Si no hay pregunta para mostrar, no renderizar nada
   if (!questionToShow) {
     return null;
   }
 
+  // Actualiza el estado local con la pregunta actual y maneja la inicialización de opciones de respuesta.
   useEffect(() => {
-    // if (currentQuestion.id_pregunta) {
     setLocalQuestion(prev => {
       const esPreguntaNueva = !currentQuestion?.id_pregunta;
 
@@ -56,15 +53,17 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
               contenido: op.contenido || "",
               imagen_url: op.imagen_url || null
             }))
-            : prev.opcion // No sobrescribir opciones vacías si ya estaban en localQuestion
+            : prev.opcion  // Mantener las opciones previas si ya estaban en `localQuestion`
       }
     });
+    // Indicar que los cambios aún no han sido guardados
     setIsSaved(false);
     setHasAttemptedSave(false);
 
-  }, [currentQuestion]);
+  }, [currentQuestion]); // Dependencia: se ejecuta cada vez que cambia `currentQuestion`
 
 
+  //Resetea la pregunta actual para evitar datos residuales.
   useEffect(() => {
     return () => {
       handleResetCurrentQuestion();
@@ -73,7 +72,7 @@ export const QuestionCard = memo(({ onDelete, onUpdate, setIsDirty }) => {
 
 
   const handleQuestionChange = useCallback((e) => {
-    setIsDirty(true)
+    setIsDirty(true); // Marcamos el formulario como modificado
     const newContent = e.target.value
     setIsSaved(false)
     setLocalQuestion((prev) => ({ ...prev, contenido: newContent }))

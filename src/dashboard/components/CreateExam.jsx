@@ -2,21 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Stack,
-  CircularProgress,
-  Alert,
-  FormControlLabel,
-  Switch,
-  Autocomplete,
-  IconButton,
-  Snackbar,
-  InputAdornment,
-} from "@mui/material"
+import { Box, Typography, TextField, Button, Stack, CircularProgress, Alert, FormControlLabel, Switch, Autocomplete, IconButton, Snackbar, InputAdornment, } from "@mui/material"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useCreateExamStore } from "../../hooks/useCreateExamStore"
 import EditIcon from "@mui/icons-material/Edit"
@@ -24,16 +10,7 @@ import ScheduleIcon from "@mui/icons-material/Schedule"
 import { QuestionCard } from "./QuestionCard"
 import { FloatingAddButton } from "./FloatingAddButton"
 import { useDispatch, useSelector } from "react-redux"
-import {
-  addNewQuestionTemp,
-  resetCurrentOrder,
-  resetPreguntaNueva,
-  resetTotalQuestions,
-  setCurrentOrder,
-  setIsLoadingFalse,
-  setPreguntaNueva,
-  setTotalQuestions,
-} from "../../store/exams/examsSlice"
+import { addNewQuestionTemp, resetCurrentOrder, resetPreguntaNueva, resetTotalQuestions, setCurrentOrder, setIsLoadingFalse, setPreguntaNueva, setTotalQuestions, } from "../../store/exams/examsSlice"
 import Swal from "sweetalert2"
 import QuestionPanel from "./QuestionPanel"
 import { resetNewExamInfo } from "../../store"
@@ -56,20 +33,11 @@ const generatePeriodOptions = () => {
 }
 
 export const CreateExam = () => {
-  const {
-    handleUpdateExam,
-    handleLoadQuestion,
-    handleClearError,
-    handleClearSuccess,
-    handleUpdateQuestion,
-    handleResetCurrentQuestion,
-    handleAddNewQuestion,
-    handleDeleteQuestion,
-    handleLoadExam,
-  } = useExamsStore()
-
+  // Importación de funciones del store relacionadas con exámenes
+  const { handleUpdateExam, handleLoadQuestion, handleClearError, handleClearSuccess, handleUpdateQuestion, handleResetCurrentQuestion, handleAddNewQuestion, handleDeleteQuestion, handleLoadExam, } = useExamsStore()
+  // Función para guardar la información del examen
   const { handleSaveExamInfo } = useCreateExamStore()
-
+  // Estado local del formulario del examen
   const [examInfo, setExamInfo] = useState({
     nombre: "",
     periodo: "",
@@ -79,16 +47,16 @@ export const CreateExam = () => {
     estado: "borrador",
   })
 
+  // Estados de control de UI y lógica de negocio
+  const [isExamInfoEditable, setIsExamInfoEditable] = useState(true);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isExamCreated, setIsExamCreated] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Cargando...");
 
-  const [isExamInfoEditable, setIsExamInfoEditable] = useState(true)
-  const [isDirty, setIsDirty] = useState(false)
-  const [isExamCreated, setIsExamCreated] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [loadingMessage, setLoadingMessage] = useState("Cargando...")
-
-
+  // Hooks de navegación y manejo de estado global
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { totalQuestions, currentOrder, preguntaNueva, currentQuestion, currentExam } = useSelector((state) => state.exams)
@@ -100,6 +68,7 @@ export const CreateExam = () => {
     setExamInfo((prev) => ({ ...prev, carrera: user.carrera }))
   }, [user])
 
+  // Función para cerrar el snackbar de notificaciones
   const handleCloseSnackbar = () => {
     setError(null)
     setSuccess(null)
@@ -108,48 +77,46 @@ export const CreateExam = () => {
     }
   }
 
+  // Manejo del input en el formulario del examen
   const handleInputChange = (event) => {
     const { name, value } = event.target
     setExamInfo((prev) => ({ ...prev, [name]: value }))
     setIsDirty(true)
   }
 
+  // Formateo de la duración en formato HH:MM:SS
   const handleDurationChange = (event) => {
     let value = event.target.value.replace(/[^0-9]/g, ""); // Eliminar cualquier caracter no numérico
-
     // Asegurar que solo tenga hasta 6 dígitos (HHMMSS)
-    if (value.length > 6) {
-      value = value.slice(0, 6);
-    }
-
+    if (value.length > 6) value = value.slice(0, 6);
     // Insertar ":" automáticamente cada dos dígitos
     let formatted = value.replace(/(\d{2})(?=\d)/g, "$1:");
-
     // Si el usuario borra todo, dejar vacío
     if (value.length === 0) {
       formatted = "";
     }
-
     setExamInfo((prev) => ({ ...prev, duracion: formatted }));
     setIsDirty(true);
   };
 
-
-
+  // Manejo de cambios en autocompletes
   const handleAutocompleteChange = (name, value) => {
     setExamInfo((prev) => ({ ...prev, [name]: value }))
     setIsDirty(true)
   }
 
+  // Manejo del switch para cambiar estado del examen (borrador/activo)
   const handleSwitchChange = (event) => {
     setExamInfo((prev) => ({ ...prev, estado: event.target.checked ? "activo" : "borrador" }))
     setIsDirty(true)
   }
 
+  // Validación para verificar si toda la información está completa
   const isExamInfoComplete = useMemo(() => {
     return Object.values(examInfo).every((value) => value !== "")
   }, [examInfo])
 
+  // Función para guardar o actualizar la información del examen
   const guardarInformacionExamen = useCallback(
     async (e) => {
       e.preventDefault()
@@ -202,16 +169,17 @@ export const CreateExam = () => {
     ],
   )
 
+  // Función para iniciar una nueva pregunta
   const iniciarNuevaPregunta = () => {
     dispatch(addNewQuestionTemp())
   }
 
+  // Efecto para actualizar el estado sucio cuando hay una nueva pregunta
   useEffect(() => {
-    if (preguntaNueva) {
-      setIsDirty(true)
-    }
+    if (preguntaNueva) setIsDirty(true)
   }, [preguntaNueva])
 
+  // Efecto para limpiar el estado del examen al desmontar el componente
   useEffect(() => {
     return () => {
       handleResetCurrentQuestion()
@@ -220,17 +188,17 @@ export const CreateExam = () => {
       dispatch(resetPreguntaNueva())
     }
   }, [handleResetCurrentQuestion, dispatch])
-
+  
   useEffect(() => {
     return () => {
       dispatch(resetNewExamInfo()); // ✅ Se ejecuta cuando se desmonta el componente
     };
   }, [dispatch]);
-
+  
+  // Cargar la pregunta cuando cambia el orden actual
   useEffect(() => {
     if (currentOrder && !preguntaNueva && totalQuestions > 0) {
       if (currentOrder > totalQuestions) {
-        console.warn("La pregunta seleccionada no existe, actualizando currentOrder...")
         dispatch(setCurrentOrder(totalQuestions > 0 ? totalQuestions : null))
         return
       }
@@ -243,6 +211,7 @@ export const CreateExam = () => {
     }
   }, [currentOrder, examInfo.id_examen, preguntaNueva, totalQuestions, dispatch, handleLoadQuestion])
 
+  // Selección de pregunta
   const handleQuestionSelect = async (orden) => {
     // if (preguntaNueva && orden === preguntaNueva.orden) return
     try {
@@ -254,7 +223,7 @@ export const CreateExam = () => {
       console.error("Error loading question:", error)
     }
   }
-
+  // Alternar edición de la información del examen
   const toggleExamInfoEdit = () => {
     if (isDirty) {
       Swal.fire({
@@ -280,6 +249,7 @@ export const CreateExam = () => {
     }
   }
 
+  // Eliminación de una pregunta
   const eliminarPregunta = async (preguntaId) => {
     Swal.fire({
       title: "¿Estás seguro de eliminar esta pregunta?",
@@ -301,7 +271,7 @@ export const CreateExam = () => {
           dispatch(setCurrentOrder(currentOrder - 1))
           return
         }
-        
+
         try {
           await handleDeleteQuestion(preguntaId)
           dispatch(setTotalQuestions(totalQuestions - 1))
@@ -320,12 +290,14 @@ export const CreateExam = () => {
     })
   }
 
+  //Funcion para actualizar la pregunta en la base de datos 
   const actualizarPregunta = (preguntaId, campo, valor) => {
     if (!currentQuestion) return
     const updatedQuestion = { ...currentQuestion, [campo]: valor }
     handleUpdateQuestion(preguntaId, updatedQuestion)
   }
-
+  
+  //Funcion para guardar la pregunta en la base de datos 
   const guardarPregunta = async (preguntaId) => {
     if (!currentQuestion) return
     try {

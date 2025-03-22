@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSelector } from "react-redux"
 import { Grid, Typography, Box, useTheme, Card, CardContent, Button, Select, MenuItem, TextField, CircularProgress, Snackbar, Alert } from "@mui/material"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,} from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, } from "recharts"
 import { Assignment, People, Edit, Event } from "@mui/icons-material"
 import { Link as RouterLink } from "react-router-dom"
 import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
@@ -12,25 +12,28 @@ import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
 const COLORS = ["#0088FE", "#FF8042"]
 
 export const Dashboard = () => {
-  const theme = useTheme()
-  const [resumenData, setResumenData] = useState([])
-  const [dataLineas, setDataLineas] = useState([])
-  const [dataPie, setDataPie] = useState([])
-  const [examenesBorrador, setExamenesBorrador] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const theme = useTheme();
+  const { handlePercentageByDate, handlePercentage, handleDrafts } = useAdminStatsStore();
+  const { user } = useSelector(state => state.auth);
 
+  // Estados
+  const [resumenData, setResumenData] = useState([]);
+  const [dataLineas, setDataLineas] = useState([]);
+  const [dataPie, setDataPie] = useState([]);
+  const [examenesBorrador, setExamenesBorrador] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  //Filtros
+  // Filtros
   const [selectedExam, setSelectedExam] = useState(""); // Examen seleccionado
   const [startDate, setStartDate] = useState(""); // Fecha inicial
   const [endDate, setEndDate] = useState(""); // Fecha final
 
-  // Obtener todos los exámenes únicos
-  const uniqueExams = Array.from(new Set(dataLineas.map((item) => item.nombre)));
+  // Obtener exámenes únicos para los filtros
+  const uniqueExams = Array.from(new Set(dataLineas.map(item => item.nombre)));
 
   // Filtrar datos por examen y rango de fechas
-  const filteredData = dataLineas.filter((item) => {
+  const filteredData = dataLineas.filter(item => {
     const examFilter = selectedExam ? item.nombre === selectedExam : true;
     const dateFilter =
       (!startDate || new Date(item.fecha) >= new Date(startDate)) &&
@@ -38,53 +41,56 @@ export const Dashboard = () => {
     return examFilter && dateFilter;
   });
 
-  //************** */
-  const { handlePercentageByDate, handlePercentage, handleDrafts } = useAdminStatsStore();
-  const { user } = useSelector(state => state.auth)
-
   useEffect(() => {
-    if(!user) return;
+    if (!user) return; // Evita ejecutar la carga si no hay usuario
+
     const fetchData = async () => {
       setLoading(true);
       try {
-        await Promise.all([
-          getPercentages(),
-          getPercentagesByDate(),
-          getDrafts()
-        ]);
+        await Promise.all([getPercentages(), getPercentagesByDate(), getDrafts()]);
       } catch (error) {
         setError("Error al cargar los datos");
       } finally {
-        setLoading(false); // ✅ Solo se ejecuta cuando TODO ha terminado
+        setLoading(false); // Se ejecuta cuando todas las llamadas han finalizado
       }
     };
 
     fetchData();
-  }, [user])
+  }, [user]);
 
   const getPercentagesByDate = async () => {
     try {
+      // Verificamos si el usuario tiene una carrera asociada
       if (!user?.carrera) {
         setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
         return;
       }
+
+      // Llamamos a la función que obtiene los porcentajes por fecha según la carrera del usuario
       const data = await handlePercentageByDate(user.carrera);
-      // Transformamos los datos antes de usarlos en el gráfico
+
+      // Transformamos los datos para que sean compatibles con el gráfico de líneas
       const lineas = procesarDatos(data.porcentajesPorFecha);
+
+      // Actualizamos el estado con los datos procesados
       setDataLineas(lineas);
     } catch (error) {
       setError("Error al obtener porcentajes");
     }
-  }
+  };
 
   const getDrafts = async () => {
     try {
+      // Verificamos si el usuario tiene una carrera asociada
       if (!user?.carrera) {
         setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
         return;
       }
+
+      // Llamamos a la función que obtiene los borradores de exámenes para la carrera del usuario
       const data = await handleDrafts(user.carrera);
-      // Formatear fechas antes de actualizar el estado
+
+      // Formateamos las fechas antes de actualizar el estado
       const borradoresFormateados = data.borradores.map((borrador) => ({
         ...borrador,
         fecha_modificacion: new Date(borrador.fecha_modificacion).toLocaleDateString("es-ES", {
@@ -93,18 +99,23 @@ export const Dashboard = () => {
           year: "numeric",
         }),
       }));
+
+      // Actualizamos el estado con los borradores formateados
       setExamenesBorrador(borradoresFormateados);
     } catch (error) {
+      // Agregamos el mensaje de error previo al nuevo error capturado
       setError((prevError) => `${prevError} ${error}`);
     }
-  }
+  };
 
+  // Función que transforma los datos recibidos en un formato adecuado para el gráfico
   const procesarDatos = (data) => {
     return data.flatMap((item) => {
+      // Dividimos los nombres de exámenes en caso de que haya varios en una misma fecha
       return item.nombre.split(", ").map((examen) => ({
         fecha: item.fecha,
         nombre: examen,
-        porcentajeAprobados: parseFloat(item.porcentajeAprobados), // Convertir a número,
+        porcentajeAprobados: parseFloat(item.porcentajeAprobados), // Convertimos a número
         totalIntentos: item.totalIntentos
       }));
     });
@@ -112,21 +123,23 @@ export const Dashboard = () => {
 
   const getPercentages = async () => {
     try {
+      // Verificamos si el usuario tiene una carrera asociada
       if (!user?.carrera) {
         setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
         return;
       }
 
+      // Llamamos a la función que obtiene los porcentajes de aprobados y reprobados
       const data = await handlePercentage(user.carrera);
 
-      // Transformar datos para el gráfico de pastel
+      // Transformamos los datos para el gráfico de pastel
       const transformedData = [
         { name: "Aprobados", value: parseFloat(data.porcentajes.aprobados) || 0 },
         { name: "Reprobados", value: parseFloat(data.porcentajes.reprobados) || 0 }
       ];
       setDataPie(transformedData);
 
-      // Transformar datos para la sección de resumen
+      // Transformamos los datos para la sección de resumen
       const transformedResumen = [
         {
           title: "Total de Exámenes",

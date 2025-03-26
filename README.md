@@ -5,22 +5,6 @@ Cuenta con un sistema de administración para la creación de exámenes y la ges
 
 ---
 
-## Características
-
-### Módulo de Estudiantes
-- **Realización de exámenes** con tiempo límite  
-- **Consulta de resultados y estadísticas personales**  
-- **Revisión de respuestas y análisis de desempeño**
-- **Gestión de sus datos personales**
-
-### 🛠 Módulo Administrativo  
-- **Dashboard con estadísticas** de rendimiento de los estudiantes por examen 
-- **Gestión de exámenes y preguntas** (CRUD)  
-- **Creación y gestión de administradores**  
-- **Reportes de desempeño global**  
-
----
-
 ## 🖥️ Tecnologías Utilizadas  
 - **React** - Frontend  
 - **Node.js & Express** - Backend con API REST  
@@ -28,31 +12,18 @@ Cuenta con un sistema de administración para la creación de exámenes y la ges
 - **JWT** - Autenticación segura  
 - **Cloudinary** - Almacenamiento de imágenes
 
----
+## 🚀 Getting Started
 
-## Instalación Frontend
-1. Clona el repositorio:  
-   ```sh
-   git clone https://github.com/JahirSamperio/simulador-egel.git
-   ```
+Sigue estos pasos para configurar y ejecutar el simulador de exámenes EGEL en tu máquina local.
 
-2. Accede a la carpeta del proyecto
-   ```sh
-    cd simulador-egel
-    ```
+### Requisitos
 
-3. Instala las dependencias:
-    ```sh
-    npm install
-    ```
+Antes de comenzar, asegúrate de tener instalados los siguientes programas:
 
-4. Configura las variables de entorno en un archivo .env:
-    VITE_API_URL=http://localhost:8080
-
-5. Inicia el servidor de desarrollo:
-    ```sh
-    npm run dev
-    ```
+> [!IMPORTANT]
+> Vas a necesitar:
+> - [Node.js 18+ (recomendado 20 LTS)](https://nodejs.org/en/).
+> - [MySQL](https://dev.mysql.com/downloads/).
 
 ---
 
@@ -85,6 +56,34 @@ Cuenta con un sistema de administración para la creación de exámenes y la ges
     ```
 
 ---
+
+## Instalación Frontend
+1. Clona el repositorio:  
+   ```sh
+   git clone https://github.com/JahirSamperio/simulador-egel.git
+   ```
+
+2. Accede a la carpeta del proyecto
+   ```sh
+    cd simulador-egel
+    ```
+
+3. Instala las dependencias:
+    ```sh
+    npm install
+    ```
+
+4. Configura las variables de entorno en un archivo .env:
+    VITE_API_URL=http://localhost:8080
+
+5. Inicia el servidor de desarrollo:
+    ```sh
+    npm run dev
+    ```
+
+---
+
+## 👨‍💻 Uso de la Aplicación
 
 ### Panel de Estudiantes  
 Aquí los alumnos pueden ver sus exámenes y revisar su desempeño.  

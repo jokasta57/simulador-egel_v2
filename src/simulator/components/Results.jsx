@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { useStudentStatsStore } from "../../hooks/statistics/useStudentStatsStore"
-import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Card, CardContent, Grid, useTheme, CircularProgress, TextField, FormControl, InputLabel, Select, MenuItem, Button, IconButton, Snackbar, Alert, } from "@mui/material"
+import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Card, CardContent, Grid, useTheme, CircularProgress, TextField, FormControl, InputLabel, Select, MenuItem, Button, IconButton, Snackbar, Alert, TablePagination, } from "@mui/material"
 import { TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon, Stars as StarsIcon, Assessment as AssessmentIcon, Search as SearchIcon, FilterList as FilterListIcon, Visibility as VisibilityIcon, } from "@mui/icons-material"
 import { Link } from "react-router-dom"
 import { LoadingSpinner } from "./LoadingSpinner"
@@ -20,7 +20,9 @@ export const Results = () => {
   const [statusFilter, setStatusFilter] = useState("all") // Filtro por estado del examen
   const [dateFilter, setDateFilter] = useState("") // Filtro por fecha
   const [areaFilter, setAreaFilter] = useState("") // Filtro por área de examen
-
+  const [page, setPage] = useState(0);  // Página actual
+  const [rowsPerPage, setRowsPerPage] = useState(5);  // Filas por página
+  
   const calificacionMinima = 70 // Calificación mínima para aprobar
   const { user } = useSelector((state) => state.auth) // Obtiene los datos del usuario autenticado
   const { handleStudentResults } = useStudentStatsStore() // Función para obtener los resultados del estudiante
@@ -95,6 +97,17 @@ export const Results = () => {
   const handleCloseSnackbar = () => {
     setError("")
   }
+
+  // Función para manejar el cambio de página
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  // Función para manejar el cambio de filas por página
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));  // Filas por página
+    setPage(0);  // Resetea la página cuando cambian las filas por página
+  };
 
   // Obtiene las áreas únicas de los exámenes para los filtros
   const uniqueAreas = [...new Set(examenes.map((examen) => examen.area))]
@@ -294,6 +307,7 @@ export const Results = () => {
               </TableRow>
             ) : (
               examenes
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .filter((examen) => {
                   const searchTermLower = searchTerm.toLowerCase();
                   const matchesSearch =
@@ -336,6 +350,16 @@ export const Results = () => {
             )}
           </TableBody>
         </Table>
+        {/* Paginación */}
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}  // Opciones de filas por página
+          component="div"
+          count={examenes.length}  // Total de registros
+          rowsPerPage={rowsPerPage}  // Número de filas por página
+          page={page}  // Página actual
+          onPageChange={handleChangePage}  // Cambiar de página
+          onRowsPerPageChange={handleChangeRowsPerPage}  // Cambiar las filas por página
+        />
       </TableContainer>
       <Snackbar
         open={Boolean(error)}

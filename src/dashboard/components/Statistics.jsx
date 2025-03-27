@@ -1,12 +1,14 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Box, Typography, Grid, Paper, useTheme, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Chip, IconButton, FormHelperText, Alert, Button, CircularProgress, Snackbar, } from "@mui/material"
+import { Box, Typography, Grid, Paper, useTheme, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Chip, Alert, Button, Snackbar, TablePagination, } from "@mui/material"
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, } from "recharts"
 import { useExamsStore } from "../../hooks/exams/useExamsStore"
 import { useSelector } from "react-redux"
 import { useAdminStatsStore } from "../../hooks/statistics/useAdminStatsStore"
 import { LoadingSpinner } from "../../simulator/components/LoadingSpinner"
+import DownloadIcon from "@mui/icons-material/Download"
+import * as XLSX from "xlsx"
 
 const COLORS = ["#2196f3", "#f44336"] // Azul para aprobados, Rojo para reprobados
 
@@ -30,7 +32,7 @@ export const Statistics = () => {
   const [statusFilter, setStatusFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
 
-  //Info de las preguntas para las graficas de 
+  //Info de las preguntas para las graficas de
   const [preguntasData, setPreguntasData] = useState([])
 
   //para la grafica de distribucion de calificaciones
@@ -42,28 +44,29 @@ export const Statistics = () => {
   const [resumen, setResumen] = useState({})
 
   //Preguntas por pagina para la grafica de moda
-  const preguntasPorPagina = 5; // Mínimo 5 preguntas por página
-  const [paginaActual, setPaginaActual] = useState(0);
+  const preguntasPorPagina = 5 // Mínimo 5 preguntas por página
+  const [paginaActual, setPaginaActual] = useState(0)
+
+  const [page, setPage] = useState(0);  // Página actual
+  const [rowsPerPage, setRowsPerPage] = useState(5);  // Filas por página
+
 
   //Loading
   const [isLoading, setIsLoading] = useState(false)
-  const [isExamAvailable, setIsExamAvailable] = useState(true); // Estado para verificar si hay exámenes
+  const [isExamAvailable, setIsExamAvailable] = useState(true) // Estado para verificar si hay exámenes
 
   //Hook de estadisticas
-  const { handlePerformancePerQuestion, handleLastExamAttempt, handleSummaryAndGrades } = useAdminStatsStore();
+  const { handlePerformancePerQuestion, handleLastExamAttempt, handleSummaryAndGrades } = useAdminStatsStore()
   const { handleLoadExams } = useExamsStore()
 
   const { exams } = useSelector((state) => state.exams)
   const { user } = useSelector((state) => state.auth)
-
-
 
   const handleExamChange = (event) => {
     setSelectedExam(event.target.value)
     if (event.target.value) {
       // Aquí cargarías los datos reales del examen seleccionado
       // setCalificaciones(calificacionesFake)
-
     } else {
       // Resetear datos cuando no hay examen seleccionado
       setDistribucionCalificaciones([])
@@ -72,93 +75,85 @@ export const Statistics = () => {
     }
   }
   // Calcular el rango de preguntas a mostrar
-  const inicio = paginaActual * preguntasPorPagina;
-  const fin = Math.min(inicio + preguntasPorPagina, preguntasData.length);
-  const preguntasPagina = Array.isArray(preguntasData) ? preguntasData.slice(inicio, fin) : [];
-
+  const inicio = paginaActual * preguntasPorPagina
+  const fin = Math.min(inicio + preguntasPorPagina, preguntasData.length)
+  const preguntasPagina = Array.isArray(preguntasData) ? preguntasData.slice(inicio, fin) : []
 
   // Obtener todas las opciones posibles en la página actual
-  const todasLasOpciones = [...new Set(preguntasPagina.flatMap((p) => p.opciones.map((o) => o.opcion)))];
+  const todasLasOpciones = [...new Set(preguntasPagina.flatMap((p) => p.opciones.map((o) => o.opcion)))]
 
   // Transformar los datos para que cada pregunta tenga todas las opciones, incluso con frecuencia 0 si no existe
   const datosTransformados = preguntasPagina.map((pregunta) => {
-    let data = { pregunta: `P${pregunta.pregunta}` }; // Se mantiene única en el eje X
+    const data = { pregunta: `P${pregunta.pregunta}` } // Se mantiene única en el eje X
     pregunta.opciones.forEach((opcion) => {
-      data[opcion.opcion] = opcion.frecuencia; // Se asigna cada opción como clave con su frecuencia
-    });
+      data[opcion.opcion] = opcion.frecuencia // Se asigna cada opción como clave con su frecuencia
+    })
 
     // Asegurar que todas las opciones están presentes (incluso si faltan en la pregunta)
     todasLasOpciones.forEach((opcion) => {
       if (!(opcion in data)) {
-        data[opcion] = 0; // Si no hay datos para esa opción, poner 0
+        data[opcion] = 0 // Si no hay datos para esa opción, poner 0
       }
-    });
+    })
 
-    return data;
-  });
+    return data
+  })
 
   // Maneja el cambio en el campo de búsqueda
   const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
+    setSearchTerm(event.target.value)
+  }
 
   useEffect(() => {
     // Función asíncrona para cargar los datos al montar el componente
     const loadData = async () => {
-      setIsLoading(true);
+      setIsLoading(true)
       try {
         // Verifica si el usuario tiene una carrera asignada
         if (!user?.carrera) {
-          setError("No se pudo obtener la información del usuario. Por favor, vuelve a iniciar sesión.");
+          setError("No se pudo obtener la información del usuario. Por favor, vuelve a iniciar sesión.")
         }
         // Carga los exámenes y el último intento de examen en paralelo
-        await Promise.all([
-          handleLoadExams(user.carrera),
-          getLastExamAttempt()
-        ]);
+        await Promise.all([handleLoadExams(user.carrera), getLastExamAttempt()])
       } catch (error) {
         // Manejo de errores: si el usuario no tiene carrera, mostramos el mismo mensaje de error
         if (!user?.carrera) {
-          setError("No se pudo obtener la información del usuario. Por favor, vuelve a iniciar sesión.");
+          setError("No se pudo obtener la información del usuario. Por favor, vuelve a iniciar sesión.")
         } else {
-          setError("Error al cargar los exámenes. Intenta de nuevo más tarde.");
+          setError("Error al cargar los exámenes. Intenta de nuevo más tarde.")
         }
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
+    }
 
-    };
-
-    loadData();
-  }, []); // Solo se ejecuta una vez al montar el componente
+    loadData()
+  }, []) // Solo se ejecuta una vez al montar el componente
 
   useEffect(() => {
-    if (!selectedExam) return; // Evita ejecutar si selectedExam está vacío
+    if (!selectedExam) return // Evita ejecutar si selectedExam está vacío
     // Función para cargar los datos de rendimiento
     const loadPerformanceData = async () => {
-      setIsLoading(true);
+      setIsLoading(true)
       try {
-        await Promise.all([
-          getPerformancePerQuestion(),
-          getSummaryAndGrades()
-        ]);
+        await Promise.all([getPerformancePerQuestion(), getSummaryAndGrades()])
       } catch (error) {
-        setError("Error al cargar los datos de rendimiento");
+        setError("Error al cargar los datos de rendimiento")
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    loadPerformanceData();
-  }, [selectedExam, startDate, endDate]); // Se ejecuta cuando cambian estos valores
+    loadPerformanceData()
+  }, [selectedExam, startDate, endDate]) // Se ejecuta cuando cambian estos valores
 
   // Obtiene el rendimiento por pregunta
   const getPerformancePerQuestion = async () => {
     try {
-      const data = await handlePerformancePerQuestion(selectedExam, startDate, endDate);
+      const data = await handlePerformancePerQuestion(selectedExam, startDate, endDate)
       setPreguntasData(data.intentos)
     } catch (error) {
-      setError("Error al cargar los datos de rendimiento");
+      setError("Error al cargar los datos de rendimiento")
     }
   }
 
@@ -167,13 +162,12 @@ export const Statistics = () => {
     try {
       // Si no se puede obtener la carrera del usuario, mostramos un mensaje de error
       if (!user?.carrera) {
-        setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.");
-        return;
+        setError("No pudimos obtener tu información de usuario. Intenta cerrar sesión y volver a ingresar.")
+        return
       }
-      const data = await handleLastExamAttempt(user.carrera);
+      const data = await handleLastExamAttempt(user.carrera)
       setSelectedExam(data.examen.id_examen)
-      setIsExamAvailable(true);
-
+      setIsExamAvailable(true)
     } catch (error) {
       setError(error)
       // Si no hay exámenes disponibles, marcamos que no hay exámenes disponibles
@@ -184,13 +178,13 @@ export const Statistics = () => {
   // Obtiene el resumen y las calificaciones del examen
   const getSummaryAndGrades = async () => {
     try {
-      const data = await handleSummaryAndGrades(selectedExam, startDate, endDate);
+      const data = await handleSummaryAndGrades(selectedExam, startDate, endDate)
       setDistribucionCalificaciones(data.resumen.distribucion_calificaciones)
       setAprobacion(data.resumen.aprobacion)
       setCalificaciones(data.calificaciones)
       setResumen(data.resumen)
     } catch (error) {
-      setError("Error al cargar datos");
+      setError("Error al cargar datos")
     }
   }
 
@@ -211,9 +205,133 @@ export const Statistics = () => {
   }, [searchTerm, statusFilter, calificaciones])
 
   const handleCloseSnackbar = () => {
-    if (error) setError("");
+    if (error) setError("")
+  }
+
+  // Función para exportar los datos a Excel
+  const exportToExcel = () => {
+    try {
+      // Obtener el nombre del examen seleccionado
+      const selectedExamName = exams.find((exam) => exam.id_examen === selectedExam)?.nombre || "Examen"
+      const selectedExamPeriod = exams.find((exam) => exam.id_examen === selectedExam)?.periodo || ""
+
+      // Crear un nuevo libro de trabajo
+      const workbook = XLSX.utils.book_new()
+
+      // Crear una hoja con la información general
+      const infoData = [
+        ["Nombre del Examen", `${selectedExamName} - ${selectedExamPeriod}`],
+        ["Fecha de Inicio", startDate || "No especificada"],
+        ["Fecha de Fin", endDate || "No especificada"],
+        ["Promedio General", resumen.promedio_general || "N/A"],
+        ["Total de Estudiantes", resumen.total_estudiantes || 0],
+        ["Tasa de Aprobación", resumen.tasa_aprobacion ? `${resumen.tasa_aprobacion}%` : "N/A"],
+      ]
+
+      const infoSheet = XLSX.utils.aoa_to_sheet(infoData)
+      XLSX.utils.book_append_sheet(workbook, infoSheet, "Información General")
+
+      // Crear una hoja para el rendimiento por pregunta
+      if (preguntasData.length > 0) {
+        const rendimientoData = [["Pregunta", "Porcentaje de Aciertos"]]
+
+        preguntasData.forEach((item) => {
+          rendimientoData.push([`Pregunta ${item.pregunta}`, (item.porcentaje_aciertos * 100).toFixed(2) + "%"])
+        })
+
+        const rendimientoSheet = XLSX.utils.aoa_to_sheet(rendimientoData)
+        XLSX.utils.book_append_sheet(workbook, rendimientoSheet, "Rendimiento por Pregunta")
+      }
+
+      // Crear una hoja para la distribución de calificaciones
+      if (distribucionCalificaciones.length > 0) {
+        const distribucionData = [["Rango de Calificaciones", "Cantidad de Estudiantes"]]
+
+        distribucionCalificaciones.forEach((item) => {
+          distribucionData.push([item.rango, item.cantidad])
+        })
+
+        const distribucionSheet = XLSX.utils.aoa_to_sheet(distribucionData)
+        XLSX.utils.book_append_sheet(workbook, distribucionSheet, "Distribución de Calificaciones")
+      }
+
+      // Crear una hoja para la moda de respuestas
+      if (datosTransformados.length > 0) {
+        const modaData = [["Pregunta", ...todasLasOpciones.map((opcion) => `Opción ${opcion}`)]]
+
+        datosTransformados.forEach((item) => {
+          const row = [item.pregunta]
+          todasLasOpciones.forEach((opcion) => {
+            row.push(item[opcion] || 0)
+          })
+          modaData.push(row)
+        })
+
+        const modaSheet = XLSX.utils.aoa_to_sheet(modaData)
+        XLSX.utils.book_append_sheet(workbook, modaSheet, "Moda de Respuestas")
+      }
+
+      // Crear una hoja para aprobados vs reprobados
+      if (aprobacion.length > 0) {
+        const aprobacionData = [["Estado", "Porcentaje"]]
+
+        aprobacion.forEach((item) => {
+          aprobacionData.push([item.name, `${item.value}%`])
+        })
+
+        const aprobacionSheet = XLSX.utils.aoa_to_sheet(aprobacionData)
+        XLSX.utils.book_append_sheet(workbook, aprobacionSheet, "Aprobados vs Reprobados")
+      }
+
+      // Crear una hoja para las calificaciones de estudiantes
+      if (calificaciones.length > 0) {
+        const calificacionesData = [
+          [
+            "Número de Cuenta",
+            "Nombre",
+            "Apellido Paterno",
+            "Apellido Materno",
+            "Calificación",
+            "No. de Intentos",
+            "Estado",
+          ],
+        ]
+
+        calificaciones.forEach((student) => {
+          calificacionesData.push([
+            student.numero_cuenta,
+            student.nombre,
+            student.apellido_paterno,
+            student.apellido_materno,
+            student.calificacion,
+            student.total_intentos,
+            student.calificacion >= 70 ? "Aprobado" : "Reprobado",
+          ])
+        })
+
+        const calificacionesSheet = XLSX.utils.aoa_to_sheet(calificacionesData)
+        XLSX.utils.book_append_sheet(workbook, calificacionesSheet, "Calificaciones por Estudiante")
+      }
+
+      // Generar el archivo Excel y descargarlo
+      const fileName = `${selectedExamName}_Estadisticas_${new Date().toISOString().split("T")[0]}.xlsx`
+      XLSX.writeFile(workbook, fileName)
+    } catch (error) {
+      setError("Error al exportar a Excel: " + error.message)
+    }
+  }
+
+
+  // Función para manejar el cambio de página
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
   };
 
+  // Función para manejar el cambio de filas por página
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));  // Filas por página
+    setPage(0);  // Resetea la página cuando cambian las filas por página
+  };
 
   if (isLoading) return <LoadingSpinner />
 
@@ -246,7 +364,11 @@ export const Statistics = () => {
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
             <FormControl fullWidth error={!selectedExam}>
-              {isExamAvailable ? (<InputLabel>Seleccionar Examen</InputLabel>) : (<InputLabel>No hay exámenes disponibles</InputLabel>)}
+              {isExamAvailable ? (
+                <InputLabel>Seleccionar Examen</InputLabel>
+              ) : (
+                <InputLabel>No hay exámenes disponibles</InputLabel>
+              )}
               <Select
                 value={selectedExam || ""}
                 label="Seleccionar Examen"
@@ -257,7 +379,7 @@ export const Statistics = () => {
                   -- Selecciona un examen --
                 </MenuItem>
                 {exams.length === 0 ? (
-                  <MenuItem disabled>No hay exámenes disponibles</MenuItem>// Mensaje si no hay exámenes
+                  <MenuItem disabled>No hay exámenes disponibles</MenuItem> // Mensaje si no hay exámenes
                 ) : (
                   exams.map((exam) => (
                     <MenuItem key={exam.id_examen} value={exam.id_examen}>
@@ -296,6 +418,20 @@ export const Statistics = () => {
           </Grid>
         </Grid>
 
+        {/* Botón de exportar a Excel */}
+        <Grid item xs={12}>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<DownloadIcon />}
+              onClick={exportToExcel}
+              disabled={!selectedExam || isLoading}
+            >
+              Exportar a Excel
+            </Button>
+          </Box>
+        </Grid>
 
         {/* Resumen General */}
         <Grid item xs={12}>
@@ -309,13 +445,27 @@ export const Statistics = () => {
               ) : (
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={4}>
-                    <Typography variant="body1"><strong>Promedio General: </strong>{isNaN(resumen.promedio_general) || resumen.promedio_general === null ? 'Sin resultados aún' : resumen.promedio_general}</Typography>
+                    <Typography variant="body1">
+                      <strong>Promedio General: </strong>
+                      {isNaN(resumen.promedio_general) || resumen.promedio_general === null
+                        ? "Sin resultados aún"
+                        : resumen.promedio_general}
+                    </Typography>
                   </Grid>
                   <Grid item xs={12} sm={4}>
-                    <Typography variant="body1"><strong> Total de Estudiantes: </strong>{resumen.total_estudiantes}</Typography>
+                    <Typography variant="body1">
+                      <strong> Total de Estudiantes: </strong>
+                      {resumen.total_estudiantes}
+                    </Typography>
                   </Grid>
                   <Grid item xs={12} sm={4}>
-                    <Typography variant="body1"> <strong> Tasa de Aprobación: </strong>{isNaN(resumen.tasa_aprobacion) || resumen.tasa_aprobacion === null ? 'Sin resultados aún' : resumen.tasa_aprobacion + '%'}</Typography>
+                    <Typography variant="body1">
+                      {" "}
+                      <strong> Tasa de Aprobación: </strong>
+                      {isNaN(resumen.tasa_aprobacion) || resumen.tasa_aprobacion === null
+                        ? "Sin resultados aún"
+                        : resumen.tasa_aprobacion + "%"}
+                    </Typography>
                   </Grid>
                 </Grid>
               )
@@ -359,19 +509,24 @@ export const Statistics = () => {
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Distribución de Calificaciones
+              Distribución de Promedios
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={distribucionCalificaciones}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="rango" label={{ value: "Rango de calificaciones", position: "insideBottom", offset: -5 }} />
-                <YAxis label={{ value: "Número de estudiantes", angle: -90, position: "insideLeft", dy: 80 }} />
-
+                <XAxis
+                  dataKey="rango"
+                  label={{ value: "Rango de calificaciones", position: "insideBottom", offset: -5 }}
+                />
+                <YAxis
+                  label={{ value: "Número de estudiantes", angle: -90, position: "insideLeft", dy: 80 }}
+                  tickFormatter={(value) => Math.floor(value)}  // Asegura que los números sean enteros
+                />
 
                 <Tooltip />
                 <Bar dataKey="cantidad" fill={theme.palette.primary.main} />
                 {/* Mensaje si no hay datos */}
-                {distribucionCalificaciones.every(item => item.cantidad === 0) && (
+                {distribucionCalificaciones.every((item) => item.cantidad === 0) && (
                   <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
                     No hay datos disponibles
                   </text>
@@ -431,15 +586,16 @@ export const Statistics = () => {
               </span>
               <Button
                 variant="contained"
-                onClick={() => setPaginaActual((prev) => (prev + 1 < Math.ceil(preguntasData.length / preguntasPorPagina) ? prev + 1 : prev))}
+                onClick={() =>
+                  setPaginaActual((prev) =>
+                    prev + 1 < Math.ceil(preguntasData.length / preguntasPorPagina) ? prev + 1 : prev,
+                  )
+                }
                 disabled={fin >= preguntasData.length}
               >
                 Siguiente
               </Button>
             </div>
-
-
-
           </Paper>
         </Grid>
 
@@ -465,7 +621,7 @@ export const Statistics = () => {
                   ))}
                 </Pie>
                 <Tooltip />
-                {aprobacion.every(item => item.value === null) && (
+                {aprobacion.every((item) => item.value === null) && (
                   <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
                     No hay datos disponibles
                   </text>
@@ -524,16 +680,16 @@ export const Statistics = () => {
                 },
               }}
             >
-              <Table stickyHeader sx={{ minWidth: 650 }} aria-label="tabla de calificaciones">
+              <Table>
                 <TableHead>
-                  <TableRow>
-                    <TableCell>Número de Cuenta</TableCell>
-                    <TableCell>Nombre</TableCell>
-                    <TableCell>Apellido Paterno</TableCell>
-                    <TableCell>Apellido Materno</TableCell>
-                    <TableCell align="right">Calificación</TableCell>
-                    <TableCell align="right">No. de Intentos</TableCell>
-                    <TableCell align="center">Estado</TableCell>
+                  <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
+                    <TableCell sx={{ color: "white" }}>Número de Cuenta</TableCell>
+                    <TableCell sx={{ color: "white" }}>Nombre</TableCell>
+                    <TableCell sx={{ color: "white" }}>Apellido Paterno</TableCell>
+                    <TableCell sx={{ color: "white" }}>Apellido Materno</TableCell>
+                    <TableCell sx={{ color: "white" }} align="right">Promedio</TableCell>
+                    <TableCell sx={{ color: "white" }} align="right">No. de Intentos</TableCell>
+                    <TableCell sx={{ color: "white" }} align="center">Estado</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -544,27 +700,39 @@ export const Statistics = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredStudents.map((row) => (
-                      <TableRow key={row.numero_cuenta} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                        <TableCell component="th" scope="row">
-                          {row.numero_cuenta}
-                        </TableCell>
-                        <TableCell>{row.nombre}</TableCell>
-                        <TableCell>{row.apellido_paterno}</TableCell>
-                        <TableCell>{row.apellido_materno}</TableCell>
-                        <TableCell align="right">{row.calificacion}</TableCell>
-                        <TableCell align="right">{row.total_intentos}</TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={row.calificacion >= 70 ? "Aprobado" : "Reprobado"}
-                            color={row.calificacion >= 70 ? "success" : "error"}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    filteredStudents
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((row) => (
+                        <TableRow key={row.numero_cuenta} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                          <TableCell component="th" scope="row">
+                            {row.numero_cuenta}
+                          </TableCell>
+                          <TableCell>{row.nombre}</TableCell>
+                          <TableCell>{row.apellido_paterno}</TableCell>
+                          <TableCell>{row.apellido_materno}</TableCell>
+                          <TableCell align="right">{row.calificacion}</TableCell>
+                          <TableCell align="right">{row.total_intentos}</TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              label={row.calificacion >= 70 ? "Aprobado" : "Reprobado"}
+                              color={row.calificacion >= 70 ? "success" : "error"}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))
                   )}
                 </TableBody>
               </Table>
+              {/* Paginación */}
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25]}  // Opciones de filas por página
+                component="div"
+                count={filteredStudents.length}  // Total de registros
+                rowsPerPage={rowsPerPage}  // Número de filas por página
+                page={page}  // Página actual
+                onPageChange={handleChangePage}  // Cambiar de página
+                onRowsPerPageChange={handleChangeRowsPerPage}  // Cambiar las filas por página
+              />
             </TableContainer>
           </Paper>
         </Grid>
@@ -573,17 +741,13 @@ export const Statistics = () => {
         open={Boolean(error)}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={'error'}
-          variant="filled"
-        >
-          {typeof error === 'string' ? error : JSON.stringify(error)}
+        <Alert onClose={handleCloseSnackbar} severity={"error"} variant="filled">
+          {typeof error === "string" ? error : JSON.stringify(error)}
         </Alert>
       </Snackbar>
-    </Box >
+    </Box>
   )
 }
 

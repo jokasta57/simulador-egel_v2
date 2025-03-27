@@ -74,16 +74,16 @@ export const Statistics = () => {
       setCalificaciones([])
     }
   }
-  // Calcular el rango de preguntas a mostrar
-  const inicio = paginaActual * preguntasPorPagina
-  const fin = Math.min(inicio + preguntasPorPagina, preguntasData.length)
-  const preguntasPagina = Array.isArray(preguntasData) ? preguntasData.slice(inicio, fin) : []
+  // // Calcular el rango de preguntas a mostrar
+  // const inicio = paginaActual * preguntasPorPagina
+  // const fin = Math.min(inicio + preguntasPorPagina, preguntasData.length)
+  // const preguntasPagina = Array.isArray(preguntasData) ? preguntasData.slice(inicio, fin) : []
 
   // Obtener todas las opciones posibles en la página actual
-  const todasLasOpciones = [...new Set(preguntasPagina.flatMap((p) => p.opciones.map((o) => o.opcion)))]
+  const todasLasOpciones = [...new Set(preguntasData.flatMap((p) => p.opciones.map((o) => o.opcion)))]
 
   // Transformar los datos para que cada pregunta tenga todas las opciones, incluso con frecuencia 0 si no existe
-  const datosTransformados = preguntasPagina.map((pregunta) => {
+  const datosTransformados = preguntasData.map((pregunta) => {
     const data = { pregunta: `P${pregunta.pregunta}` } // Se mantiene única en el eje X
     pregunta.opciones.forEach((opcion) => {
       data[opcion.opcion] = opcion.frecuencia // Se asigna cada opción como clave con su frecuencia
@@ -474,36 +474,38 @@ export const Statistics = () => {
             )}
           </Paper>
         </Grid>
-
-        {/* Rendimiento por pregunta */}
+        {/* Aprobados vs Reprobados */}
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Rendimiento por pregunta
+              Aprobados vs Reprobados
             </Typography>
-
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={preguntasData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="pregunta" label={{ value: "Pregunta", position: "insideBottom", offset: -5 }} />
-                <YAxis
-                  domain={[0, 1]}
-                  tickFormatter={(value) => `${value * 100}%`}
-                  label={{ value: "Acertividad (%)", angle: -90, position: "insideLeft", dy: 60 }}
-                />
-                <Tooltip formatter={(value) => `${(value * 100).toFixed(0)}%`} />
-                <Line type="monotone" dataKey="porcentaje_aciertos" stroke={theme.palette.primary.main} />
-
-                {/* Mensaje si no hay datos */}
-                {preguntasData.length === 0 && (
+              <PieChart>
+                <Pie
+                  data={aprobacion}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={100}
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}%`}
+                >
+                  {aprobacion.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                {aprobacion.every((item) => item.value === null) && (
                   <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
                     No hay datos disponibles
                   </text>
                 )}
-              </LineChart>
+              </PieChart>
             </ResponsiveContainer>
           </Paper>
         </Grid>
+
 
         {/* Distribución de Calificaciones */}
         <Grid item xs={12} md={6}>
@@ -535,9 +537,38 @@ export const Statistics = () => {
             </ResponsiveContainer>
           </Paper>
         </Grid>
+        {/* Rendimiento por pregunta */}
+        <Grid item xs={12} md={12}>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Rendimiento por pregunta
+            </Typography>
 
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={preguntasData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="pregunta" label={{ value: "Pregunta", position: "insideBottom", offset: -5 }} />
+                <YAxis
+                  domain={[0, 1]}
+                  tickFormatter={(value) => `${value * 100}%`}
+                  label={{ value: "Acertividad (%)", angle: -90, position: "insideLeft", dy: 60 }}
+                />
+                <Tooltip formatter={(value) => `${(value * 100).toFixed(0)}%`} />
+                <Line type="monotone" dataKey="porcentaje_aciertos" stroke={theme.palette.primary.main} />
+
+                {/* Mensaje si no hay datos */}
+                {preguntasData.length === 0 && (
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
+                    No hay datos disponibles
+                  </text>
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid>
+                
         {/* Moda de Respuesta por Pregunta */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={12}>
           <Paper elevation={3} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
               Moda de Respuesta por Pregunta
@@ -573,7 +604,7 @@ export const Statistics = () => {
               </LineChart>
             </ResponsiveContainer>
             {/* Controles de paginación */}
-            <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
+            {/* <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
               <Button
                 variant="contained"
                 onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 0))}
@@ -595,41 +626,12 @@ export const Statistics = () => {
               >
                 Siguiente
               </Button>
-            </div>
+            </div> */}
           </Paper>
         </Grid>
 
-        {/* Aprobados vs Reprobados */}
-        <Grid item xs={12} md={6}>
-          <Paper elevation={3} sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Aprobados vs Reprobados
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={aprobacion}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}%`}
-                >
-                  {aprobacion.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                {aprobacion.every((item) => item.value === null) && (
-                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="#888" fontSize="16">
-                    No hay datos disponibles
-                  </text>
-                )}
-              </PieChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid>
+
+
 
         {/* Tabla de Calificaciones por Estudiante */}
         <Grid item xs={12}>

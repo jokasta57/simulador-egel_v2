@@ -87,11 +87,11 @@ Antes de comenzar, asegúrate de tener instalados los siguientes programas:
 
 ### Panel de Estudiantes  
 Aquí los alumnos pueden ver sus exámenes y revisar su desempeño.  
-![Panel estudiantil](https://github.com/user-attachments/assets/b7e70d91-fc0c-430b-83e8-51ab16f70c5a)
+![Panel estudiantil](https://github.com/user-attachments/assets/b33e3769-672a-4394-9fc6-aafdf8e7d3e3)
 
 ### Panel Administrativo  
 El panel de administración permite gestionar preguntas, exámenes y analizar estadísticas.  
-![Panel administrativo](https://github.com/user-attachments/assets/0ca2112a-a153-4a7a-9cfa-e4a3d0a90656)
+![Panel administrativo](https://github.com/user-attachments/assets/e452a39e-4766-4f20-8003-c5caf4ae8043)
 
 ---
 

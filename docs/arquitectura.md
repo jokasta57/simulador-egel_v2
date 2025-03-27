@@ -5,6 +5,7 @@ Este documento describe la estructura de carpetas y la organización del código
 ## 📂 Estructura de directorios
 La aplicación sigue una arquitectura modular, separando componentes, páginas, estilos y utilidades.
 
+```plaintext
 simulador-egel/
 ├── public/               # Archivos públicos (garza.png)
 ├── src/                  # Código fuente
@@ -32,7 +33,7 @@ simulador-egel/
 ├── .gitignore            # Archivos y carpetas a ignorar en Git
 ├── package.json          # Dependencias y configuración del proyecto
 └── README.md             # Documentación principal del proyecto
-
+```
 ---
 
 ## 📌 **Explicación de cada directorio**

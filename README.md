@@ -44,7 +44,6 @@ Antes de comenzar, asegúrate de tener instalados los siguientes programas:
     npm install
     ```
 
-# Configura las variables de entorno en el archivo .env
 4. Configura el entorno; copia el archivo `.env.example`, renómbralo a `.env` y edítalo con tus credenciales reales:  
    ```sh
    cp .env.example .env
@@ -93,11 +92,36 @@ Aquí los alumnos pueden ver sus exámenes y revisar su desempeño.
 El panel de administración permite gestionar preguntas, exámenes y analizar estadísticas.  
 ![Panel administrativo](https://github.com/user-attachments/assets/e452a39e-4766-4f20-8003-c5caf4ae8043)
 
+### 🔄 Flujo de Uso  
+
+El siguiente diagrama muestra el flujo principal de la aplicación:  
+![Diagrama de flujo](https://github.com/user-attachments/assets/aa82436d-1e33-4952-861d-99d055407a82)
+
 ---
 
-## Configuración de la Base de Datos
 
-La base de datos del proyecto está diseñada para gestionar los exámenes, estudiantes, resultados y administración del sistema. 
+## 🗄️ Configuración de la Base de Datos  
+
+El sistema utiliza **MySQL** para gestionar la información de los administradores, estudiantes, exámenes y sus respuestas.  
+
+### 📌 Estructura de la Base de Datos  
+
+La base de datos está compuesta por las siguientes tablas principales:  
+
+#### 👤 **Usuarios**  
+- **admin** → Almacena los datos de los administradores que gestionan los exámenes.  
+- **estudiante** → Guarda la información de los alumnos registrados en el sistema.  
+
+#### 📄 **Exámenes y Preguntas**  
+- **examen** → Contiene la información de los exámenes creados por los administradores.  
+- **pregunta** → Almacena las preguntas de cada examen.  
+- **opcion** → Guarda las opciones de respuesta para cada pregunta.  
+
+#### 📝 **Intentos y Respuestas**  
+- **intento_examen** → Registra cada intento realizado por un estudiante en un examen.  
+- **respuesta** → Almacena las respuestas seleccionadas por el estudiante en un intento.  
+
+---
 
 ### Diagrama de la Base de Datos
 
@@ -105,38 +129,17 @@ A continuación se muestra el diagrama de la base de datos:
 
 ![Diagrama de la base de datos](https://github.com/user-attachments/assets/c69f6aa7-aed4-4191-9033-0bc6fefaf8ab)
 
-### Paso 1: Crear la Base de Datos
+### Importar la Base de Datos
 
-1. **Accede a MySQL**: Si no tienes MySQL instalado, [descárgalo aquí](https://dev.mysql.com/downloads/).
-   
-2. **Accede a tu terminal** (o usa MySQL Workbench si prefieres una interfaz gráfica).
-   
-   Ejecuta el siguiente comando para acceder a MySQL:
-   
-   `mysql -u root -p`
-   
-   Luego, ingresa tu contraseña.
+La estructura de la base de datos está definida en el archivo SQL dentro de la carpeta `sql` del repositorio.
 
-3. **Crear la base de datos**: Ejecuta el siguiente comando para crear la base de datos que utilizarás en el proyecto (por ejemplo, `simulador_egel_db`):
-   
-   `CREATE DATABASE simulador_egel_db;`
-   
-   Si prefieres una base de datos con otro nombre, puedes cambiar `simulador_egel_db` por el nombre que prefieras.
+📄 [`/sql/estructura_egel.sql`](https://github.com/JahirSamperio/simulador-egel/blob/master/sql/estructura_egel.sql)
 
-### Paso 2: Importar los Datos desde un Backup
+Para crear la base de datos en MySQL, simplemente ejecuta el archivo con el siguiente comando:
 
-Si tienes un archivo de backup con los datos de la base de datos (por ejemplo, `backup.sql`), puedes restaurarlo siguiendo estos pasos:
-
-1. **Prepara el archivo de backup**: Asegúrate de tener el archivo `backup.sql` en el directorio desde donde ejecutarás los comandos o conoce la ruta completa del archivo.
-
-2. **Restaurar el backup**: En la terminal, ejecuta el siguiente comando para importar los datos:
-   
-   `mysql -u root -p simulador_egel_db < backup.sql`
-   
-   - Reemplaza `root` con tu nombre de usuario de MySQL si es diferente.
-   - Asegúrate de reemplazar `simulador_egel_db` con el nombre de tu base de datos si usas un nombre diferente.
-   - El archivo `backup.sql` debe ser el archivo de backup que quieres importar.
-
+    ```sh
+    mysql -u tu_usuario -p tu_basededatos < sql/estructura.sql
+    ```
 
 ## 📞 Contacto  
 Para dudas o soporte interno, puedes comunicarte con el equipo de desarrollo a:  

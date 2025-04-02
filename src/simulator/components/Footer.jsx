@@ -54,7 +54,7 @@ export const Footer = () => {
         >
           <LinkedIn />
         </IconButton>
-        <IconButton href="https://tuportafolio.com" target="_blank" rel="noopener noreferrer" sx={{ mx: 1 }}>
+        <IconButton href="https://portafolio-jahirsamperio.netlify.app/" target="_blank" rel="noopener noreferrer" sx={{ mx: 1 }}>
           <Language />
         </IconButton>
       </Box>

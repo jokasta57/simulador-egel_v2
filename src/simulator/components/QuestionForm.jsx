@@ -114,7 +114,7 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
       }
     });
   };
-  
+
 
   return (
     <>
@@ -331,39 +331,22 @@ export const QuestionForm = ({ loading, onAnswerChange, onSaveAnswer, onNextQues
 
             </Box>
             {/* Footer with action buttons */}
-            <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
               <Button
                 variant="contained"
-                onClick={onSaveAnswer}
-                disabled={!selectedValue}
+                onClick={handleFinishExam}
                 sx={{
-                  bgcolor: "primary.main",
+                  bgcolor: "error.main",
                   color: "white",
-                  "&:hover": { bgcolor: "primary.dark" },
-                  "&:disabled": { bgcolor: "grey.400", color: "text.disabled" },
+                  "&:hover": { bgcolor: "error.dark" },
                 }}
               >
-                Guardar Respuesta
+                Terminar Intento
               </Button>
             </Box>
           </Box>
-
-
         </Box>
       </Paper>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-        <Button
-          variant="contained"
-          onClick={handleFinishExam}
-          sx={{
-            bgcolor: "error.main",
-            color: "white",
-            "&:hover": { bgcolor: "error.dark" },
-          }}
-        >
-          Terminar Intento
-        </Button>
-      </Box>
     </>
   )
 };

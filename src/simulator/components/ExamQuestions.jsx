@@ -50,6 +50,13 @@ export const ExamQuestions = () => {
       dispatch(resetCurrentExam());
     };
   }, []);
+
+  useEffect(() => {
+    if (Object.keys(answers).length > 0) {
+      saveAnswer();
+    }
+    console.log(answers);
+  }, [answers])
   
 
   // Temporizador de cuenta regresiva
@@ -108,6 +115,7 @@ export const ExamQuestions = () => {
         dispatch(setRemainingTime(horas * 3600 + minutos * 60 + segundos)); // Convierte la duración en segundos y la almacena
       }
     } catch (error) {
+      console.log(error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -126,6 +134,7 @@ export const ExamQuestions = () => {
       }
       dispatch(setCurrentOrder(orden));
     } catch (error) {
+      console.log(error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -145,7 +154,7 @@ export const ExamQuestions = () => {
         await handleSaveAnswer(currentAttempt.id_intento, answers[question]) // Guarda la respuesta
         await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento) // Recarga la pregunta
         dispatch(setAnsweredQuestion(currentOrder)) // Marca la pregunta como respondida
-        setSuccess("Respuesta guardada exitosamente")
+        // setSuccess("Respuesta guardada exitosamente")
       } else {
         const pregunta = await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento) // Obtiene la pregunta y respuestas
         const answeredOption = pregunta?.opcion?.find((opt) => opt.respuesta?.length > 0) // Busca la respuesta guardada
@@ -153,9 +162,10 @@ export const ExamQuestions = () => {
         await handleUpdateAnswer(answeredId, answers[question]) // Actualiza la respuesta existente
         await handleLoadQuestionAndAnswer(id, currentOrder, currentAttempt.id_intento) // Recarga la pregunta
         dispatch(setAnsweredQuestion(currentOrder)) // Marca la pregunta como respondida
-        setSuccess("Respuesta actualizada exitosamente")
+        // setSuccess("Respuesta actualizada exitosamente")
       }
     } catch (error) {
+      console.log(error);
       setError(error.response?.data?.msg || error.message) // Muestra el mensaje de error
     } finally {
       setLoading(false)

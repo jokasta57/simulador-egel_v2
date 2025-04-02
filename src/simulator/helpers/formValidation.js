@@ -22,8 +22,8 @@ export const validateStudentForm = (formData) => {
     errors.email = 'Email inválido';
   }
   // NIP validation (minimum 6 characters)
-  if (!formData.nip || formData.nip.length < 6) {
-    errors.nip = 'El NIP debe tener al menos 6 caracteres';
+  if (!formData.nip || formData.nip.length < 4) {
+    errors.nip = 'El NIP debe tener al menos 4 caracteres';
   }
 
   // Required fields

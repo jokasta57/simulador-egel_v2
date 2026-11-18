@@ -53,13 +53,14 @@ export const Statistics = () => {
 
   //Loading
   const [isLoading, setIsLoading] = useState(false)
-  const [isExamAvailable, setIsExamAvailable] = useState(true) // Estado para verificar si hay exámenes
 
   //Hook de estadisticas
   const { handlePerformancePerQuestion, handleLastExamAttempt, handleSummaryAndGrades } = useAdminStatsStore()
   const { handleLoadExams } = useExamsStore()
 
   const { exams } = useSelector((state) => state.exams)
+  // Hay exámenes si la lista cargada tiene elementos o si ya hay uno seleccionado
+  const isExamAvailable = (Array.isArray(exams) && exams.length > 0) || Boolean(selectedExam)
   const { user } = useSelector((state) => state.auth)
 
   const handleExamChange = (event) => {
@@ -80,7 +81,7 @@ export const Statistics = () => {
   // const preguntasPagina = Array.isArray(preguntasData) ? preguntasData.slice(inicio, fin) : []
 
   // Obtener todas las opciones posibles en la página actual
-  const todasLasOpciones = [...new Set(preguntasData.flatMap((p) => p.opciones.map((o) => o.opcion)))]
+  const todasLasOpciones = [...new Set(preguntasData.flatMap((p) => p.opciones.map((o) => o.opcion)))].sort((a, b) => a - b)
 
   // Transformar los datos para que cada pregunta tenga todas las opciones, incluso con frecuencia 0 si no existe
   const datosTransformados = preguntasData.map((pregunta) => {
@@ -166,12 +167,10 @@ export const Statistics = () => {
         return
       }
       const data = await handleLastExamAttempt(user.carrera)
-      setSelectedExam(data.examen.id_examen)
-      setIsExamAvailable(true)
+      if (data?.examen?.id_examen) setSelectedExam(data.examen.id_examen)
     } catch (error) {
-      setError(error)
-      // Si no hay exámenes disponibles, marcamos que no hay exámenes disponibles
-      exams.length === 0 ? setIsExamAvailable(false) : setIsExamAvailable(true)
+      // Si aún no hay intentos aplicados, el usuario puede elegir el examen manualmente
+      console.log(error)
     }
   }
 
@@ -514,11 +513,11 @@ export const Statistics = () => {
               Distribución de Promedios
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={distribucionCalificaciones}>
+              <BarChart data={distribucionCalificaciones} margin={{ top: 10, right: 20, bottom: 25, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="rango"
-                  label={{ value: "Rango de calificaciones", position: "insideBottom", offset: -5 }}
+                  label={{ value: "Rango de calificaciones", position: "insideBottom", offset: -15 }}
                 />
                 <YAxis
                   label={{ value: "Número de estudiantes", angle: -90, position: "insideLeft", dy: 80 }}
@@ -545,9 +544,9 @@ export const Statistics = () => {
             </Typography>
 
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={preguntasData}>
+              <LineChart data={preguntasData} margin={{ top: 10, right: 20, bottom: 25, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="pregunta" label={{ value: "Pregunta", position: "insideBottom", offset: -5 }} />
+                <XAxis dataKey="pregunta" label={{ value: "Pregunta", position: "insideBottom", offset: -15 }} />
                 <YAxis
                   domain={[0, 1]}
                   tickFormatter={(value) => `${value * 100}%`}
@@ -574,15 +573,15 @@ export const Statistics = () => {
               Moda de Respuesta por Pregunta
             </Typography>
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={datosTransformados}>
+              <LineChart data={datosTransformados} margin={{ top: 10, right: 20, bottom: 25, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="pregunta"
-                  label={{ value: "Número de Pregunta", position: "insideBottom", offset: -5 }}
+                  label={{ value: "Número de Pregunta", position: "insideBottom", offset: -15 }}
                 />
-                <YAxis label={{ value: "Frecuencia", angle: -90, position: "insideLeft" }} />
+                <YAxis allowDecimals={false} label={{ value: "Frecuencia", angle: -90, position: "insideLeft" }} />
                 <Tooltip />
-                <Legend />
+                <Legend verticalAlign="top" />
 
                 {/* Generar líneas dinámicamente según las opciones disponibles */}
                 {todasLasOpciones.map((opcion, index) => (

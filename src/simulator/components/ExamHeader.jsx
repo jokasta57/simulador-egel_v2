@@ -1,7 +1,10 @@
 import { Box, Typography, Paper } from "@mui/material"
 import { Timer } from "lucide-react"
 
-export const ExamHeader = ({ examName, remainingTime }) => {
+export const ExamHeader = ({ examName, remainingTime, seconds }) => {
+  // El contador llega como texto (hh:mm:ss), así que la alerta se calcula con los segundos restantes
+  const tiempoAgotado = typeof seconds === "number" && seconds <= 300
+
   return (
     <Paper
       elevation={2}
@@ -31,13 +34,13 @@ export const ExamHeader = ({ examName, remainingTime }) => {
           boxShadow: 1,
         }}
       >
-        <Timer size={24} color={remainingTime <= 300 ? "error" : "primary"} />
+        <Timer size={24} color={tiempoAgotado ? "error" : "primary"} />
         <Typography
           variant="h6"
           sx={{
             fontFamily: "monospace",
             fontWeight: "bold",
-            color: remainingTime <= 300 ? "error.main" : "primary.main",
+            color: tiempoAgotado ? "error.main" : "primary.main",
             letterSpacing: "0.05em",
           }}
         >
@@ -47,4 +50,3 @@ export const ExamHeader = ({ examName, remainingTime }) => {
     </Paper>
   )
 }
-

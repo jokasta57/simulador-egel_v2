@@ -91,6 +91,22 @@ export const ExamQuestions = () => {
     return () => clearInterval(timer);
   }, [remainingTime, id]);
 
+  // Convierte la duración del examen (hh:mm:ss) a segundos
+  const parseDuracion = (duracion) => {
+    const partes = String(duracion ?? "").match(/(\d{1,3}):(\d{2}):(\d{2})/);
+    if (!partes) return null;
+    return Number(partes[1]) * 3600 + Number(partes[2]) * 60 + Number(partes[3]);
+  };
+
+  // Inicia el cronómetro con la duración del examen (solo si aún no está en marcha)
+  const iniciarCronometro = (exam) => {
+    if (typeof remainingTime === "number" && remainingTime > 0) return;
+    const segundos = parseDuracion(exam?.duracion);
+    if (segundos !== null) {
+      dispatch(setRemainingTime(segundos)); // Convierte la duración en segundos y la almacena
+    }
+  };
+
   //Obtener info del examen
   const fetchExamInfo = async () => {
     setLoading(true);
@@ -99,8 +115,16 @@ export const ExamQuestions = () => {
       const questionsLength = await handleLoadQuestionsByExam(id); // Obtiene el número total de preguntas
       dispatch(setTotalQuestions(questionsLength.length || 0)); // Almacena el total de preguntas en el estado global
 
-      await handleNewAttempt(user.numero_cuenta, id); // Registra un nuevo intento para el usuario
-      const pregunta = await handleLoadQuestionAndAnswer(id, 1, currentAttempt.id_intento); // Carga la primera pregunta
+      // ⏳ El cronómetro inicia apenas se carga el examen, sin importar lo que suceda después
+      iniciarCronometro(exam);
+
+      const intento = await handleNewAttempt(user.numero_cuenta, id); // Registra un nuevo intento para el usuario
+      if (!intento?.id_intento) {
+        throw new Error("No se pudo registrar el intento del examen");
+      }
+
+      // Se usa el intento recién creado: el estado global aún no se ha refrescado en este cierre
+      const pregunta = await handleLoadQuestionAndAnswer(id, 1, intento.id_intento); // Carga la primera pregunta
 
       if (!pregunta || pregunta.ok === false) {
         setLoading(false)
@@ -108,12 +132,6 @@ export const ExamQuestions = () => {
       }
 
       dispatch(setCurrentOrder(1)); // Establece el número de orden de la pregunta actual en 1
-
-      // Inicializa el tiempo restante solo si aún no ha sido definido
-      if (exam?.duracion && remainingTime === "00:00:00") {
-        const [horas, minutos, segundos] = exam.duracion.split(":").map(Number);
-        dispatch(setRemainingTime(horas * 3600 + minutos * 60 + segundos)); // Convierte la duración en segundos y la almacena
-      }
     } catch (error) {
       console.log(error);
       setError(error.message);
@@ -126,6 +144,7 @@ export const ExamQuestions = () => {
   const handleQuestionSelect = async (orden) => {
     handleCloseSnackbar();
     if (!Number.isInteger(orden) || orden < 1) return setError("Orden de pregunta no válido");
+    if (!currentAttempt?.id_intento) return setError("El intento del examen no está disponible");
     setLoading(true);
     try {
       const pregunta = await handleLoadQuestionAndAnswer(id, orden, currentAttempt.id_intento);
@@ -182,7 +201,7 @@ export const ExamQuestions = () => {
 
   // Formatear el tiempo restante a formato hh:mm:ss
   const formatTime = (totalSeconds) => {
-    if (!totalSeconds) return "00:00:00";
+    if (typeof totalSeconds !== "number" || totalSeconds <= 0) return "00:00:00";
     const horas = Math.floor(totalSeconds / 3600);
     const minutos = Math.floor((totalSeconds % 3600) / 60);
     const segundos = totalSeconds % 60;
@@ -196,7 +215,7 @@ export const ExamQuestions = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 4 }}>
-        <ExamHeader examName={currentExam.nombre} remainingTime={formatTime(remainingTime)} />
+        <ExamHeader examName={currentExam.nombre} remainingTime={formatTime(remainingTime)} seconds={remainingTime} />
 
         <QuestionPanel onQuestionSelect={handleQuestionSelect} />
 

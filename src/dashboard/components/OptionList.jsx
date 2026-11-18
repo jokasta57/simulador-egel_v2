@@ -83,12 +83,8 @@ export const OptionList = ({
     setIsSaved(false); //  Marcar como no guardado
     setIsDirty(true); // Indicar que hay cambios pendientes
 
-    // Clonamos el estado actual de opciones y modificamos la opción específica
-    const newOptions = [...options];
-    newOptions[index] = { ...newOptions[index], contenido: value };
-
-    // Llamamos a `onOptionUpdate` para actualizar todas las opciones
-    onOptionUpdate(-1, "update_all", newOptions);
+    // Actualiza solo el texto de esa opción en el estado del padre (actualización funcional)
+    onOptionUpdate(index, "contenido", value);
   };
 
   //Maneja la carga de una imagen en una opción de respuesta.
@@ -278,7 +274,7 @@ export const OptionList = ({
                       multiline
                       rows={3} // Aumenta el número de filas para mayor altura
                       placeholder={`Opción ${index + 1}`}
-                      value={opcion.contenido || ""}
+                      value={opciones[index]?.contenido ?? ""}
                       onChange={(e) => handleOptionTextChange(index, e.target.value)}
                       error={hasAttemptedSave && (!opcion.contenido?.trim() && !opcion.imagen_url)}
                       helperText={hasAttemptedSave && (!opcion.contenido?.trim() && !opcion.imagen_url) ? "Debe agregar texto o una imagen." : ""}

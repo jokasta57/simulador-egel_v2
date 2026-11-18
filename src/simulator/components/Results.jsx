@@ -146,7 +146,7 @@ export const Results = () => {
                 </Typography>
               </Box>
               <Typography variant="h4" sx={{ color: "rgba(0, 0, 0, 0.8)" }}>
-                {promedioCalificaciones === "N/A" ? "No hay datos" : promedioCalificaciones}
+                {promedioCalificaciones === "N/A" ? "No hay datos" : `${promedioCalificaciones}%`}
               </Typography>
             </CardContent>
           </Card>
@@ -163,7 +163,7 @@ export const Results = () => {
                 </Typography>
               </Box>
               <Typography variant="h4" sx={{ color: "white" }}>
-                {mejorExamen === "N/A" ? "No hay datos" : mejorExamen}
+                {mejorExamen === "N/A" ? "No hay datos" : `${mejorExamen}%`}
               </Typography>
               <Typography variant="subtitle2" sx={{ color: "white" }}>
                 {resultados?.mejorCalificacion?.examen?.nombre || "N/A"}
@@ -182,7 +182,7 @@ export const Results = () => {
                 </Typography>
               </Box>
               <Typography variant="h4" sx={{ color: "white" }}>
-                {peorExamen === "N/A" ? "No hay datos" : peorExamen}
+                {peorExamen === "N/A" ? "No hay datos" : `${peorExamen}%`}
               </Typography>
               <Typography variant="subtitle2" sx={{ color: "white" }}>
                 {resultados?.menorCalificacion?.examen?.nombre || "N/A"}
@@ -286,6 +286,9 @@ export const Results = () => {
           },
         }}
       >
+        <Typography variant="body2" sx={{ p: 1.5 }} color="text.secondary">
+          Las calificaciones se muestran en porcentaje: 100% es la mejor calificación posible y 70% es la mínima para aprobar.
+        </Typography>
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
@@ -293,7 +296,7 @@ export const Results = () => {
               <TableCell sx={{ color: "white" }}>Área</TableCell>
               <TableCell sx={{ color: "white" }}>Fecha</TableCell>
               <TableCell sx={{ color: "white" }}>Numero de Intento</TableCell>
-              <TableCell sx={{ color: "white" }}>Calificación</TableCell>
+              <TableCell sx={{ color: "white" }}>Calificación (%)</TableCell>
               <TableCell sx={{ color: "white" }}>Estado</TableCell>
               <TableCell sx={{ color: "white" }}>Acción</TableCell>
             </TableRow>
@@ -329,7 +332,7 @@ export const Results = () => {
                     <TableCell>{examen.fecha_aplicacion}</TableCell>
                     <TableCell>{examen.intento}°</TableCell>
                     <TableCell>
-                      {examen.calificacion ? formatCalificacion(examen.calificacion) : 0}
+                      {examen.calificacion ? formatCalificacion(examen.calificacion) : 0}%
                     </TableCell>
                     <TableCell>
                       {examen.calificacion >= calificacionMinima ? "Aprobado" : "Reprobado"}
